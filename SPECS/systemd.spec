@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        74%{?dist}
+Release:        74%{?dist}.2
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -954,6 +954,13 @@ Patch0901: 0901-man-document-the-new-_LINE_BREAK-type.patch
 Patch0902: 0902-journald-server-always-create-state-file-in-signal-h.patch
 Patch0903: 0903-journald-server-move-relinquish-code-into-function.patch
 Patch0904: 0904-journald-server-always-touch-state-file-in-signal-ha.patch
+Patch0905: 0905-pager-set-LESSSECURE-whenver-we-invoke-a-pager.patch
+Patch0906: 0906-test-login-always-test-sd_pid_get_owner_uid-moderniz.patch
+Patch0907: 0907-pager-make-pager-secure-when-under-euid-is-changed-o.patch
+Patch0908: 0908-test-ignore-ENOMEDIUM-error-from-sd_pid_get_cgroup.patch
+Patch0909: 0909-pstore-fix-crash-and-forward-dummy-arguments-instead.patch
+Patch0910: 0910-ci-workflow-for-gathering-metadata-for-source-git-au.patch
+Patch0911: 0911-ci-first-part-of-the-source-git-automation-commit-li.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1584,6 +1591,17 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Thu May 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.2
+- pstore: fix crash and forward dummy arguments instead of NULL (#2190153)
+- ci: workflow for gathering metadata for source-git automation (#2190153)
+- ci: first part of the source-git automation - commit linter (#2190153)
+
+* Tue Apr 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.1
+- pager: set $LESSSECURE whenver we invoke a pager (#2175623)
+- test-login: always test sd_pid_get_owner_uid(), modernize (#2175623)
+- pager: make pager secure when under euid is changed or explicitly requested (#2175623)
+- test: ignore ENOMEDIUM error from sd_pid_get_cgroup() (#2175623)
+
 * Tue Mar 14 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74
 - journald-server: always create state file in signal handler (#2174645)
 - journald-server: move relinquish code into function (#2174645)
