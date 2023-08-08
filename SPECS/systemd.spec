@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        74%{?dist}.2
+Release:        74%{?dist}.3
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -961,6 +961,8 @@ Patch0908: 0908-test-ignore-ENOMEDIUM-error-from-sd_pid_get_cgroup.patch
 Patch0909: 0909-pstore-fix-crash-and-forward-dummy-arguments-instead.patch
 Patch0910: 0910-ci-workflow-for-gathering-metadata-for-source-git-au.patch
 Patch0911: 0911-ci-first-part-of-the-source-git-automation-commit-li.patch
+Patch0912: 0912-login-add-a-missing-error-check-for-session_set_lead.patch
+Patch0913: 0913-logind-reset-session-leader-if-we-know-for-a-fact-th.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1591,6 +1593,10 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Thu Jul 20 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.3
+- login: add a missing error check for session_set_leader() (#2223602)
+- logind: reset session leader if we know for a fact that it is gone (#2223602)
+
 * Thu May 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.2
 - pstore: fix crash and forward dummy arguments instead of NULL (#2190153)
 - ci: workflow for gathering metadata for source-git automation (#2190153)

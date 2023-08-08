@@ -1,0 +1,77 @@
+From 33c66376740d069502ae807d0fa582865cddc359 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Wed, 5 Jul 2023 15:27:38 +0200
+Subject: [PATCH] logind: reset session leader if we know for a fact that it is
+ gone
+
+rhel-only
+
+Related: #2223602
+---
+ src/login/logind-dbus.c    |  3 +++
+ src/login/logind-session.c | 18 ++++++++++++++++++
+ src/login/logind-session.h |  1 +
+ 3 files changed, 22 insertions(+)
+
+diff --git a/src/login/logind-dbus.c b/src/login/logind-dbus.c
+index 5edcf4e43f..dbac406035 100644
+--- a/src/login/logind-dbus.c
++++ b/src/login/logind-dbus.c
+@@ -3169,6 +3169,9 @@ int match_job_removed(sd_bus_message *message, void *userdata, sd_bus_error *err
+                         session->scope_job = mfree(session->scope_job);
+                         (void) session_jobs_reply(session, unit, result);
+ 
++                        /* Scope job is done so leader should be gone as well. */
++                        session_invalidate_leader(session);
++
+                         session_save(session);
+                         user_save(session->user);
+                 }
+diff --git a/src/login/logind-session.c b/src/login/logind-session.c
+index 916202a65a..c143202d0b 100644
+--- a/src/login/logind-session.c
++++ b/src/login/logind-session.c
+@@ -179,6 +179,23 @@ int session_set_leader(Session *s, pid_t pid) {
+         return 1;
+ }
+ 
++int session_invalidate_leader(Session *s) {
++        assert(s);
++
++        if (s->leader <= 0)
++                return 0;
++
++        if (pid_is_alive(s->leader))
++                return 0;
++
++        (void) hashmap_remove_value(s->manager->sessions_by_leader, PID_TO_PTR(s->leader), s);
++        s->leader = 0;
++
++        (void) session_save(s);
++
++        return 1;
++}
++
+ static void session_save_devices(Session *s, FILE *f) {
+         SessionDevice *sd;
+         Iterator i;
+@@ -1096,6 +1113,7 @@ static int session_dispatch_fifo(sd_event_source *es, int fd, uint32_t revents,
+         /* EOF on the FIFO means the session died abnormally. */
+ 
+         session_remove_fifo(s);
++        session_invalidate_leader(s);
+         session_stop(s, false);
+ 
+         return 1;
+diff --git a/src/login/logind-session.h b/src/login/logind-session.h
+index 6678441bb9..0557696761 100644
+--- a/src/login/logind-session.h
++++ b/src/login/logind-session.h
+@@ -127,6 +127,7 @@ DEFINE_TRIVIAL_CLEANUP_FUNC(Session *, session_free);
+ 
+ void session_set_user(Session *s, User *u);
+ int session_set_leader(Session *s, pid_t pid);
++int session_invalidate_leader(Session *s);
+ bool session_may_gc(Session *s, bool drop_not_started);
+ void session_add_to_gc_queue(Session *s);
+ int session_activate(Session *s);
