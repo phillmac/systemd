@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        74%{?dist}.3
+Release:        74%{?dist}.5
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -963,6 +963,7 @@ Patch0910: 0910-ci-workflow-for-gathering-metadata-for-source-git-au.patch
 Patch0911: 0911-ci-first-part-of-the-source-git-automation-commit-li.patch
 Patch0912: 0912-login-add-a-missing-error-check-for-session_set_lead.patch
 Patch0913: 0913-logind-reset-session-leader-if-we-know-for-a-fact-th.patch
+Patch0914: 0914-sulogin-fix-control-lost-of-the-current-terminal-whe.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1460,32 +1461,32 @@ fi
 %{?ldconfig}
 
 function mod_nss() {
-    if [ -f "$1" ] ; then
-        # sed-fu to add myhostname to hosts line
-        grep -E -q '^hosts:.* myhostname' "$1" ||
+    if [ $1 -eq 1 ] && [ -f "$2" ]; then
+        # sed-fu to add myhostname to hosts line (only once, on install)
+        grep -E -q '^hosts:.* myhostname' "$2" ||
         sed -i.bak -e '
                 /^hosts:/ !b
                 /\<myhostname\>/ b
                 s/[[:blank:]]*$/ myhostname/
-                ' "$1" &>/dev/null || :
+                ' "$2" &>/dev/null || :
 
-        # Add nss-systemd to passwd and group
-        grep -E -q '^(passwd|group):.* systemd' "$1" ||
+        # Add nss-systemd to passwd and group (only once, on install)
+        grep -E -q '^(passwd|group):.* systemd' "$2" ||
         sed -i.bak -r -e '
                 s/^(passwd|group):(.*)/\1: \2 systemd/
-                ' "$1" &>/dev/null || :
+                ' "$2" &>/dev/null || :
     fi
 }
 
 FILE="$(readlink /etc/nsswitch.conf || echo /etc/nsswitch.conf)"
 if [ "$FILE" = "/etc/authselect/nsswitch.conf" ] && authselect check &>/dev/null; then
-        mod_nss "/etc/authselect/user-nsswitch.conf"
+        mod_nss $1 "/etc/authselect/user-nsswitch.conf"
         authselect apply-changes &> /dev/null || :
 else
-        mod_nss "$FILE"
+        mod_nss $1 "$FILE"
         # also apply the same changes to user-nsswitch.conf to affect
         # possible future authselect configuration
-        mod_nss "/etc/authselect/user-nsswitch.conf"
+        mod_nss $1 "/etc/authselect/user-nsswitch.conf"
 fi
 
 # check if nobody or nfsnobody is defined
@@ -1593,6 +1594,12 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Mon Aug 07 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.5
+- spec: prevent 'myhostname' from being appended on upgrade (#2229687)
+
+* Wed Aug 02 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.4
+- sulogin: fix control lost of the current terminal when default.target is rescue.target (#2227769)
+
 * Thu Jul 20 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.3
 - login: add a missing error check for session_set_leader() (#2223602)
 - logind: reset session leader if we know for a fact that it is gone (#2223602)
