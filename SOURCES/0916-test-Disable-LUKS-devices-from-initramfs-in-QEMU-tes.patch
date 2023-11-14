@@ -1,0 +1,45 @@
+From 6fdc5f71ee28829bdedb159e7d138f7a1b447fb2 Mon Sep 17 00:00:00 2001
+From: Filipe Brandenburger <filbranden@gmail.com>
+Date: Wed, 13 Nov 2019 10:46:08 -0800
+Subject: [PATCH] test: Disable LUKS devices from initramfs in QEMU tests
+
+We currently use the host's kernel and initramfs in our QEMU tests.
+
+If the host is running on an encrypted LUKS partition, then the initramfs
+will have a crypttab setup looking for the particular root disk it needs to
+encrypt before booting into the system.
+
+However, this disk obviously doesn't exist in our QEMU VM, so it turns out
+our tests end up waiting for this device to become available, which will
+never actually happen, and boot hangs for 90s until that service times out.
+
+[***   ] A start job is running for /dev/disk/by-uuid/01234567-abcd-1234-abcd-0123456789ab (20s / 1min 30s)
+
+In order to prevent this issue, let's pass "rd.luks=0" to disable LUKS in
+the initramfs only as part of our default kernel command-line in our QEMU
+tests.
+
+This is enough to disable this behavior and prevent the timeout, while at
+the same time doesn't conflict with our tests that actually check for LUKS
+behavior in the systemd running under test (such as TEST-02-CRYPTSETUP).
+
+Tested: `sudo make -C TEST-02-CRYPTSETUP/ clean setup run`
+(cherry picked from commit 14e0259b499c188de09040f2e5857a0193094d5a)
+
+Related: #2190151
+---
+ test/test-functions | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/test/test-functions b/test/test-functions
+index e5d4d28a5f..a7b18991f4 100644
+--- a/test/test-functions
++++ b/test/test-functions
+@@ -154,6 +154,7 @@ fi
+ KERNEL_APPEND="$PARAMS \
+ root=/dev/sda1 \
+ raid=noautodetect \
++rd.luks=0 \
+ loglevel=2 \
+ init=$PATH_TO_INIT \
+ console=ttyS0 \

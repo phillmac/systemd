@@ -1,0 +1,54 @@
+From bf5b87db9785b86fadbd2b5e97e4883cbe51797d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Thu, 23 Jun 2022 09:56:33 +0200
+Subject: [PATCH] logind: simplify code
+
+Follow-up for 4885d7490b23e08d8444e5a68927ce9ce8727e5a.
+
+(cherry picked from commit e5c09aad375551b9db499703ab7eb123d408ba16)
+
+Resolves: #2209328
+---
+ src/login/logind-session.c | 10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
+
+diff --git a/src/login/logind-session.c b/src/login/logind-session.c
+index 916202a65a..fabf680b61 100644
+--- a/src/login/logind-session.c
++++ b/src/login/logind-session.c
+@@ -349,12 +349,11 @@ fail:
+ }
+ 
+ static int session_load_devices(Session *s, const char *devices) {
+-        const char *p;
+         int r = 0;
+ 
+         assert(s);
+ 
+-        for (p = devices;;) {
++        for (const char *p = devices;;) {
+                 _cleanup_free_ char *word = NULL;
+                 SessionDevice *sd;
+                 dev_t dev;
+@@ -531,7 +530,7 @@ int session_load(Session *s) {
+                         s->class = c;
+         }
+ 
+-        if (state && streq(state, "closing"))
++        if (streq_ptr(state, "closing"))
+                 s->stopping = true;
+ 
+         if (s->fifo_path) {
+@@ -1073,11 +1072,8 @@ int session_set_display(Session *s, const char *display) {
+         assert(s);
+         assert(display);
+ 
+-        if (streq(s->display, display))
+-                return 0;
+-
+         r = free_and_strdup(&s->display, display);
+-        if (r < 0)
++        if (r <= 0)  /* 0 means the strings were equal */
+                 return r;
+ 
+         session_save(s);

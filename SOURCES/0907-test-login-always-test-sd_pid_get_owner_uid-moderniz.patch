@@ -1,4 +1,4 @@
-From cd2d72208df18c0894d2e6eea0656603e326f9cf Mon Sep 17 00:00:00 2001
+From a45636228c7000aef000e45d9853585e51bfb9ef Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
 Date: Mon, 12 Oct 2020 18:57:32 +0200
 Subject: [PATCH] test-login: always test sd_pid_get_owner_uid(), modernize
@@ -12,7 +12,7 @@ to return anything except 0 or error.
 
 (cherry picked from commit 1b5b507cd2d1d7a2b053151abb548475ad9c5c3b)
 
-Related: #2175623
+Related: #2175624
 ---
  src/libsystemd/sd-login/test-login.c | 132 ++++++++++++++-------------
  1 file changed, 71 insertions(+), 61 deletions(-)

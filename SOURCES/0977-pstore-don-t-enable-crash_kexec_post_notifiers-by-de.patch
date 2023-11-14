@@ -1,0 +1,66 @@
+From 21e0afbe2764476c98d7809af6634773835723d4 Mon Sep 17 00:00:00 2001
+From: Kairui Song <kasong@redhat.com>
+Date: Tue, 4 Aug 2020 17:30:51 +0800
+Subject: [PATCH] pstore: don't enable crash_kexec_post_notifiers by default
+
+commit f00c36641a253f4ea659ec3def5d87ba1336eb3b enabled
+crash_kexec_post_notifiers by default regardless of whether pstore
+is enabled or not.
+
+The original intention to enabled this option by default is that
+it only affects kernel post-panic behavior, so should have no harm.
+But this is not true if the user wants a reliable kdump.
+
+crash_kexec_post_notifiers is known to cause problem with kdump,
+and it's documented in kernel. It's not easy to fix the problem
+because of how kdump works. Kdump expects the crashed kernel to
+jump to an pre-loaded crash kernel, so doing any extra job before
+the jump will increase the risk.
+
+It depends on the user to choose between having a reliable kdump or
+some other post-panic debug mechanic.
+
+So it's better to keep this config untouched by default, or it may put
+kdump at higher risk of failing silently. User should enable it by
+uncommenting the config line manually if pstore is always needed.
+
+Also add a inline comment inform user about the potential issue.
+
+Thanks to Dave Young for finding out this issue.
+
+Fixes #16661
+
+Signed-off-by: Kairui Song <kasong@redhat.com>
+(cherry picked from commit edb8c98446e7dae54bcda90806bf6c068e1c6385)
+
+Related: #2211416
+---
+ tmpfiles.d/systemd-pstore.conf | 11 ++++++++---
+ 1 file changed, 8 insertions(+), 3 deletions(-)
+
+diff --git a/tmpfiles.d/systemd-pstore.conf b/tmpfiles.d/systemd-pstore.conf
+index 8b6a1dafc3..e8e9ed48ae 100644
+--- a/tmpfiles.d/systemd-pstore.conf
++++ b/tmpfiles.d/systemd-pstore.conf
+@@ -11,8 +11,13 @@
+ # control writes into pstore.
+ #
+ # The crash_kexec_post_notifiers parameter enables the kernel to write
+-# dmesg (including stack trace) into pstore upon a panic, and
+-# printk.always_kmsg_dump parameter enables the kernel to write dmesg
++# dmesg (including stack trace) into pstore upon a panic even if kdump
++# is loaded, only needed if you want to use pstore with kdump. Without
++# this parameter, kdump could block writing to pstore for stability
++# reason. Note this increases the risk of kdump failure even if pstore
++# is not available.
++#
++# The printk.always_kmsg_dump parameter enables the kernel to write dmesg
+ # upon a normal shutdown (shutdown, reboot, halt).
+ #
+ # To configure the kernel parameters, uncomment the appropriate
+@@ -26,4 +31,4 @@
+ 
+ d /var/lib/systemd/pstore 0755 root root 14d
+ #w- /sys/module/printk/parameters/always_kmsg_dump - - - - Y
+-w- /sys/module/kernel/parameters/crash_kexec_post_notifiers - - - - Y
++#w- /sys/module/kernel/parameters/crash_kexec_post_notifiers - - - - Y

@@ -1,4 +1,4 @@
-From 33c66376740d069502ae807d0fa582865cddc359 Mon Sep 17 00:00:00 2001
+From ab53c4f5c39ab8d34a3cca652de67fe31dbb776d Mon Sep 17 00:00:00 2001
 From: Michal Sekletar <msekleta@redhat.com>
 Date: Wed, 5 Jul 2023 15:27:38 +0200
 Subject: [PATCH] logind: reset session leader if we know for a fact that it is
@@ -6,7 +6,7 @@ Subject: [PATCH] logind: reset session leader if we know for a fact that it is
 
 rhel-only
 
-Related: #2223602
+Related: #2158167
 ---
  src/login/logind-dbus.c    |  3 +++
  src/login/logind-session.c | 18 ++++++++++++++++++
@@ -28,7 +28,7 @@ index 5edcf4e43f..dbac406035 100644
                          user_save(session->user);
                  }
 diff --git a/src/login/logind-session.c b/src/login/logind-session.c
-index 916202a65a..c143202d0b 100644
+index fabf680b61..4edc4b9b88 100644
 --- a/src/login/logind-session.c
 +++ b/src/login/logind-session.c
 @@ -179,6 +179,23 @@ int session_set_leader(Session *s, pid_t pid) {
@@ -55,7 +55,7 @@ index 916202a65a..c143202d0b 100644
  static void session_save_devices(Session *s, FILE *f) {
          SessionDevice *sd;
          Iterator i;
-@@ -1096,6 +1113,7 @@ static int session_dispatch_fifo(sd_event_source *es, int fd, uint32_t revents,
+@@ -1092,6 +1109,7 @@ static int session_dispatch_fifo(sd_event_source *es, int fd, uint32_t revents,
          /* EOF on the FIFO means the session died abnormally. */
  
          session_remove_fifo(s);

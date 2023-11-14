@@ -1,0 +1,27 @@
+From e89c5274a75907bf24689859cdcdf8335df382cd Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@microsoft.com>
+Date: Wed, 24 Nov 2021 20:23:02 +0000
+Subject: [PATCH] meson: remove libdw dependency from pstore
+
+systemd-pstore does not use any symbol from libdw, and never did,
+but the dependency was listed since the beginning
+
+(cherry picked from commit 5361f62d6d5b25c6545059f7d2513324be8d7a49)
+
+Related: #2211416
+---
+ meson.build | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/meson.build b/meson.build
+index d986dd24ac..d00d250444 100644
+--- a/meson.build
++++ b/meson.build
+@@ -2161,7 +2161,6 @@ if conf.get('ENABLE_PSTORE') == 1
+                    link_with : [libshared],
+                    dependencies : [threads,
+                                    libacl,
+-                                   libdw,
+                                    libxz,
+                                    liblz4],
+                    install_rpath : rootlibexecdir,

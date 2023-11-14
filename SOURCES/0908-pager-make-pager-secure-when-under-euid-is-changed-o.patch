@@ -1,4 +1,4 @@
-From 9c8a6018ed4a4da6efb1fc6958e70f9324bb5b1e Mon Sep 17 00:00:00 2001
+From 7955f053c498a70616ac6c4d57c0fd47dfa8e5ac Mon Sep 17 00:00:00 2001
 From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
 Date: Wed, 7 Oct 2020 11:15:05 +0200
 Subject: [PATCH] pager: make pager secure when under euid is changed or
@@ -32,7 +32,7 @@ v3:
 
 (cherry picked from commit 0a42426d797406b4b01a0d9c13bb759c2629d108)
 
-Resolves: #2175623
+Resolves: #2175624
 ---
  man/less-variables.xml | 28 ++++++++++++++---
  meson.build            |  3 +-

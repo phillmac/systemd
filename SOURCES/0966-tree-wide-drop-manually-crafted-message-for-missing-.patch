@@ -1,0 +1,43 @@
+From a167aac4c52ad68bc64748bf4f2b63f45b45f25a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 4 May 2022 08:24:06 +0200
+Subject: [PATCH] tree-wide: drop manually-crafted message for missing
+ variables
+
+Bash will generate a very nice message for us:
+/tmp/ff.sh: line 1: SOMEVAR: parameter null or not set
+
+Let's save some keystrokes by not replacing this with our own inferior
+messages.
+
+[dtardon: Dropped changes to other files.]
+
+(cherry picked from commit d7ff52403902900b61f644f87b5222822fd4a69b)
+
+Related: #2156620
+---
+ test/TEST-15-DROPIN/test-dropin.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/TEST-15-DROPIN/test-dropin.sh b/test/TEST-15-DROPIN/test-dropin.sh
+index a197989f72..c2c96d9797 100755
+--- a/test/TEST-15-DROPIN/test-dropin.sh
++++ b/test/TEST-15-DROPIN/test-dropin.sh
+@@ -4,7 +4,7 @@ set -e
+ set -x
+ 
+ _clear_service () {
+-    local SERVICE_NAME="${1:?_clear_service: missing argument}"
++    local SERVICE_NAME="${1:?}"
+     systemctl stop "$SERVICE_NAME.service" 2>/dev/null || :
+     rm -f  /{etc,run,usr/lib}/systemd/system/"$SERVICE_NAME".service
+     rm -fr /{etc,run,usr/lib}/systemd/system/"$SERVICE_NAME".service.d
+@@ -25,7 +25,7 @@ clear_services () {
+ }
+ 
+ create_service () {
+-    local SERVICE_NAME="${1:?create_service: missing argument}"
++    local SERVICE_NAME="${1:?}"
+     clear_services "$SERVICE_NAME"
+ 
+     cat >/etc/systemd/system/"$SERVICE_NAME".service <<EOF

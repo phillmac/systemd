@@ -1,0 +1,545 @@
+From da79f303ec02fdb9a1c07e0fe48e0aaf4bd09e1b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 30 Nov 2021 04:07:24 +0900
+Subject: [PATCH] tree-wide: use ERRNO_IS_TRANSIENT()
+
+(cherry picked from commit 8add30a03cb19e4a2722fa5a0fc08c277aaf67fd)
+
+Related: #2172846
+---
+ src/basic/barrier.c                             |  7 ++++---
+ src/basic/terminal-util.c                       |  2 +-
+ src/core/cgroup.c                               |  2 +-
+ src/core/manager.c                              | 17 ++++++++---------
+ src/core/path.c                                 |  2 +-
+ src/import/importd.c                            |  2 +-
+ src/journal/journald-kmsg.c                     |  2 +-
+ src/journal/journald-server.c                   |  2 +-
+ src/journal/journald-stream.c                   |  2 +-
+ src/journal/sd-journal.c                        |  2 +-
+ src/libsystemd-network/icmp6-util.c             |  2 +-
+ src/libsystemd-network/sd-dhcp-client.c         |  4 ++--
+ src/libsystemd-network/sd-dhcp-server.c         |  2 +-
+ src/libsystemd-network/sd-dhcp6-client.c        |  2 +-
+ src/libsystemd-network/sd-ipv4acd.c             |  2 +-
+ src/libsystemd-network/sd-lldp.c                |  2 +-
+ src/libsystemd/sd-event/sd-event.c              |  6 +++---
+ src/libsystemd/sd-netlink/netlink-socket.c      |  4 ++--
+ src/libsystemd/sd-network/sd-network.c          |  2 +-
+ src/nspawn/nspawn.c                             |  2 +-
+ src/resolve/resolved-dns-stream.c               |  6 +++---
+ src/resolve/resolved-dns-stub.c                 |  2 +-
+ src/resolve/resolved-manager.c                  |  2 +-
+ src/shared/ask-password-api.c                   |  6 +++---
+ src/socket-proxy/socket-proxyd.c                |  4 ++--
+ src/time-wait-sync/time-wait-sync.c             |  2 +-
+ .../tty-ask-password-agent.c                    |  2 +-
+ src/udev/udevd.c                                |  2 +-
+ 28 files changed, 47 insertions(+), 47 deletions(-)
+
+diff --git a/src/basic/barrier.c b/src/basic/barrier.c
+index 587852aac8..d36c6c6f88 100644
+--- a/src/basic/barrier.c
++++ b/src/basic/barrier.c
+@@ -13,6 +13,7 @@
+ #include "barrier.h"
+ #include "fd-util.h"
+ #include "macro.h"
++#include "util.h"
+ 
+ /**
+  * Barriers
+@@ -181,7 +182,7 @@ static bool barrier_write(Barrier *b, uint64_t buf) {
+         assert(b->me >= 0);
+         do {
+                 len = write(b->me, &buf, sizeof(buf));
+-        } while (len < 0 && IN_SET(errno, EAGAIN, EINTR));
++        } while (len < 0 && ERRNO_IS_TRANSIENT(errno));
+ 
+         if (len != sizeof(buf))
+                 goto error;
+@@ -223,7 +224,7 @@ static bool barrier_read(Barrier *b, int64_t comp) {
+                 int r;
+ 
+                 r = poll(pfd, 2, -1);
+-                if (r < 0 && IN_SET(errno, EAGAIN, EINTR))
++                if (r < 0 && ERRNO_IS_TRANSIENT(errno))
+                         continue;
+                 else if (r < 0)
+                         goto error;
+@@ -233,7 +234,7 @@ static bool barrier_read(Barrier *b, int64_t comp) {
+ 
+                         /* events on @them signal new data for us */
+                         len = read(b->them, &buf, sizeof(buf));
+-                        if (len < 0 && IN_SET(errno, EAGAIN, EINTR))
++                        if (len < 0 && ERRNO_IS_TRANSIENT(errno))
+                                 continue;
+ 
+                         if (len != sizeof(buf))
+diff --git a/src/basic/terminal-util.c b/src/basic/terminal-util.c
+index e2bbe8187d..18176cfe17 100644
+--- a/src/basic/terminal-util.c
++++ b/src/basic/terminal-util.c
+@@ -460,7 +460,7 @@ int acquire_terminal(
+ 
+                         l = read(notify, &buffer, sizeof(buffer));
+                         if (l < 0) {
+-                                if (IN_SET(errno, EINTR, EAGAIN))
++                                if (ERRNO_IS_TRANSIENT(errno))
+                                         continue;
+ 
+                                 return -errno;
+diff --git a/src/core/cgroup.c b/src/core/cgroup.c
+index f89bce3d61..0c8a66edd1 100644
+--- a/src/core/cgroup.c
++++ b/src/core/cgroup.c
+@@ -2356,7 +2356,7 @@ static int on_cgroup_inotify_event(sd_event_source *s, int fd, uint32_t revents,
+ 
+                 l = read(fd, &buffer, sizeof(buffer));
+                 if (l < 0) {
+-                        if (IN_SET(errno, EINTR, EAGAIN))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 return 0;
+ 
+                         return log_error_errno(errno, "Failed to read control group inotify events: %m");
+diff --git a/src/core/manager.c b/src/core/manager.c
+index 4a9f9bfcf9..e09227d5ac 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -2331,7 +2331,7 @@ static int manager_dispatch_notify_fd(sd_event_source *source, int fd, uint32_t
+ 
+         n = recvmsg(m->notify_fd, &msghdr, MSG_DONTWAIT|MSG_CMSG_CLOEXEC|MSG_TRUNC);
+         if (n < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(n))
+                         return 0; /* Spurious wakeup, try again */
+ 
+                 /* If this is any other, real error, then let's stop processing this socket. This of course means we
+@@ -2573,19 +2573,18 @@ static int manager_dispatch_signal_fd(sd_event_source *source, int fd, uint32_t
+         }
+ 
+         n = read(m->signal_fd, &sfsi, sizeof(sfsi));
+-        if (n != sizeof(sfsi)) {
+-                if (n >= 0) {
+-                        log_warning("Truncated read from signal fd (%zu bytes), ignoring!", n);
+-                        return 0;
+-                }
+-
+-                if (IN_SET(errno, EINTR, EAGAIN))
++        if (n < 0) {
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 /* We return an error here, which will kill this handler,
+                  * to avoid a busy loop on read error. */
+                 return log_error_errno(errno, "Reading from signal fd failed: %m");
+         }
++        if (n != sizeof(sfsi)) {
++                log_warning("Truncated read from signal fd (%zu bytes), ignoring!", n);
++                return 0;
++        }
+ 
+         log_received_signal(sfsi.ssi_signo == SIGCHLD ||
+                             (sfsi.ssi_signo == SIGTERM && MANAGER_IS_USER(m))
+@@ -4453,7 +4452,7 @@ int manager_dispatch_user_lookup_fd(sd_event_source *source, int fd, uint32_t re
+ 
+         l = recv(fd, &buffer, sizeof(buffer), MSG_DONTWAIT);
+         if (l < 0) {
+-                if (IN_SET(errno, EINTR, EAGAIN))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_error_errno(errno, "Failed to read from user lookup fd: %m");
+diff --git a/src/core/path.c b/src/core/path.c
+index b899bde0de..dfa63d5102 100644
+--- a/src/core/path.c
++++ b/src/core/path.c
+@@ -152,7 +152,7 @@ int path_spec_fd_event(PathSpec *s, uint32_t revents) {
+ 
+         l = read(s->inotify_fd, &buffer, sizeof(buffer));
+         if (l < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_error_errno(errno, "Failed to read inotify event: %m");
+diff --git a/src/import/importd.c b/src/import/importd.c
+index 04563fb098..5463bd7146 100644
+--- a/src/import/importd.c
++++ b/src/import/importd.c
+@@ -519,7 +519,7 @@ static int manager_on_notify(sd_event_source *s, int fd, uint32_t revents, void
+ 
+         n = recvmsg(fd, &msghdr, MSG_DONTWAIT|MSG_CMSG_CLOEXEC);
+         if (n < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(n))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/journal/journald-kmsg.c b/src/journal/journald-kmsg.c
+index 726c006ce1..a49cc5c4c5 100644
+--- a/src/journal/journald-kmsg.c
++++ b/src/journal/journald-kmsg.c
+@@ -321,7 +321,7 @@ static int server_read_dev_kmsg(Server *s) {
+                         return 0;
+                 }
+ 
+-                if (IN_SET(errno, EAGAIN, EINTR, EPIPE))
++                if (ERRNO_IS_TRANSIENT(errno) || errno == EPIPE)
+                         return 0;
+ 
+                 return log_error_errno(errno, "Failed to read from kernel: %m");
+diff --git a/src/journal/journald-server.c b/src/journal/journald-server.c
+index 4788ff78bb..1e00e4b4bd 100644
+--- a/src/journal/journald-server.c
++++ b/src/journal/journald-server.c
+@@ -1131,7 +1131,7 @@ int server_process_datagram(sd_event_source *es, int fd, uint32_t revents, void
+ 
+         n = recvmsg(fd, &msghdr, MSG_DONTWAIT|MSG_CMSG_CLOEXEC);
+         if (n < 0) {
+-                if (IN_SET(errno, EINTR, EAGAIN))
++                if (ERRNO_IS_TRANSIENT(n))
+                         return 0;
+ 
+                 return log_error_errno(errno, "recvmsg() failed: %m");
+diff --git a/src/journal/journald-stream.c b/src/journal/journald-stream.c
+index 5be5b0939c..470d2e2661 100644
+--- a/src/journal/journald-stream.c
++++ b/src/journal/journald-stream.c
+@@ -556,7 +556,7 @@ static int stdout_stream_process(sd_event_source *es, int fd, uint32_t revents,
+ 
+         l = recvmsg(s->fd, &msghdr, MSG_DONTWAIT|MSG_CMSG_CLOEXEC);
+         if (l < 0) {
+-                if (IN_SET(errno, EINTR, EAGAIN))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 log_warning_errno(errno, "Failed to read from stream: %m");
+diff --git a/src/journal/sd-journal.c b/src/journal/sd-journal.c
+index 4c502978de..ca083da161 100644
+--- a/src/journal/sd-journal.c
++++ b/src/journal/sd-journal.c
+@@ -2563,7 +2563,7 @@ _public_ int sd_journal_process(sd_journal *j) {
+ 
+                 l = read(j->inotify_fd, &buffer, sizeof(buffer));
+                 if (l < 0) {
+-                        if (IN_SET(errno, EAGAIN, EINTR))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 return got_something ? determine_change(j) : SD_JOURNAL_NOP;
+ 
+                         return -errno;
+diff --git a/src/libsystemd-network/icmp6-util.c b/src/libsystemd-network/icmp6-util.c
+index 736df222f0..17d4d1faf2 100644
+--- a/src/libsystemd-network/icmp6-util.c
++++ b/src/libsystemd-network/icmp6-util.c
+@@ -175,7 +175,7 @@ int icmp6_receive(int fd, void *buffer, size_t size, struct in6_addr *dst,
+ 
+         len = recvmsg(fd, &msg, MSG_DONTWAIT);
+         if (len < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/libsystemd-network/sd-dhcp-client.c b/src/libsystemd-network/sd-dhcp-client.c
+index ff434f8ce7..8a8d806b3f 100644
+--- a/src/libsystemd-network/sd-dhcp-client.c
++++ b/src/libsystemd-network/sd-dhcp-client.c
+@@ -1720,7 +1720,7 @@ static int client_receive_message_udp(
+ 
+         len = recv(fd, message, buflen, 0);
+         if (len < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_dhcp_client_errno(client, errno,
+@@ -1814,7 +1814,7 @@ static int client_receive_message_raw(
+ 
+         len = recvmsg(fd, &msg, 0);
+         if (len < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_dhcp_client_errno(client, errno,
+diff --git a/src/libsystemd-network/sd-dhcp-server.c b/src/libsystemd-network/sd-dhcp-server.c
+index 5ca46b3502..c964b73da1 100644
+--- a/src/libsystemd-network/sd-dhcp-server.c
++++ b/src/libsystemd-network/sd-dhcp-server.c
+@@ -962,7 +962,7 @@ static int server_receive_message(sd_event_source *s, int fd,
+ 
+         len = recvmsg(fd, &msg, 0);
+         if (len < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(len))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/libsystemd-network/sd-dhcp6-client.c b/src/libsystemd-network/sd-dhcp6-client.c
+index b3bc259280..67257f2e03 100644
+--- a/src/libsystemd-network/sd-dhcp6-client.c
++++ b/src/libsystemd-network/sd-dhcp6-client.c
+@@ -1055,7 +1055,7 @@ static int client_receive_message(
+ 
+         len = recv(fd, message, buflen, 0);
+         if (len < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(len))
+                         return 0;
+ 
+                 return log_dhcp6_client_errno(client, errno, "Could not receive message from UDP socket: %m");
+diff --git a/src/libsystemd-network/sd-ipv4acd.c b/src/libsystemd-network/sd-ipv4acd.c
+index a40d40db90..f69810c6f5 100644
+--- a/src/libsystemd-network/sd-ipv4acd.c
++++ b/src/libsystemd-network/sd-ipv4acd.c
+@@ -336,7 +336,7 @@ static int ipv4acd_on_packet(
+ 
+         n = recv(fd, &packet, sizeof(struct ether_arp), 0);
+         if (n < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 log_ipv4acd_errno(acd, errno, "Failed to read ARP packet: %m");
+diff --git a/src/libsystemd-network/sd-lldp.c b/src/libsystemd-network/sd-lldp.c
+index c75d6079e1..bf15029027 100644
+--- a/src/libsystemd-network/sd-lldp.c
++++ b/src/libsystemd-network/sd-lldp.c
+@@ -200,7 +200,7 @@ static int lldp_receive_datagram(sd_event_source *s, int fd, uint32_t revents, v
+ 
+         length = recv(fd, LLDP_NEIGHBOR_RAW(n), n->raw_size, MSG_DONTWAIT);
+         if (length < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_lldp_errno(errno, "Failed to read LLDP datagram: %m");
+diff --git a/src/libsystemd/sd-event/sd-event.c b/src/libsystemd/sd-event/sd-event.c
+index 2c9d331bf2..549103bc6f 100644
+--- a/src/libsystemd/sd-event/sd-event.c
++++ b/src/libsystemd/sd-event/sd-event.c
+@@ -3007,7 +3007,7 @@ static int flush_timer(sd_event *e, int fd, uint32_t events, usec_t *next) {
+ 
+         ss = read(fd, &x, sizeof(x));
+         if (ss < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+@@ -3161,7 +3161,7 @@ static int process_signal(sd_event *e, struct signal_data *d, uint32_t events) {
+ 
+                 n = read(d->fd, &si, sizeof(si));
+                 if (n < 0) {
+-                        if (IN_SET(errno, EAGAIN, EINTR))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 return read_one;
+ 
+                         return -errno;
+@@ -3210,7 +3210,7 @@ static int event_inotify_data_read(sd_event *e, struct inotify_data *d, uint32_t
+ 
+         n = read(d->fd, &d->buffer, sizeof(d->buffer));
+         if (n < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/libsystemd/sd-netlink/netlink-socket.c b/src/libsystemd/sd-netlink/netlink-socket.c
+index f103cbedea..5fe91450a7 100644
+--- a/src/libsystemd/sd-netlink/netlink-socket.c
++++ b/src/libsystemd/sd-netlink/netlink-socket.c
+@@ -265,7 +265,7 @@ static int socket_recv_message(int fd, struct iovec *iov, uint32_t *_group, bool
+                 else if (errno == EAGAIN)
+                         log_debug("rtnl: no data in socket");
+ 
+-                return IN_SET(errno, EAGAIN, EINTR) ? 0 : -errno;
++                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+         }
+ 
+         if (sender.nl.nl_pid != 0) {
+@@ -276,7 +276,7 @@ static int socket_recv_message(int fd, struct iovec *iov, uint32_t *_group, bool
+                         /* drop the message */
+                         n = recvmsg(fd, &msg, 0);
+                         if (n < 0)
+-                                return IN_SET(errno, EAGAIN, EINTR) ? 0 : -errno;
++                                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+                 }
+ 
+                 return 0;
+diff --git a/src/libsystemd/sd-network/sd-network.c b/src/libsystemd/sd-network/sd-network.c
+index 3b8ce935b0..09d3b86e14 100644
+--- a/src/libsystemd/sd-network/sd-network.c
++++ b/src/libsystemd/sd-network/sd-network.c
+@@ -338,7 +338,7 @@ _public_ int sd_network_monitor_flush(sd_network_monitor *m) {
+ 
+         l = read(fd, &buffer, sizeof(buffer));
+         if (l < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
+index 8cb7591f0e..025a513def 100644
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -3252,7 +3252,7 @@ static int nspawn_dispatch_notify_fd(sd_event_source *source, int fd, uint32_t r
+ 
+         n = recvmsg(fd, &msghdr, MSG_DONTWAIT|MSG_CMSG_CLOEXEC);
+         if (n < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++            if (ERRNO_IS_TRANSIENT(n))
+                         return 0;
+ 
+                 return log_warning_errno(errno, "Couldn't read notification socket: %m");
+diff --git a/src/resolve/resolved-dns-stream.c b/src/resolve/resolved-dns-stream.c
+index ca0313d1d7..cebaba4207 100644
+--- a/src/resolve/resolved-dns-stream.c
++++ b/src/resolve/resolved-dns-stream.c
+@@ -380,7 +380,7 @@ static int on_stream_io(sd_event_source *es, int fd, uint32_t revents, void *use
+ 
+                 ss = dns_stream_writev(s, iov, 2, 0);
+                 if (ss < 0) {
+-                        if (!IN_SET(-ss, EINTR, EAGAIN))
++                        if (!ERRNO_IS_TRANSIENT(ss))
+                                 return dns_stream_complete(s, -ss);
+                 } else
+                         s->n_written += ss;
+@@ -402,7 +402,7 @@ static int on_stream_io(sd_event_source *es, int fd, uint32_t revents, void *use
+ 
+                         ss = dns_stream_read(s, (uint8_t*) &s->read_size + s->n_read, sizeof(s->read_size) - s->n_read);
+                         if (ss < 0) {
+-                                if (!IN_SET(-ss, EINTR, EAGAIN))
++                                if (!ERRNO_IS_TRANSIENT(ss))
+                                         return dns_stream_complete(s, -ss);
+                         } else if (ss == 0)
+                                 return dns_stream_complete(s, ECONNRESET);
+@@ -452,7 +452,7 @@ static int on_stream_io(sd_event_source *es, int fd, uint32_t revents, void *use
+                                           (uint8_t*) DNS_PACKET_DATA(s->read_packet) + s->n_read - sizeof(s->read_size),
+                                           sizeof(s->read_size) + be16toh(s->read_size) - s->n_read);
+                                 if (ss < 0) {
+-                                        if (!IN_SET(errno, EINTR, EAGAIN))
++                                        if (!ERRNO_IS_TRANSIENT(errno))
+                                                 return dns_stream_complete(s, errno);
+                                 } else if (ss == 0)
+                                         return dns_stream_complete(s, ECONNRESET);
+diff --git a/src/resolve/resolved-dns-stub.c b/src/resolve/resolved-dns-stub.c
+index 5ddf13081e..1b80c42174 100644
+--- a/src/resolve/resolved-dns-stub.c
++++ b/src/resolve/resolved-dns-stub.c
+@@ -458,7 +458,7 @@ static int on_dns_stub_stream(sd_event_source *s, int fd, uint32_t revents, void
+ 
+         cfd = accept4(fd, NULL, NULL, SOCK_NONBLOCK|SOCK_CLOEXEC);
+         if (cfd < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/resolve/resolved-manager.c b/src/resolve/resolved-manager.c
+index 01372fc66b..2a23c387a6 100644
+--- a/src/resolve/resolved-manager.c
++++ b/src/resolve/resolved-manager.c
+@@ -755,7 +755,7 @@ int manager_recv(Manager *m, int fd, DnsProtocol protocol, DnsPacket **ret) {
+         if (l == 0)
+                 return 0;
+         if (l < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;
+diff --git a/src/shared/ask-password-api.c b/src/shared/ask-password-api.c
+index 764ebd08e1..062db31bbd 100644
+--- a/src/shared/ask-password-api.c
++++ b/src/shared/ask-password-api.c
+@@ -332,7 +332,7 @@ int ask_password_tty(
+ 
+                 n = read(ttyfd >= 0 ? ttyfd : STDIN_FILENO, &c, 1);
+                 if (n < 0) {
+-                        if (IN_SET(errno, EINTR, EAGAIN))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 continue;
+ 
+                         r = -errno;
+@@ -652,7 +652,7 @@ int ask_password_agent(
+ 
+                 n = recvmsg(socket_fd, &msghdr, 0);
+                 if (n < 0) {
+-                        if (IN_SET(errno, EAGAIN, EINTR))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 continue;
+ 
+                         r = -errno;
+@@ -661,7 +661,7 @@ int ask_password_agent(
+ 
+                 cmsg_close_all(&msghdr);
+ 
+-                if (n <= 0) {
++                if (n == 0) {
+                         log_debug("Message too short");
+                         continue;
+                 }
+diff --git a/src/socket-proxy/socket-proxyd.c b/src/socket-proxy/socket-proxyd.c
+index 3d07483eb4..155631f1e7 100644
+--- a/src/socket-proxy/socket-proxyd.c
++++ b/src/socket-proxy/socket-proxyd.c
+@@ -144,7 +144,7 @@ static int connection_shovel(
+                         } else if (z == 0 || IN_SET(errno, EPIPE, ECONNRESET)) {
+                                 *from_source = sd_event_source_unref(*from_source);
+                                 *from = safe_close(*from);
+-                        } else if (!IN_SET(errno, EAGAIN, EINTR))
++                        } else if (!ERRNO_IS_TRANSIENT(errno))
+                                 return log_error_errno(errno, "Failed to splice: %m");
+                 }
+ 
+@@ -156,7 +156,7 @@ static int connection_shovel(
+                         } else if (z == 0 || IN_SET(errno, EPIPE, ECONNRESET)) {
+                                 *to_source = sd_event_source_unref(*to_source);
+                                 *to = safe_close(*to);
+-                        } else if (!IN_SET(errno, EAGAIN, EINTR))
++                        } else if (!ERRNO_IS_TRANSIENT(errno))
+                                 return log_error_errno(errno, "Failed to splice: %m");
+                 }
+         } while (shoveled);
+diff --git a/src/time-wait-sync/time-wait-sync.c b/src/time-wait-sync/time-wait-sync.c
+index d268fb0c5a..2071cb2759 100644
+--- a/src/time-wait-sync/time-wait-sync.c
++++ b/src/time-wait-sync/time-wait-sync.c
+@@ -94,7 +94,7 @@ static int inotify_handler(sd_event_source *s,
+ 
+         l = read(fd, &buffer, sizeof(buffer));
+         if (l < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return log_warning_errno(errno, "Lost access to inotify: %m");
+diff --git a/src/tty-ask-password-agent/tty-ask-password-agent.c b/src/tty-ask-password-agent/tty-ask-password-agent.c
+index 40d594896b..3a20a381c9 100644
+--- a/src/tty-ask-password-agent/tty-ask-password-agent.c
++++ b/src/tty-ask-password-agent/tty-ask-password-agent.c
+@@ -150,7 +150,7 @@ static int ask_password_plymouth(
+ 
+                 k = read(fd, buffer + p, sizeof(buffer) - p);
+                 if (k < 0) {
+-                        if (IN_SET(errno, EINTR, EAGAIN))
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 continue;
+ 
+                         r = -errno;
+diff --git a/src/udev/udevd.c b/src/udev/udevd.c
+index 34f6a95503..172d21018e 100644
+--- a/src/udev/udevd.c
++++ b/src/udev/udevd.c
+@@ -1119,7 +1119,7 @@ static int on_inotify(sd_event_source *s, int fd, uint32_t revents, void *userda
+ 
+         l = read(fd, &buffer, sizeof(buffer));
+         if (l < 0) {
+-                if (IN_SET(errno, EAGAIN, EINTR))
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 1;
+ 
+                 return log_error_errno(errno, "Failed to read inotify fd: %m");

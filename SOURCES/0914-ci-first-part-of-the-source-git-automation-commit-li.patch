@@ -1,4 +1,4 @@
-From e08bdd25344ed475f48d22a1c303421e19489427 Mon Sep 17 00:00:00 2001
+From 7e0eb456a99229d19b8e42491c1ddb7b8050903f Mon Sep 17 00:00:00 2001
 From: Jan Macku <jamacku@redhat.com>
 Date: Mon, 24 Apr 2023 15:15:00 +0200
 Subject: [PATCH] ci: first part of the source-git automation - commit linter
@@ -13,7 +13,7 @@ is configured via the `advanced-commit-linter.yml` file.
 
 rhel-only
 
-Related: #2190153
+Related: #2179309
 ---
  .github/advanced-commit-linter.yml          | 23 +++++++++++
  .github/workflows/source-git-automation.yml | 45 +++++++++++++++++++++

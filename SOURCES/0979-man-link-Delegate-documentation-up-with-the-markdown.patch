@@ -1,0 +1,26 @@
+From 0c1f96220f2a42c256a1e22e5f16d2ff8f4144df Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Fri, 16 Nov 2018 20:29:02 +0100
+Subject: [PATCH] man: link Delegate= documentation up with the markdown docs
+
+(cherry picked from commit 077c40bc5271dfc8d9cee179fbed27a27e741973)
+
+Related: #2215925
+---
+ man/systemd.resource-control.xml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/man/systemd.resource-control.xml b/man/systemd.resource-control.xml
+index d3bff29169..36a622ebf0 100644
+--- a/man/systemd.resource-control.xml
++++ b/man/systemd.resource-control.xml
+@@ -808,6 +808,9 @@
+           specific to the unified hierarchy while others are specific to the legacy hierarchy. Also note that the
+           kernel might support further controllers, which aren't covered here yet as delegation is either not supported
+           at all for them or not defined cleanly.</para>
++
++          <para>For further details on the delegation model consult <ulink
++          url="https://systemd.io/CGROUP_DELEGATION">Control Group APIs and Delegation</ulink>.</para>
+         </listitem>
+       </varlistentry>
+ 

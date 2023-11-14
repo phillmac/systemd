@@ -1,0 +1,53 @@
+From ea3d85221a7ba83ff1d9612d29cc8ca3e054f2fa Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Thu, 25 May 2023 01:20:45 +0800
+Subject: [PATCH] loginctl: list-sessions: fix timestamp for idle hint
+
+Follow-up for 556723e738b96a5c2b2d45a96b87b7b80e0c5664
+
+TABLE_TIMESTAMP_RELATIVE takes a realtime timestamp.
+
+(cherry picked from commit be88af3d9646c8bd1aaea3d4a00520e97ee8674d)
+
+Related: #2156786
+---
+ src/login/loginctl.c | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/login/loginctl.c b/src/login/loginctl.c
+index 65fe182195..1131267015 100644
+--- a/src/login/loginctl.c
++++ b/src/login/loginctl.c
+@@ -67,7 +67,7 @@ typedef struct SessionStatusInfo {
+         const char *scope;
+         const char *desktop;
+         bool idle_hint;
+-        dual_timestamp idle_hint_timestamp;
++        usec_t idle_hint_timestamp;
+ } SessionStatusInfo;
+ 
+ static OutputFlags get_output_flags(void) {
+@@ -136,10 +136,10 @@ static int show_table(Table *table, const char *word) {
+ 
+ static int list_sessions(int argc, char *argv[], void *userdata) {
+ 
+-        static const struct bus_properties_map map[]  = {
+-                { "IdleHint",               "b",    NULL,   offsetof(SessionStatusInfo, idle_hint)                      },
+-                { "IdleSinceHintMonotonic", "t",    NULL,   offsetof(SessionStatusInfo, idle_hint_timestamp.monotonic)  },
+-                { "TTY",                    "s",    NULL,   offsetof(SessionStatusInfo, tty)                            },
++        static const struct bus_properties_map map[] = {
++                { "IdleHint",      "b", NULL, offsetof(SessionStatusInfo, idle_hint)           },
++                { "IdleSinceHint", "t", NULL, offsetof(SessionStatusInfo, idle_hint_timestamp) },
++                { "TTY",           "s", NULL, offsetof(SessionStatusInfo, tty)                 },
+                 {},
+         };
+ 
+@@ -210,7 +210,7 @@ static int list_sessions(int argc, char *argv[], void *userdata) {
+                         return log_error_errno(r, "Failed to add row to table: %m");
+ 
+                 if (i.idle_hint)
+-                        r = table_add_cell(table, NULL, TABLE_TIMESTAMP_RELATIVE, &i.idle_hint_timestamp.monotonic);
++                        r = table_add_cell(table, NULL, TABLE_TIMESTAMP_RELATIVE, &i.idle_hint_timestamp);
+                 else
+                         r = table_add_cell(table, NULL, TABLE_EMPTY, NULL);
+                 if (r < 0)

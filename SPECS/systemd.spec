@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        74%{?dist}.5
+Release:        78%{?dist}
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -954,16 +954,81 @@ Patch0901: 0901-man-document-the-new-_LINE_BREAK-type.patch
 Patch0902: 0902-journald-server-always-create-state-file-in-signal-h.patch
 Patch0903: 0903-journald-server-move-relinquish-code-into-function.patch
 Patch0904: 0904-journald-server-always-touch-state-file-in-signal-ha.patch
-Patch0905: 0905-pager-set-LESSSECURE-whenver-we-invoke-a-pager.patch
-Patch0906: 0906-test-login-always-test-sd_pid_get_owner_uid-moderniz.patch
-Patch0907: 0907-pager-make-pager-secure-when-under-euid-is-changed-o.patch
-Patch0908: 0908-test-ignore-ENOMEDIUM-error-from-sd_pid_get_cgroup.patch
-Patch0909: 0909-pstore-fix-crash-and-forward-dummy-arguments-instead.patch
-Patch0910: 0910-ci-workflow-for-gathering-metadata-for-source-git-au.patch
-Patch0911: 0911-ci-first-part-of-the-source-git-automation-commit-li.patch
-Patch0912: 0912-login-add-a-missing-error-check-for-session_set_lead.patch
-Patch0913: 0913-logind-reset-session-leader-if-we-know-for-a-fact-th.patch
-Patch0914: 0914-sulogin-fix-control-lost-of-the-current-terminal-whe.patch
+Patch0905: 0905-test-make-TEST-35-LOGIN-stable-again.patch
+Patch0906: 0906-pager-set-LESSSECURE-whenver-we-invoke-a-pager.patch
+Patch0907: 0907-test-login-always-test-sd_pid_get_owner_uid-moderniz.patch
+Patch0908: 0908-pager-make-pager-secure-when-under-euid-is-changed-o.patch
+Patch0909: 0909-ci-trigger-differential-shellcheck-workflow-on-push.patch
+Patch0910: 0910-ci-codeql-master-main.patch
+Patch0911: 0911-test-ignore-ENOMEDIUM-error-from-sd_pid_get_cgroup.patch
+Patch0912: 0912-ci-Mergify-drop-requirements-on-linting-workflows.patch
+Patch0913: 0913-ci-workflow-for-gathering-metadata-for-source-git-au.patch
+Patch0914: 0914-ci-first-part-of-the-source-git-automation-commit-li.patch
+Patch0915: 0915-pstore-fix-crash-and-forward-dummy-arguments-instead.patch
+Patch0916: 0916-test-Disable-LUKS-devices-from-initramfs-in-QEMU-tes.patch
+Patch0917: 0917-pstore-explicitly-set-the-base-when-converting-recor.patch
+Patch0918: 0918-pstore-avoid-opening-the-dmesg.txt-file-if-not-reque.patch
+Patch0919: 0919-test-add-a-couple-of-tests-for-systemd-pstore.patch
+Patch0920: 0920-ci-update-permissions-for-source-git-automation-work.patch
+Patch0921: 0921-sulogin-fix-control-lost-of-the-current-terminal-whe.patch
+Patch0922: 0922-parse-util-in-parse_permille-check-negative-earlier.patch
+Patch0923: 0923-tree-wide-increase-granularity-of-percent-specificat.patch
+Patch0924: 0924-errno-util-introduce-ERRNO_IS_TRANSIENT.patch
+Patch0925: 0925-tree-wide-use-ERRNO_IS_TRANSIENT.patch
+Patch0926: 0926-libsystemd-ignore-both-EINTR-and-EAGAIN.patch
+Patch0927: 0927-sd-bus-handle-EINTR-return-from-bus_poll.patch
+Patch0928: 0928-stdio-bridge-don-t-be-bothered-with-EINTR.patch
+Patch0929: 0929-sd-netlink-handle-EINTR-from-poll-gracefully-as-succ.patch
+Patch0930: 0930-resolved-handle-EINTR-returned-from-fd_wait_for_even.patch
+Patch0931: 0931-utmp-wtmp-fix-error-in-case-isatty-fails.patch
+Patch0932: 0932-utmp-wtmp-handle-EINTR-gracefully-when-waiting-to-wr.patch
+Patch0933: 0933-journal-vacuum-count-size-of-all-journal-files.patch
+Patch0934: 0934-resolved-instead-of-closing-DNS-UDP-transaction-fds-.patch
+Patch0935: 0935-resolved-close-UDP-socket-when-we-received-a-network.patch
+Patch0936: 0936-ci-allow-RHEL-only-labels-to-mark-downstream-only-co.patch
+Patch0937: 0937-man-tweak-markup-in-systemd-pstore.service-8.patch
+Patch0938: 0938-man-add-.service-suffix-to-systemd-pstore-8.patch
+Patch0939: 0939-presets-enable-systemd-pstore.service-by-default.patch
+Patch0940: 0940-logind-simplify-code.patch
+Patch0941: 0941-format-table-add-TABLE_TIMESTAMP_UTC-and-_RELATIVE.patch
+Patch0942: 0942-loginctl-shorten-variable-name.patch
+Patch0943: 0943-loginctl-use-bus_map_all_properties.patch
+Patch0944: 0944-loginctl-show-session-idle-status-in-list-sessions.patch
+Patch0945: 0945-loginctl-list-sessions-fix-timestamp-for-idle-hint.patch
+Patch0946: 0946-loginctl-also-show-idle-hint-in-session-status.patch
+Patch0947: 0947-core-timer-Always-use-inactive_exit_timestamp-if-it-.patch
+Patch0948: 0948-timer-Use-dual_timestamp_is_set-in-one-more-place.patch
+Patch0949: 0949-ci-drop-systemd-stable-from-advanced-commit-linter-c.patch
+Patch0950: 0950-core-mount-escape-invalid-UTF8-char-in-dbus-reply.patch
+Patch0951: 0951-login-add-a-missing-error-check-for-session_set_lead.patch
+Patch0952: 0952-logind-reset-session-leader-if-we-know-for-a-fact-th.patch
+Patch0953: 0953-test-login-skip-consistency-checks-when-logind-is-no.patch
+Patch0954: 0954-sd-event-remove-dead-code-and-use-_cleanup_.patch
+Patch0955: 0955-sd-event-don-t-destroy-inotify-data-structures-from-.patch
+Patch0956: 0956-sd-event-add-sd_event_add_inotify_fd-call.patch
+Patch0957: 0957-test-add-test-case-for-self-destroy-inotify-handler.patch
+Patch0958: 0958-doc-add-downstream-CONTRIBUTING-document.patch
+Patch0959: 0959-doc-use-link-with-prefilled-Jira-issue.patch
+Patch0960: 0960-docs-link-downstream-CONTRIBUTING-in-README.patch
+Patch0961: 0961-unit-drop-in-Fix-ordering-of-special-type.d-drop-ins.patch
+Patch0962: 0962-Add-failing-test-to-show-service.d-global-drop-in-do.patch
+Patch0963: 0963-test-set-indentation-to-4-spaces.patch
+Patch0964: 0964-test-TEST-15-remove-all-created-unit-files.patch
+Patch0965: 0965-test-use-quotes-where-necessary.patch
+Patch0966: 0966-tree-wide-drop-manually-crafted-message-for-missing-.patch
+Patch0967: 0967-manager-reformat-boolean-expression-in-unit_is_prist.patch
+Patch0968: 0968-manager-allow-transient-units-to-have-drop-ins.patch
+Patch0969: 0969-TEST-15-allow-helper-functions-to-accept-other-unit-.patch
+Patch0970: 0970-TEST-15-also-test-hierarchical-drop-ins-for-slices.patch
+Patch0971: 0971-TEST-15-add-test-for-transient-units-with-drop-ins.patch
+Patch0972: 0972-TEST-15-add-one-more-test-for-drop-in-precedence.patch
+Patch0973: 0973-udev-net_id-introduce-naming-scheme-for-RHEL-8.9.patch
+Patch0974: 0974-meson-remove-libdw-dependency-from-pstore.patch
+Patch0975: 0975-pstore-introduce-tmpfiles.d-systemd-pstore.conf.patch
+Patch0976: 0976-tmpfiles-don-t-complain-if-we-can-t-enable-pstore-in.patch
+Patch0977: 0977-pstore-don-t-enable-crash_kexec_post_notifiers-by-de.patch
+Patch0978: 0978-core-when-Delegate-yes-is-set-for-a-unit-run-ExecSta.patch
+Patch0979: 0979-man-link-Delegate-documentation-up-with-the-markdown.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1594,26 +1659,91 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
-* Mon Aug 07 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.5
-- spec: prevent 'myhostname' from being appended on upgrade (#2229687)
+* Tue Aug 22 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-78
+- login: add a missing error check for session_set_leader() (#2158167)
+- logind: reset session leader if we know for a fact that it is gone (#2158167)
+- test-login: skip consistency checks when logind is not active (#2223582)
+- sd-event: remove dead code and use _cleanup_ (#2211358)
+- sd-event: don't destroy inotify data structures from inotify event handler (#2211358)
+- sd-event: add sd_event_add_inotify_fd() call (#2211358)
+- test: add test case for self-destroy inotify handler (#2211358)
+- doc: add downstream CONTRIBUTING document (#2179309)
+- doc: use link with prefilled Jira issue (#2179309)
+- docs: link downstream CONTRIBUTING in README (#2179309)
+- unit drop-in: Fix ordering of special type.d drop-ins (#2156620)
+- Add failing test to show service.d global drop-in does not get overridden by more specific dropins (#2156620)
+- test: set indentation to 4 spaces (#2156620)
+- test/TEST-15: remove all created unit files (#2156620)
+- test: use quotes where necessary (#2156620)
+- tree-wide: drop manually-crafted message for missing variables (#2156620)
+- manager: reformat boolean expression in unit_is_pristine() (#2156620)
+- manager: allow transient units to have drop-ins (#2156620)
+- TEST-15: allow helper functions to accept other unit types (#2156620)
+- TEST-15: also test hierarchical drop-ins for slices (#2156620)
+- TEST-15: add test for transient units with drop-ins (#2156620)
+- TEST-15: add one more test for drop-in precedence (#2156620)
+- udev/net_id: introduce naming scheme for RHEL-8.9 (#2231846)
+- meson: remove libdw dependency from pstore (#2211416)
+- pstore: introduce tmpfiles.d/systemd-pstore.conf (#2211416)
+- tmpfiles: don't complain if we can't enable pstore in containers (#2211416)
+- pstore: don't enable crash_kexec_post_notifiers by default (#2211416)
+- core: when Delegate=yes is set for a unit, run ExecStartPre= and friends in a subcgroup of the unit (#2215925)
+- man: link Delegate= documentation up with the markdown docs (#2215925)
 
-* Wed Aug 02 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.4
-- sulogin: fix control lost of the current terminal when default.target is rescue.target (#2227769)
+* Mon Jul 17 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-77
+- ci: update permissions for source-git automation workflows (#2179309)
+- sulogin: fix control lost of the current terminal when default.target is rescue.target (#2169932)
+- parse-util: in parse_permille() check negative earlier (#2178179)
+- tree-wide: increase granularity of percent specifications all over the place to permille (#2178179)
+- errno-util: introduce ERRNO_IS_TRANSIENT() (#2172846)
+- tree-wide: use ERRNO_IS_TRANSIENT() (#2172846)
+- libsystemd: ignore both EINTR and EAGAIN (#2172846)
+- sd-bus: handle -EINTR return from bus_poll() (#2172846)
+- stdio-bridge: don't be bothered with EINTR (#2172846)
+- sd-netlink: handle EINTR from poll() gracefully, as success (#2172846)
+- resolved: handle -EINTR returned from fd_wait_for_event() better (#2172846)
+- utmp-wtmp: fix error in case isatty() fails (#2172846)
+- utmp-wtmp: handle EINTR gracefully when waiting to write to tty (#2172846)
+- journal-vacuum: count size of all journal files (#2180380)
+- resolved: instead of closing DNS UDP transaction fds right-away, add them to a socket "graveyard" (#2156751)
+- resolved: close UDP socket when we received a network error on it (#2156751)
+- ci: allow RHEL-only labels to mark downstream-only commits (#2179309)
+- man: tweak markup in systemd-pstore.service(8) (#2217786)
+- man: add .service suffix to systemd-pstore(8) (#2217786)
+- presets: enable systemd-pstore.service by default (#2217786)
+- logind: simplify code (#2209328)
+- format-table: add TABLE_TIMESTAMP_UTC and _RELATIVE (#2156786)
+- loginctl: shorten variable name (#2156786)
+- loginctl: use bus_map_all_properties (#2156786)
+- loginctl: show session idle status in list-sessions (#2156786)
+- loginctl: list-sessions: fix timestamp for idle hint (#2156786)
+- loginctl: also show idle hint in session-status (#2156786)
+- core/timer: Always use inactive_exit_timestamp if it is set (#1719364)
+- timer: Use dual_timestamp_is_set() in one more place (#1719364)
+- ci: drop systemd-stable from advanced-commit-linter config (#2179309)
+- core/mount: escape invalid UTF8 char in dbus reply (#2158724)
 
-* Thu Jul 20 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.3
-- login: add a missing error check for session_set_leader() (#2223602)
-- logind: reset session leader if we know for a fact that it is gone (#2223602)
+* Thu May 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-76
+- ci(Mergify): drop requirements on linting workflows (#2179309)
+- ci: workflow for gathering metadata for source-git automation (#2179309)
+- ci: first part of the source-git automation - commit linter (#2179309)
+- pstore: fix crash and forward dummy arguments instead of NULL (#2190151)
+- test: Disable LUKS devices from initramfs in QEMU tests (#2190151)
+- pstore: explicitly set the base when converting record ID (#2190151)
+- pstore: avoid opening the dmesg.txt file if not requested (#2190151)
+- test: add a couple of tests for systemd-pstore (#2190151)
 
-* Thu May 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.2
-- pstore: fix crash and forward dummy arguments instead of NULL (#2190153)
-- ci: workflow for gathering metadata for source-git automation (#2190153)
-- ci: first part of the source-git automation - commit linter (#2190153)
-
-* Tue Apr 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74.1
-- pager: set $LESSSECURE whenver we invoke a pager (#2175623)
-- test-login: always test sd_pid_get_owner_uid(), modernize (#2175623)
-- pager: make pager secure when under euid is changed or explicitly requested (#2175623)
-- test: ignore ENOMEDIUM error from sd_pid_get_cgroup() (#2175623)
+* Tue Apr 18 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-75
+- journald-server: always create state file in signal handler (#2176892)
+- journald-server: move relinquish code into function (#2176892)
+- journald-server: always touch state file in signal handler (#2176892)
+- test: make TEST-35-LOGIN stable again (#2179309)
+- pager: set $LESSSECURE whenver we invoke a pager (#2175624)
+- test-login: always test sd_pid_get_owner_uid(), modernize (#2175624)
+- pager: make pager secure when under euid is changed or explicitly requested (#2175624)
+- ci: trigger differential-shellcheck workflow on push (#2179309)
+- ci: codeql `master` -> `main` (#2179309)
+- test: ignore ENOMEDIUM error from sd_pid_get_cgroup() (#2175622)
 
 * Tue Mar 14 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-74
 - journald-server: always create state file in signal handler (#2174645)

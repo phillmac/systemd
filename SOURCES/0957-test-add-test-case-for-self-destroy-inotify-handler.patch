@@ -1,0 +1,65 @@
+From 2fcb71007e5137e1be4a16fb24783ff329313ebf Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 9 Nov 2021 00:15:43 +0100
+Subject: [PATCH] test: add test case for self-destroy inotify handler
+
+(cherry picked from commit 035daf73fbfa05e5abf049bd9385fc0994ab5672)
+
+Related: #2211358
+---
+ src/libsystemd/sd-event/test-event.c | 36 ++++++++++++++++++++++++++++
+ 1 file changed, 36 insertions(+)
+
+diff --git a/src/libsystemd/sd-event/test-event.c b/src/libsystemd/sd-event/test-event.c
+index 9135b22839..df3de1bfb0 100644
+--- a/src/libsystemd/sd-event/test-event.c
++++ b/src/libsystemd/sd-event/test-event.c
+@@ -588,6 +588,40 @@ static void test_ratelimit(void) {
+         assert_se(expired == 0);
+ }
+ 
++static int inotify_self_destroy_handler(sd_event_source *s, const struct inotify_event *ev, void *userdata) {
++        sd_event_source **p = userdata;
++
++        assert_se(ev);
++        assert_se(p);
++        assert_se(*p == s);
++
++        assert_se(FLAGS_SET(ev->mask, IN_ATTRIB));
++
++        assert_se(sd_event_exit(sd_event_source_get_event(s), 0) >= 0);
++
++        *p = sd_event_source_unref(*p); /* here's what we actually intend to test: we destroy the event
++                                         * source from inside the event source handler */
++        return 1;
++}
++
++static void test_inotify_self_destroy(void) {
++        _cleanup_(sd_event_source_unrefp) sd_event_source *s = NULL;
++        _cleanup_(sd_event_unrefp) sd_event *e = NULL;
++        char path[] = "/tmp/inotifyXXXXXX";
++        _cleanup_close_ int fd = -1;
++
++        /* Tests that destroying an inotify event source from its own handler is safe */
++
++        assert_se(sd_event_default(&e) >= 0);
++
++        fd = mkostemp_safe(path);
++        assert_se(fd >= 0);
++        assert_se(sd_event_add_inotify_fd(e, &s, fd, IN_ATTRIB, inotify_self_destroy_handler, &s) >= 0);
++        fd = safe_close(fd);
++        assert_se(unlink(path) >= 0); /* This will trigger IN_ATTRIB because link count goes to zero */
++        assert_se(sd_event_loop(e) >= 0);
++}
++
+ int main(int argc, char *argv[]) {
+ 
+         log_set_max_level(LOG_DEBUG);
+@@ -602,5 +636,7 @@ int main(int argc, char *argv[]) {
+ 
+         test_ratelimit();
+ 
++        test_inotify_self_destroy();
++
+         return 0;
+ }

@@ -1,0 +1,25 @@
+From e7c06a10a106068e5bd9f092edbfcc937954a959 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 24 May 2023 11:41:37 +0200
+Subject: [PATCH] timer: Use dual_timestamp_is_set() in one more place
+
+(cherry picked from commit e21f75afcd95a46261a36a2614712eff6bc119f4)
+
+Related: #1719364
+---
+ src/core/timer.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/timer.c b/src/core/timer.c
+index b80f6d714c..81468d4ca6 100644
+--- a/src/core/timer.c
++++ b/src/core/timer.c
+@@ -366,7 +366,7 @@ static void timer_enter_waiting(Timer *t, bool time_change) {
+                          * to that. If we don't, just start from
+                          * the activation time. */
+ 
+-                        if (t->last_trigger.realtime > 0)
++                        if (dual_timestamp_is_set(&t->last_trigger))
+                                 b = t->last_trigger.realtime;
+                         else if (dual_timestamp_is_set(&UNIT(t)->inactive_exit_timestamp))
+                                 b = UNIT(t)->inactive_exit_timestamp.realtime;

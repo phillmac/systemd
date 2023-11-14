@@ -1,4 +1,4 @@
-From 47cc8f7e1d153e576f146d309b4043739997a673 Mon Sep 17 00:00:00 2001
+From 0491902d0eff9f4480ce873decc5dd29e5e189d7 Mon Sep 17 00:00:00 2001
 From: David Tardon <dtardon@redhat.com>
 Date: Mon, 13 Mar 2023 14:22:28 +0100
 Subject: [PATCH] journald-server: always create state file in signal handler
@@ -8,7 +8,7 @@ nothing has really happened.
 
 RHEL-only
 
-Resolves: #2174645
+Resolves: #2176892
 ---
  src/journal/journald-server.c | 5 +++++
  1 file changed, 5 insertions(+)

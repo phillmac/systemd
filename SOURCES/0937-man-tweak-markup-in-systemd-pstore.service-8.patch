@@ -1,0 +1,39 @@
+From e3d4d6b36c111c5273ce5da124116f1c98b10d9d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Sat, 29 Feb 2020 09:48:44 +0100
+Subject: [PATCH] man: tweak markup in systemd-pstore.service(8)
+
+(cherry picked from commit e3b192626e24cbd3a4dc2c7d5fb9a3b3fd136e24)
+
+Related: #2217786
+---
+ man/systemd-pstore.xml | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/man/systemd-pstore.xml b/man/systemd-pstore.xml
+index dd1aa5e83b..8726071cf0 100644
+--- a/man/systemd-pstore.xml
++++ b/man/systemd-pstore.xml
+@@ -49,8 +49,8 @@
+ 
+     <para>The pstore service is independent of the kdump service. In cloud environments
+     specifically, host and guest filesystems are on remote filesystems (eg. iSCSI
+-    or NFS), thus kdump relies [implicitly and/or explicitly] upon proper operation
+-    of networking software *and* hardware *and* infrastructure.  Thus it may not be
++    or NFS), thus kdump relies (implicitly and/or explicitly) upon proper operation
++    of networking software *and* hardware *and* infrastructure. Thus it may not be
+     possible to capture a kernel coredump to a file since writes over the network
+     may not be possible.</para>
+ 
+@@ -59,9 +59,9 @@
+     debugging.</para>
+ 
+     <para>The <command>systemd-pstore</command> executable does the actual work. Upon starting,
+-    the <filename>pstore.conf</filename> is read to obtain options, then the /sys/fs/pstore
++    the <filename>pstore.conf</filename> file is read and the <filename>/sys/fs/pstore</filename>
+     directory contents are processed according to the options. Pstore files are written to the
+-    journal, and optionally saved into /var/lib/systemd/pstore.</para>
++    journal, and optionally saved into <filename>/var/lib/systemd/pstore</filename>.</para>
+   </refsect1>
+ 
+   <refsect1>

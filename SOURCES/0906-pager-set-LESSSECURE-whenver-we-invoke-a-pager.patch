@@ -1,4 +1,4 @@
-From e0488facf5b6e1faa292460548cfe0d7c542918d Mon Sep 17 00:00:00 2001
+From c971d99ffc43df89ca4e15cd81f9e44f4139ba91 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Mon, 31 Aug 2020 19:37:13 +0200
 Subject: [PATCH] pager: set $LESSSECURE whenver we invoke a pager
@@ -12,7 +12,7 @@ Prompted by #5666
 
 (cherry picked from commit 612ebf6c913dd0e4197c44909cb3157f5c51a2f0)
 
-Related: #2175623
+Related: #2175624
 ---
  man/less-variables.xml |  8 ++++++++
  man/systemctl.xml      |  1 +

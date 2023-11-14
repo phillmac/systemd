@@ -1,0 +1,40 @@
+From 0d3f481f791d918380a1b5587529cb8642d3e407 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Tue, 23 May 2023 18:54:30 +0800
+Subject: [PATCH] loginctl: also show idle hint in session-status
+
+(cherry picked from commit 82449055af97cf92466dbe132a89c9d889440c3d)
+
+Related: #2156786
+---
+ src/login/loginctl.c | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/src/login/loginctl.c b/src/login/loginctl.c
+index 1131267015..80d0a302d3 100644
+--- a/src/login/loginctl.c
++++ b/src/login/loginctl.c
+@@ -473,6 +473,8 @@ static int print_session_status_info(sd_bus *bus, const char *path, bool *new_li
+                 { "Remote",              "b",    NULL,                     offsetof(SessionStatusInfo, remote)              },
+                 { "Timestamp",           "t",    NULL,                     offsetof(SessionStatusInfo, timestamp.realtime)  },
+                 { "TimestampMonotonic",  "t",    NULL,                     offsetof(SessionStatusInfo, timestamp.monotonic) },
++                { "IdleHint",            "b",    NULL,                     offsetof(SessionStatusInfo, idle_hint)           },
++                { "IdleSinceHint",       "t",    NULL,                     offsetof(SessionStatusInfo, idle_hint_timestamp) },
+                 { "User",                "(uo)", prop_map_first_of_struct, offsetof(SessionStatusInfo, uid)                 },
+                 { "Seat",                "(so)", prop_map_first_of_struct, offsetof(SessionStatusInfo, seat)                },
+                 {}
+@@ -571,6 +573,14 @@ static int print_session_status_info(sd_bus *bus, const char *path, bool *new_li
+         if (i.state)
+                 printf("\t   State: %s\n", i.state);
+ 
++        if (i.idle_hint && i.idle_hint_timestamp > 0) {
++                s1 = format_timestamp_relative(since1, sizeof(since1), i.idle_hint_timestamp);
++                s2 = format_timestamp(since2, sizeof(since2), i.idle_hint_timestamp);
++
++                printf("\t    Idle: %s since %s (%s)\n", yes_no(i.idle_hint), s2, s1);
++        } else
++                printf("\t    Idle: %s\n", yes_no(i.idle_hint));
++
+         if (i.scope) {
+                 printf("\t    Unit: %s\n", i.scope);
+                 show_unit_cgroup(bus, "org.freedesktop.systemd1.Scope", i.scope, i.leader);

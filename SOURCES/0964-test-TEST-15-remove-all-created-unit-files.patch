@@ -1,0 +1,31 @@
+From eaffd717ec05ced564fc67b880f07640a8d60816 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Sat, 21 Mar 2020 16:30:27 +0100
+Subject: [PATCH] test/TEST-15: remove all created unit files
+
+We would miss anything created under a template instance.
+
+(cherry picked from commit 4e2ac45a83e5495a5c1d3ecac62a054e0cef7746)
+
+Related: #2156620
+---
+ test/TEST-15-DROPIN/test-dropin.sh | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/test/TEST-15-DROPIN/test-dropin.sh b/test/TEST-15-DROPIN/test-dropin.sh
+index 64d8a98fc7..30f1e84954 100755
+--- a/test/TEST-15-DROPIN/test-dropin.sh
++++ b/test/TEST-15-DROPIN/test-dropin.sh
+@@ -8,6 +8,12 @@ _clear_service () {
+     rm -f  /{etc,run,usr/lib}/systemd/system/$1.service
+     rm -fr /{etc,run,usr/lib}/systemd/system/$1.service.d
+     rm -fr /{etc,run,usr/lib}/systemd/system/$1.service.{wants,requires}
++    if [[ $1 == *@ ]]; then
++        systemctl stop $1*.service 2>/dev/null || :
++        rm -f  /{etc,run,usr/lib}/systemd/system/$1*.service
++        rm -fr /{etc,run,usr/lib}/systemd/system/$1*.service.d
++        rm -fr /{etc,run,usr/lib}/systemd/system/$1*.service.{wants,requires}
++    fi
+ }
+ 
+ clear_services () {

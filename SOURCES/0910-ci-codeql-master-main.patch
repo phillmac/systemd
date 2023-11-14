@@ -1,0 +1,34 @@
+From 5e5c1425db0982c9d5e5d51e164895aa780f76b2 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 30 Mar 2023 17:18:17 +0200
+Subject: [PATCH] ci: codeql `master` -> `main`
+
+rhel-only
+
+Related: #2179309
+---
+ .github/workflows/codeql.yml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/codeql.yml b/.github/workflows/codeql.yml
+index c5426d5686..cc4fcf4754 100644
+--- a/.github/workflows/codeql.yml
++++ b/.github/workflows/codeql.yml
+@@ -7,7 +7,7 @@ name: "CodeQL"
+ on:
+   pull_request:
+     branches:
+-      - master
++      - main
+       - rhel-*
+     paths:
+       - '**/meson.build'
+@@ -17,7 +17,7 @@ on:
+       - 'tools/**'
+   push:
+     branches:
+-      - master
++      - main
+       - rhel-*
+ 
+ permissions:

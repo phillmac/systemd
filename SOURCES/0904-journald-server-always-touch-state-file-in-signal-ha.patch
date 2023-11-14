@@ -1,4 +1,4 @@
-From 980add7d84084a474c6c604c0670743c2d1e624c Mon Sep 17 00:00:00 2001
+From 05a06e34ac8a38c1cff2a08ba071386141e0b78d Mon Sep 17 00:00:00 2001
 From: David Tardon <dtardon@redhat.com>
 Date: Mon, 13 Mar 2023 14:32:20 +0100
 Subject: [PATCH] journald-server: always touch state file in signal handler
@@ -8,7 +8,7 @@ even if nothing has really happened.
 
 RHEL-only
 
-Related: #2174645
+Related: #2176892
 ---
  src/journal/journald-server.c | 12 +++++++-----
  1 file changed, 7 insertions(+), 5 deletions(-)

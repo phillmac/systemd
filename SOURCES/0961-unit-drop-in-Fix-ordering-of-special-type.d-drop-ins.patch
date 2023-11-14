@@ -1,0 +1,47 @@
+From e257d900b45df7db779fd34f01b251d4054f3685 Mon Sep 17 00:00:00 2001
+From: "Greg \"GothAck\" Miell" <greg@gothack.ninja>
+Date: Fri, 27 Dec 2019 14:49:51 +0000
+Subject: [PATCH] unit drop-in: Fix ordering of special type.d drop-ins
+
+(cherry picked from commit e6627f2392cde12e21c40a7cfa96578c648c1f33)
+
+Related: #2156620
+---
+ src/shared/dropin.c | 10 +++++-----
+ 1 file changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/src/shared/dropin.c b/src/shared/dropin.c
+index 11ed4c7184..927107c508 100644
+--- a/src/shared/dropin.c
++++ b/src/shared/dropin.c
+@@ -242,6 +242,10 @@ int unit_file_find_dropin_paths(
+ 
+         assert(ret);
+ 
++        SET_FOREACH(name, names, i)
++                STRV_FOREACH(p, lookup_path)
++                        (void) unit_file_find_dirs(original_root, unit_path_cache, *p, name, dir_suffix, &dirs);
++
+         /* All the names in the unit are of the same type so just grab one. */
+         name = (char*) set_first(names);
+         if (name) {
+@@ -253,7 +257,7 @@ int unit_file_find_dropin_paths(
+                                                "Failed to to derive unit type from unit name: %s",
+                                                name);
+ 
+-                /* Special top level drop in for "<unit type>.<suffix>". Add this first as it's the most generic
++                /* Special top level drop in for "<unit type>.<suffix>". Add this last as it's the most generic
+                  * and should be able to be overridden by more specific drop-ins. */
+                 STRV_FOREACH(p, lookup_path)
+                         (void) unit_file_find_dirs(original_root,
+@@ -264,10 +268,6 @@ int unit_file_find_dropin_paths(
+                                                    &dirs);
+         }
+ 
+-        SET_FOREACH(name, names, i)
+-                STRV_FOREACH(p, lookup_path)
+-                        (void) unit_file_find_dirs(original_root, unit_path_cache, *p, name, dir_suffix, &dirs);
+-
+         if (strv_isempty(dirs)) {
+                 *ret = NULL;
+                 return 0;

@@ -1,0 +1,31 @@
+From 5a1d30b9a775a7bbac55752abdc10ed5383d209f Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 30 Nov 2021 03:39:35 +0900
+Subject: [PATCH] errno-util: introduce ERRNO_IS_TRANSIENT()
+
+(cherry picked from commit 7aad83580fccee926d903bdb1a2a6af2c40ef0fc)
+
+Related: #2172846
+---
+ src/basic/util.h | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/basic/util.h b/src/basic/util.h
+index 195f02cf5f..48beb88bac 100644
+--- a/src/basic/util.h
++++ b/src/basic/util.h
+@@ -180,6 +180,14 @@ static inline int negative_errno(void) {
+         return -errno;
+ }
+ 
++
++/* For send()/recv() or read()/write(). */
++static inline bool ERRNO_IS_TRANSIENT(int r) {
++        return IN_SET(abs(r),
++                      EAGAIN,
++                      EINTR);
++}
++
+ /* Two different errors for access problems */
+ static inline bool ERRNO_IS_PRIVILEGE(int r) {
+         return IN_SET(abs(r),

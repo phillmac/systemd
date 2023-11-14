@@ -1,0 +1,26 @@
+From 36d9a1a50f80322b24ff5756b8fb89a07363dfd7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Sat, 29 Feb 2020 10:01:39 +0100
+Subject: [PATCH] presets: enable systemd-pstore.service by default
+
+It has no effect is the pstore is not used, and prevents the non-volatile
+storage from filling up if is used by the kernel.
+
+https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=952767
+(cherry picked from commit 5926ea0a6860095eaa83403417cbbf345db864f6)
+
+Resolves: #2217786
+---
+ presets/90-systemd.preset | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/presets/90-systemd.preset b/presets/90-systemd.preset
+index 11960e5423..b8edc23d48 100644
+--- a/presets/90-systemd.preset
++++ b/presets/90-systemd.preset
+@@ -34,3 +34,5 @@ disable syslog.socket
+ disable systemd-journal-gatewayd.*
+ disable systemd-journal-remote.*
+ disable systemd-journal-upload.*
++
++enable systemd-pstore.service

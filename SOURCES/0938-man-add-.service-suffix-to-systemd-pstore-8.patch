@@ -1,0 +1,61 @@
+From ff17baae0631f42f59be6e425943c7181c6c5c18 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Sat, 29 Feb 2020 09:57:06 +0100
+Subject: [PATCH] man: add .service suffix to systemd-pstore(8)
+
+That is the pattern that we always use with executables not in
+$PATH.
+
+(cherry picked from commit aa07dc70932837bfeda982affe53f01d36ec6efe)
+
+Related: #2217786
+---
+ man/rules/meson.build                                  | 2 +-
+ man/{systemd-pstore.xml => systemd-pstore.service.xml} | 8 ++++----
+ 2 files changed, 5 insertions(+), 5 deletions(-)
+ rename man/{systemd-pstore.xml => systemd-pstore.service.xml} (95%)
+
+diff --git a/man/rules/meson.build b/man/rules/meson.build
+index 6295330c5e..05eb0a1604 100644
+--- a/man/rules/meson.build
++++ b/man/rules/meson.build
+@@ -634,7 +634,7 @@ manpages = [
+  ['systemd-nspawn', '1', [], ''],
+  ['systemd-path', '1', [], ''],
+  ['systemd-portabled.service', '8', ['systemd-portabled'], 'ENABLE_PORTABLED'],
+- ['systemd-pstore', '8', ['systemd-pstore.service'], 'ENABLE_PSTORE'],
++ ['systemd-pstore.service', '8', ['systemd-pstore'], 'ENABLE_PSTORE'],
+  ['systemd-quotacheck.service',
+   '8',
+   ['systemd-quotacheck'],
+diff --git a/man/systemd-pstore.xml b/man/systemd-pstore.service.xml
+similarity index 95%
+rename from man/systemd-pstore.xml
+rename to man/systemd-pstore.service.xml
+index 8726071cf0..47916da521 100644
+--- a/man/systemd-pstore.xml
++++ b/man/systemd-pstore.service.xml
+@@ -7,19 +7,19 @@
+           xmlns:xi="http://www.w3.org/2001/XInclude">
+ 
+   <refentryinfo>
+-    <title>systemd-pstore</title>
++    <title>systemd-pstore.service</title>
+     <productname>systemd</productname>
+   </refentryinfo>
+ 
+   <refmeta>
+-    <refentrytitle>systemd-pstore</refentrytitle>
++    <refentrytitle>systemd-pstore.service</refentrytitle>
+     <manvolnum>8</manvolnum>
+   </refmeta>
+ 
+   <refnamediv>
+-    <refname>systemd-pstore</refname>
+     <refname>systemd-pstore.service</refname>
+-    <refpurpose>Tool to archive contents of the persistent storage filesytem</refpurpose>
++    <refname>systemd-pstore</refname>
++    <refpurpose>A service to archive contents of pstore</refpurpose>
+   </refnamediv>
+ 
+   <refsynopsisdiv>

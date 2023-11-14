@@ -1,0 +1,90 @@
+From b1075e8b3ecb9e0770dd46331ce8517ea152e1ca Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 21 Nov 2022 17:42:04 +0100
+Subject: [PATCH] sd-bus: handle -EINTR return from bus_poll()
+
+In sd_bus_wait(), let's convert EINTR to a return code of 0, thus asking
+the caller do loop again and enter sd_bus_process() again (which will
+not find any queued events). This way we'll not return an error on
+something that isn't really an error. This should typically make sure
+things are properly handled by the caller, magically, without eating up
+the event entirely, and still giving the caller time to run some code if
+they want.
+
+(cherry picked from commit 3022916b4d2483452c3ddbbac9ee7c4372b1cb46)
+
+Resolves: #2172846
+---
+ src/libsystemd/sd-bus/bus-socket.c |  5 ++++-
+ src/libsystemd/sd-bus/sd-bus.c     | 18 +++++++++++++++---
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/src/libsystemd/sd-bus/bus-socket.c b/src/libsystemd/sd-bus/bus-socket.c
+index c6e1a1624f..a5c750fc69 100644
+--- a/src/libsystemd/sd-bus/bus-socket.c
++++ b/src/libsystemd/sd-bus/bus-socket.c
+@@ -1266,8 +1266,11 @@ int bus_socket_process_opening(sd_bus *b) {
+         assert(b->state == BUS_OPENING);
+ 
+         r = poll(&p, 1, 0);
+-        if (r < 0)
++        if (r < 0) {
++                if (ERRNO_IS_TRANSIENT(errno))
++                        return 0;
+                 return -errno;
++        }
+ 
+         if (!(p.revents & (POLLOUT|POLLERR|POLLHUP)))
+                 return 0;
+diff --git a/src/libsystemd/sd-bus/sd-bus.c b/src/libsystemd/sd-bus/sd-bus.c
+index 21e54591f7..5d934cbf73 100644
+--- a/src/libsystemd/sd-bus/sd-bus.c
++++ b/src/libsystemd/sd-bus/sd-bus.c
+@@ -2209,8 +2209,11 @@ _public_ int sd_bus_call(
+                         left = (uint64_t) -1;
+ 
+                 r = bus_poll(bus, true, left);
+-                if (r < 0)
++                if (r < 0) {
++                        if (ERRNO_IS_TRANSIENT(r))
++                                continue;
+                         goto fail;
++                }
+                 if (r == 0) {
+                         r = -ETIMEDOUT;
+                         goto fail;
+@@ -3069,6 +3072,7 @@ static int bus_poll(sd_bus *bus, bool need_more, uint64_t timeout_usec) {
+ }
+ 
+ _public_ int sd_bus_wait(sd_bus *bus, uint64_t timeout_usec) {
++        int r;
+ 
+         assert_return(bus, -EINVAL);
+         assert_return(bus = bus_resolve(bus), -ENOPKG);
+@@ -3083,7 +3087,11 @@ _public_ int sd_bus_wait(sd_bus *bus, uint64_t timeout_usec) {
+         if (bus->rqueue_size > 0)
+                 return 0;
+ 
+-        return bus_poll(bus, false, timeout_usec);
++        r = bus_poll(bus, false, timeout_usec);
++        if (r < 0 && ERRNO_IS_TRANSIENT(r))
++                return 1; /* treat EINTR as success, but let's exit, so that the caller will call back into us soon. */
++
++        return r;
+ }
+ 
+ _public_ int sd_bus_flush(sd_bus *bus) {
+@@ -3125,8 +3133,12 @@ _public_ int sd_bus_flush(sd_bus *bus) {
+                         return 0;
+ 
+                 r = bus_poll(bus, false, (uint64_t) -1);
+-                if (r < 0)
++                if (r < 0) {
++                        if (ERRNO_IS_TRANSIENT(r))
++                                continue;
++
+                         return r;
++                }
+         }
+ }
+ 

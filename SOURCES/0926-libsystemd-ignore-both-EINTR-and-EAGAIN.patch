@@ -1,0 +1,75 @@
+From 4cbf11180cc6c6792f541a861f3309c34c156f4b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 30 Nov 2021 03:33:55 +0900
+Subject: [PATCH] libsystemd: ignore both EINTR and EAGAIN
+
+(cherry picked from commit b3d06b9226db96fddb6bb45a4708e2e8d413d91d)
+
+Related: #2172846
+---
+ src/libsystemd/sd-bus/bus-socket.c     | 8 ++++----
+ src/libsystemd/sd-resolve/sd-resolve.c | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/libsystemd/sd-bus/bus-socket.c b/src/libsystemd/sd-bus/bus-socket.c
+index 8813dd5efd..c6e1a1624f 100644
+--- a/src/libsystemd/sd-bus/bus-socket.c
++++ b/src/libsystemd/sd-bus/bus-socket.c
+@@ -155,7 +155,7 @@ static int bus_socket_write_auth(sd_bus *b) {
+         }
+ 
+         if (k < 0)
+-                return errno == EAGAIN ? 0 : -errno;
++                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+ 
+         iovec_advance(b->auth_iovec, &b->auth_index, (size_t) k);
+         return 1;
+@@ -573,7 +573,7 @@ static int bus_socket_read_auth(sd_bus *b) {
+                         handle_cmsg = true;
+         }
+         if (k < 0)
+-                return errno == EAGAIN ? 0 : -errno;
++                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+         if (k == 0)
+                 return -ECONNRESET;
+ 
+@@ -1051,7 +1051,7 @@ int bus_socket_write_message(sd_bus *bus, sd_bus_message *m, size_t *idx) {
+         }
+ 
+         if (k < 0)
+-                return errno == EAGAIN ? 0 : -errno;
++                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+ 
+         *idx += (size_t) k;
+         return 1;
+@@ -1205,7 +1205,7 @@ int bus_socket_read_message(sd_bus *bus) {
+                         handle_cmsg = true;
+         }
+         if (k < 0)
+-                return errno == EAGAIN ? 0 : -errno;
++                return ERRNO_IS_TRANSIENT(errno) ? 0 : -errno;
+         if (k == 0)
+                 return -ECONNRESET;
+ 
+diff --git a/src/libsystemd/sd-resolve/sd-resolve.c b/src/libsystemd/sd-resolve/sd-resolve.c
+index a189f140f8..99ecb6a467 100644
+--- a/src/libsystemd/sd-resolve/sd-resolve.c
++++ b/src/libsystemd/sd-resolve/sd-resolve.c
+@@ -402,7 +402,7 @@ static void* thread_worker(void *p) {
+ 
+                 length = recv(resolve->fds[REQUEST_RECV_FD], &buf, sizeof buf, 0);
+                 if (length < 0) {
+-                        if (errno == EINTR)
++                        if (ERRNO_IS_TRANSIENT(errno))
+                                 continue;
+ 
+                         break;
+@@ -850,7 +850,7 @@ _public_ int sd_resolve_process(sd_resolve *resolve) {
+ 
+         l = recv(resolve->fds[RESPONSE_RECV_FD], &buf, sizeof buf, 0);
+         if (l < 0) {
+-                if (errno == EAGAIN)
++                if (ERRNO_IS_TRANSIENT(errno))
+                         return 0;
+ 
+                 return -errno;

@@ -1,0 +1,28 @@
+From d55687b7489127b4b6be953c54719f3219e852f6 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 13 Jul 2023 14:23:51 +0200
+Subject: [PATCH] ci: drop systemd-stable from advanced-commit-linter config
+
+It's sufficient enough to check only the `systemd/systemd` repo.
+
+Related to https://github.com/redhat-plumbers-in-action/advanced-commit-linter/issues/62
+
+rhel-only
+
+Related: #2179309
+---
+ .github/advanced-commit-linter.yml | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/.github/advanced-commit-linter.yml b/.github/advanced-commit-linter.yml
+index 327af0467a..0fb74a9dc8 100644
+--- a/.github/advanced-commit-linter.yml
++++ b/.github/advanced-commit-linter.yml
+@@ -2,7 +2,6 @@ policy:
+   cherry-pick:
+     upstream:
+       - github: systemd/systemd
+-      - github: systemd/systemd-stable
+     exception:
+       note:
+         - rhel-only

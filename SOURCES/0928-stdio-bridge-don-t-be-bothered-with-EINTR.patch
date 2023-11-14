@@ -1,0 +1,28 @@
+From 9ddb41dd9dc3bac57d6c3e05700485ee98df3e17 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 22 Nov 2022 12:18:07 +0100
+Subject: [PATCH] stdio-bridge: don't be bothered with EINTR
+
+We handle signals via signal handlers, hence no need to be concerned
+about EINTR.
+
+(cherry picked from commit 7c75f34131772781f690860de797d3e35fd0bed9)
+
+Related: #2172846
+---
+ src/stdio-bridge/stdio-bridge.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/stdio-bridge/stdio-bridge.c b/src/stdio-bridge/stdio-bridge.c
+index 519a92a094..493117ef95 100644
+--- a/src/stdio-bridge/stdio-bridge.c
++++ b/src/stdio-bridge/stdio-bridge.c
+@@ -276,6 +276,8 @@ int main(int argc, char *argv[]) {
+                         r = ppoll(p, ELEMENTSOF(p), ts, NULL);
+                 }
+                 if (r < 0) {
++                        if (ERRNO_IS_TRANSIENT(r)) /* don't be bothered by signals, i.e. EINTR */
++                                continue;
+                         log_error_errno(errno, "ppoll() failed: %m");
+                         goto finish;
+                 }

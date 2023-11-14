@@ -1,4 +1,4 @@
-From 0117502d70f42dbc88674200ea6594d1d5454d9c Mon Sep 17 00:00:00 2001
+From 30cbb55a8d9fedf07d5c9d792849b723b856cd62 Mon Sep 17 00:00:00 2001
 From: HATAYAMA Daisuke <d.hatayama@fujitsu.com>
 Date: Sun, 12 Feb 2023 12:15:08 +0000
 Subject: [PATCH] sulogin: fix control lost of the current terminal when
@@ -29,7 +29,7 @@ including systemctl default and invoke the single-user shell if they fail.
 
 (cherry picked from commit 937ca8330d11e406b8ef343bead6f4f6244e39c7)
 
-Resolves: #2227769
+Resolves: #2169932
 ---
  src/sulogin-shell/sulogin-shell.c | 60 +++++++++++++++++++++++++------
  1 file changed, 50 insertions(+), 10 deletions(-)

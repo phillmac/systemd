@@ -1,4 +1,4 @@
-From d78272e6c2dddcbca891cb5d561f23ff766486a8 Mon Sep 17 00:00:00 2001
+From a81ace51e1efa2313fcad18f2ef5c6c6cd167240 Mon Sep 17 00:00:00 2001
 From: Jan Macku <jamacku@redhat.com>
 Date: Mon, 24 Apr 2023 15:13:08 +0200
 Subject: [PATCH] ci: workflow for gathering metadata for source-git automation
@@ -9,7 +9,7 @@ This workflow also triggers for rest of the source-git automation workflows.
 
 rhel-only
 
-Related: #2190153
+Related: #2179309
 ---
  .github/workflows/gather-metadata.yml | 28 +++++++++++++++++++++++++++
  1 file changed, 28 insertions(+)

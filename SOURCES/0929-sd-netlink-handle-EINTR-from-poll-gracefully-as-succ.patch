@@ -1,0 +1,36 @@
+From da367d5c87c039f4d1250c12097a5fb16f179a70 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 22 Nov 2022 13:00:48 +0100
+Subject: [PATCH] sd-netlink: handle EINTR from poll() gracefully, as success
+
+(cherry picked from commit 69858785335afffc51bc03127beb53332c0fb983)
+
+Related: #2172846
+---
+ src/libsystemd/sd-netlink/sd-netlink.c | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/src/libsystemd/sd-netlink/sd-netlink.c b/src/libsystemd/sd-netlink/sd-netlink.c
+index a177f220ab..09900d577b 100644
+--- a/src/libsystemd/sd-netlink/sd-netlink.c
++++ b/src/libsystemd/sd-netlink/sd-netlink.c
+@@ -488,13 +488,18 @@ static int rtnl_poll(sd_netlink *rtnl, bool need_more, uint64_t timeout_usec) {
+ }
+ 
+ int sd_netlink_wait(sd_netlink *nl, uint64_t timeout_usec) {
++        int r;
++
+         assert_return(nl, -EINVAL);
+         assert_return(!rtnl_pid_changed(nl), -ECHILD);
+ 
+         if (nl->rqueue_size > 0)
+                 return 0;
+ 
+-        return rtnl_poll(nl, false, timeout_usec);
++        r = rtnl_poll(nl, false, timeout_usec);
++        if (r < 0 && ERRNO_IS_TRANSIENT(r)) /* Convert EINTR to "something happened" and give user a chance to run some code before calling back into us */
++                return 1;
++        return r;
+ }
+ 
+ static int timeout_compare(const void *a, const void *b) {

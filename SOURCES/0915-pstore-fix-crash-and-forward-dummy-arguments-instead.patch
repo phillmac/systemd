@@ -1,4 +1,4 @@
-From 5bb3dd9c96b55a4a9da23ed96b5a2681d82dc500 Mon Sep 17 00:00:00 2001
+From f86a51500b5aa9288dbb2800e0a1f63ad863bd8f Mon Sep 17 00:00:00 2001
 From: Michal Sekletar <msekleta@redhat.com>
 Date: Wed, 26 Apr 2023 20:07:10 +0200
 Subject: [PATCH] pstore: fix crash and forward dummy arguments instead of NULL
@@ -11,7 +11,7 @@ instead.]
 
 rhel-only
 
-Related: #2190153
+Related: #2190151
 ---
  src/pstore/pstore.c | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)

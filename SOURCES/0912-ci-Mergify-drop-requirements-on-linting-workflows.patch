@@ -1,0 +1,42 @@
+From d0e8ca2dcc1467a9e28c569e0dc608e5426bae79 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Mon, 24 Apr 2023 15:25:02 +0200
+Subject: [PATCH] ci(Mergify): drop requirements on linting workflows
+
+CodeQL and DifferentialShellCheck workflows aren't run for all PRs on all branches.
+This results in Mergify incorrectly labeling PRs with `needs-ci` label.
+Lets drop the requirements on these workflows.
+
+rhel-only
+
+Related: #2179309
+---
+ .mergify.yml | 8 --------
+ 1 file changed, 8 deletions(-)
+
+diff --git a/.mergify.yml b/.mergify.yml
+index a5eed6a82a..624eb7291d 100644
+--- a/.mergify.yml
++++ b/.mergify.yml
+@@ -11,10 +11,6 @@ pull_request_rules:
+         - -check-success=build (stream8, GCC_ASAN)
+         # CentOS Stream CI
+         - -check-success=CentOS CI (CentOS Stream 8)
+-        # CodeQL
+-        - -check-success=CodeQL
+-        # Other
+-        - -check-success=Differential ShellCheck
+     actions:
+       label:
+         add:
+@@ -30,10 +26,6 @@ pull_request_rules:
+           - check-success=build (stream8, GCC_ASAN)
+           # CentOS Stream CI
+           - check-success=CentOS CI (CentOS Stream 8)
+-          # CodeQL
+-          - check-success=CodeQL
+-          # Other
+-          - check-success=Differential ShellCheck
+     actions:
+       label:
+         remove:

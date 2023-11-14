@@ -1,0 +1,49 @@
+From c4c9126b1d64fbe77ef1a74b464646711ced8f83 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 30 Mar 2023 17:16:44 +0200
+Subject: [PATCH] ci: trigger differential-shellcheck workflow on push
+
+Fixes: redhat-plumbers-in-action/differential-shellcheck#215
+
+rhel-only
+
+Related: #2179309
+---
+ .github/workflows/differential-shellcheck.yml | 9 ++++++---
+ 1 file changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/.github/workflows/differential-shellcheck.yml b/.github/workflows/differential-shellcheck.yml
+index 4399f0bc64..19634c07b3 100644
+--- a/.github/workflows/differential-shellcheck.yml
++++ b/.github/workflows/differential-shellcheck.yml
+@@ -3,9 +3,13 @@
+ 
+ name: Differential ShellCheck
+ on:
++  push:
++    branches:
++      - main
++      - rhel-8.*.0
+   pull_request:
+     branches:
+-      - master
++      - main
+       - rhel-8.*.0
+ 
+ permissions:
+@@ -18,7 +22,6 @@ jobs:
+ 
+     permissions:
+       security-events: write
+-      pull-requests: write
+ 
+     steps:
+       - name: Repository checkout
+@@ -27,6 +30,6 @@ jobs:
+           fetch-depth: 0
+ 
+       - name: Differential ShellCheck
+-        uses: redhat-plumbers-in-action/differential-shellcheck@v3
++        uses: redhat-plumbers-in-action/differential-shellcheck@v4
+         with:
+           token: ${{ secrets.GITHUB_TOKEN }}
