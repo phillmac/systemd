@@ -1,0 +1,25 @@
+From ffd775b4b96ce0d772bcbb2fe2fbc62ed06bb4a4 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Tue, 19 Sep 2023 15:17:48 +0200
+Subject: [PATCH] ci: add `Red Hat Enterprise Linux 8` to the list of supported
+ products
+
+rhel-only
+
+Related: RHEL-1087
+---
+ .github/tracker-validator.yml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.github/tracker-validator.yml b/.github/tracker-validator.yml
+index 10ead63eaa..500dce3d92 100644
+--- a/.github/tracker-validator.yml
++++ b/.github/tracker-validator.yml
+@@ -4,6 +4,7 @@ labels:
+   invalid-component: tracker/invalid-component
+   unapproved: tracker/unapproved
+ products:
++  - Red Hat Enterprise Linux 8
+   - CentOS Stream 8
+   - rhel-8.2.0
+   - rhel-8.4.0

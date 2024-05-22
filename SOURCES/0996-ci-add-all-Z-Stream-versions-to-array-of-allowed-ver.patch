@@ -1,0 +1,31 @@
+From 42e3739198e41c65b986f69a53bc6c93f7e112be Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 12 Jan 2024 16:04:22 +0100
+Subject: [PATCH] ci: add all Z-Stream versions to array of allowed versions
+
+rhel-only
+
+Related: RHEL-1087
+---
+ .github/tracker-validator.yml | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/.github/tracker-validator.yml b/.github/tracker-validator.yml
+index 500dce3d92..b09f702dd9 100644
+--- a/.github/tracker-validator.yml
++++ b/.github/tracker-validator.yml
+@@ -7,8 +7,14 @@ products:
+   - Red Hat Enterprise Linux 8
+   - CentOS Stream 8
+   - rhel-8.2.0
++  - rhel-8.2.0.z
+   - rhel-8.4.0
++  - rhel-8.4.0.z
+   - rhel-8.6.0
++  - rhel-8.6.0.z
+   - rhel-8.8.0
++  - rhel-8.8.0.z
+   - rhel-8.9.0
++  - rhel-8.9.0.z
+   - rhel-8.10.0
++  - rhel-8.10.0.z

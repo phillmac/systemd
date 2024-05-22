@@ -1,0 +1,110 @@
+From c2665abd4cae74f262d9a522b94528841ad141d2 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 12 Oct 2021 15:53:27 +0200
+Subject: [PATCH] fd-util: split out inner fallback loop of close_all_fds() as
+ close_all_fds_without_malloc()
+
+(cherry picked from commit 11966552a88039869972ca4b450f622664bd1c5e)
+
+Related: RHEL-18302
+---
+ src/basic/fd-util.c | 63 +++++++++++++++++++++++++--------------------
+ src/basic/fd-util.h |  1 +
+ 2 files changed, 36 insertions(+), 28 deletions(-)
+
+diff --git a/src/basic/fd-util.c b/src/basic/fd-util.c
+index 5d0df11d7e..7e4611dfda 100644
+--- a/src/basic/fd-util.c
++++ b/src/basic/fd-util.c
+@@ -213,44 +213,51 @@ static int get_max_fd(void) {
+         return (int) (m - 1);
+ }
+ 
+-int close_all_fds(const int except[], size_t n_except) {
+-        _cleanup_closedir_ DIR *d = NULL;
+-        struct dirent *de;
+-        int r = 0;
++int close_all_fds_without_malloc(const int except[], size_t n_except) {
++        int max_fd, r = 0;
+ 
+         assert(n_except == 0 || except);
+ 
+-        d = opendir("/proc/self/fd");
+-        if (!d) {
+-                int fd, max_fd;
++        /* This is the inner fallback core of close_all_fds(). This never calls malloc() or opendir() or so
++         * and hence is safe to be called in signal handler context. Most users should call close_all_fds(),
++         * but when we assume we are called from signal handler context, then use this simpler call
++         * instead. */
+ 
+-                /* When /proc isn't available (for example in chroots) the fallback is brute forcing through
+-                 * the fd table */
++        max_fd = get_max_fd();
++        if (max_fd < 0)
++                return max_fd;
+ 
+-                max_fd = get_max_fd();
+-                if (max_fd < 0)
+-                        return max_fd;
++        /* Refuse to do the loop over more too many elements. It's better to fail immediately than to
++         * spin the CPU for a long time. */
++        if (max_fd > MAX_FD_LOOP_LIMIT)
++                return log_debug_errno(EPERM,
++                                       "Refusing to loop over %d potential fds.",
++                                       max_fd);
+ 
+-                /* Refuse to do the loop over more too many elements. It's better to fail immediately than to
+-                 * spin the CPU for a long time. */
+-                if (max_fd > MAX_FD_LOOP_LIMIT)
+-                        return log_debug_errno(EPERM,
+-                                               "/proc/self/fd is inaccessible. Refusing to loop over %d potential fds.",
+-                                               max_fd);
++        for (int fd = 3; fd >= 0; fd = fd < max_fd ? fd + 1 : -1) {
++                int q;
+ 
+-                for (fd = 3; fd >= 0; fd = fd < max_fd ? fd + 1 : -1) {
+-                        int q;
++                if (fd_in_set(fd, except, n_except))
++                        continue;
+ 
+-                        if (fd_in_set(fd, except, n_except))
+-                                continue;
++                q = close_nointr(fd);
++                if (q < 0 && q != -EBADF && r >= 0)
++                        r = q;
++        }
+ 
+-                        q = close_nointr(fd);
+-                        if (q < 0 && q != -EBADF && r >= 0)
+-                                r = q;
+-                }
++        return r;
++}
+ 
+-                return r;
+-        }
++int close_all_fds(const int except[], size_t n_except) {
++        _cleanup_closedir_ DIR *d = NULL;
++        struct dirent *de;
++        int r = 0;
++
++        assert(n_except == 0 || except);
++
++        d = opendir("/proc/self/fd");
++        if (!d)
++                return close_all_fds_without_malloc(except, n_except); /* ultimate fallback if /proc/ is not available */
+ 
+         FOREACH_DIRENT(de, d, return -errno) {
+                 int fd = -1, q;
+diff --git a/src/basic/fd-util.h b/src/basic/fd-util.h
+index 8adc959da8..b2837d3588 100644
+--- a/src/basic/fd-util.h
++++ b/src/basic/fd-util.h
+@@ -54,6 +54,7 @@ int fd_nonblock(int fd, bool nonblock);
+ int fd_cloexec(int fd, bool cloexec);
+ 
+ int close_all_fds(const int except[], size_t n_except);
++int close_all_fds_without_malloc(const int except[], size_t n_except);
+ 
+ int same_fd(int a, int b);
+ 

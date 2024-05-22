@@ -1,0 +1,343 @@
+From d3072cec8cec84c6cb6e5771a5084e64f78c7e80 Mon Sep 17 00:00:00 2001
+From: Robert Marko <robert.marko@sartura.hr>
+Date: Fri, 14 Aug 2020 13:10:18 +0200
+Subject: [PATCH] login: Add KEY_RESTART handling
+
+KEY_RESTART is widely used in Linux to indicate device reboot.
+So lets handle it in the same fashion as KEY_POWER.
+
+Signed-off-by: Robert Marko <robert.marko@sartura.hr>
+(cherry picked from commit adbb2b6afed7858f64f5b940579f6efe79eee997)
+
+Resolves: RHEL-2857
+---
+ man/logind.conf.xml                     | 26 +++++++++++++++----------
+ src/login/logind-button.c               | 25 +++++++++++++++++++-----
+ src/login/logind-core.c                 |  4 ++++
+ src/login/logind-dbus.c                 |  1 +
+ src/login/logind-gperf.gperf            |  2 ++
+ src/login/logind-inhibit.c              | 14 ++++++++++++-
+ src/login/logind-inhibit.h              |  3 ++-
+ src/login/logind.conf.in                |  2 ++
+ src/login/logind.h                      |  2 ++
+ src/login/org.freedesktop.login1.policy | 11 +++++++++++
+ src/systemd/sd-messages.h               |  2 ++
+ 11 files changed, 75 insertions(+), 17 deletions(-)
+
+diff --git a/man/logind.conf.xml b/man/logind.conf.xml
+index 00b5b1f2e8..56981c1837 100644
+--- a/man/logind.conf.xml
++++ b/man/logind.conf.xml
+@@ -202,10 +202,11 @@
+         <term><varname>HandleLidSwitch=</varname></term>
+         <term><varname>HandleLidSwitchExternalPower=</varname></term>
+         <term><varname>HandleLidSwitchDocked=</varname></term>
++        <term><varname>HandleRebootKey=</varname></term>
+ 
+         <listitem><para>Controls how logind shall handle the
+-        system power and sleep keys and the lid switch to trigger
+-        actions such as system power-off or suspend. Can be one of
++        system power, reboot and sleep keys and the lid switch to trigger
++        actions such as system power-off, reboot or suspend. Can be one of
+         <literal>ignore</literal>,
+         <literal>poweroff</literal>,
+         <literal>reboot</literal>,
+@@ -222,7 +223,8 @@
+         in the respective event. Only input devices with the
+         <literal>power-switch</literal> udev tag will be watched for
+         key/lid switch events. <varname>HandlePowerKey=</varname>
+-        defaults to <literal>poweroff</literal>.
++        defaults to <literal>poweroff</literal>, <varname>HandleRebootKey=</varname>
++        defaults to <literal>reboot</literal>.
+         <varname>HandleSuspendKey=</varname> and
+         <varname>HandleLidSwitch=</varname> default to
+         <literal>suspend</literal>.
+@@ -243,7 +245,8 @@
+         <para>A different application may disable logind's handling of system power and
+         sleep keys and the lid switch by taking a low-level inhibitor lock
+         (<literal>handle-power-key</literal>, <literal>handle-suspend-key</literal>,
+-        <literal>handle-hibernate-key</literal>, <literal>handle-lid-switch</literal>).
++        <literal>handle-hibernate-key</literal>, <literal>handle-lid-switch</literal>,
++        <literal>handle-reboot-switch</literal>).
+         This is most commonly used by graphical desktop environments
+         to take over suspend and hibernation handling, and to use their own configuration
+         mechanisms. If a low-level inhibitor lock is taken, logind will not take any
+@@ -256,20 +259,23 @@
+         <term><varname>SuspendKeyIgnoreInhibited=</varname></term>
+         <term><varname>HibernateKeyIgnoreInhibited=</varname></term>
+         <term><varname>LidSwitchIgnoreInhibited=</varname></term>
++        <term><varname>RebootKeyIgnoreInhibited=</varname></term>
+ 
+         <listitem><para>Controls whether actions that <command>systemd-logind</command>
+-        takes when the power and sleep keys and the lid switch are triggered are subject
+-        to high-level inhibitor locks ("shutdown", "sleep", "idle"). Low level inhibitor
++        takes when the power, reboot and sleep keys and the lid switch are triggered are subject
++        to high-level inhibitor locks ("shutdown", "reboot", "sleep", "idle"). Low level inhibitor
+         locks (<literal>handle-power-key</literal>, <literal>handle-suspend-key</literal>,
+-        <literal>handle-hibernate-key</literal>, <literal>handle-lid-switch</literal>),
++        <literal>handle-hibernate-key</literal>, <literal>handle-lid-switch</literal>,
++        <literal>handle-reboot-key</literal>),
+         are always honored, irrespective of this setting.</para>
+ 
+         <para>These settings take boolean arguments. If <literal>no</literal>, the
+         inhibitor locks taken by applications are respected. If <literal>yes</literal>,
+-        "shutdown", "sleep", and "idle" inhibitor locks are ignored.
++        "shutdown", "reboot" "sleep", and "idle" inhibitor locks are ignored.
+         <varname>PowerKeyIgnoreInhibited=</varname>,
+-        <varname>SuspendKeyIgnoreInhibited=</varname>, and
+-        <varname>HibernateKeyIgnoreInhibited=</varname> default to <literal>no</literal>.
++        <varname>SuspendKeyIgnoreInhibited=</varname>,
++        <varname>HibernateKeyIgnoreInhibited=</varname> and
++        <varname>RebootKeyIgnoreInhibited=</varname> default to <literal>no</literal>.
+         <varname>LidSwitchIgnoreInhibited=</varname> defaults to <literal>yes</literal>.
+         This means that when <command>systemd-logind</command> is handling events by
+         itself (no low level inhibitor locks are taken by another application), the lid
+diff --git a/src/login/logind-button.c b/src/login/logind-button.c
+index 9944eb2316..48fc004198 100644
+--- a/src/login/logind-button.c
++++ b/src/login/logind-button.c
+@@ -15,7 +15,7 @@
+ #include "string-util.h"
+ #include "util.h"
+ 
+-#define CONST_MAX4(a, b, c, d) CONST_MAX(CONST_MAX(a, b), CONST_MAX(c, d))
++#define CONST_MAX5(a, b, c, d, e) CONST_MAX(CONST_MAX(a, b), CONST_MAX(CONST_MAX(c, d), e))
+ 
+ #define ULONG_BITS (sizeof(unsigned long)*8)
+ 
+@@ -159,7 +159,20 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         manager_handle_action(b->manager, INHIBIT_HANDLE_POWER_KEY, b->manager->handle_power_key, b->manager->power_key_ignore_inhibited, true);
+                         break;
+ 
+-                /* The kernel is a bit confused here:
++                /* The kernel naming is a bit confusing here:
++                   KEY_RESTART was probably introduced for media playback purposes, but
++                   is now being predominantly used to indicate device reboot.
++                */
++
++                case KEY_RESTART:
++                        log_struct(LOG_INFO,
++                                   LOG_MESSAGE("Reboot key pressed."),
++                                   "MESSAGE_ID=" SD_MESSAGE_REBOOT_KEY_STR);
++
++                        manager_handle_action(b->manager, INHIBIT_HANDLE_REBOOT_KEY, b->manager->handle_reboot_key, b->manager->reboot_key_ignore_inhibited, true);
++                        break;
++
++                /* The kernel naming is a bit confusing here:
+ 
+                    KEY_SLEEP   = suspend-to-ram, which everybody else calls "suspend"
+                    KEY_SUSPEND = suspend-to-disk, which everybody else calls "hibernate"
+@@ -233,7 +246,7 @@ static int button_suitable(Button *b) {
+                 return -errno;
+ 
+         if (bitset_get(types, EV_KEY)) {
+-                unsigned long keys[CONST_MAX4(KEY_POWER, KEY_POWER2, KEY_SLEEP, KEY_SUSPEND)/ULONG_BITS+1];
++                unsigned long keys[CONST_MAX5(KEY_POWER, KEY_POWER2, KEY_SLEEP, KEY_SUSPEND, KEY_RESTART)/ULONG_BITS+1];
+ 
+                 if (ioctl(b->fd, EVIOCGBIT(EV_KEY, sizeof(keys)), keys) < 0)
+                         return -errno;
+@@ -241,7 +254,8 @@ static int button_suitable(Button *b) {
+                 if (bitset_get(keys, KEY_POWER) ||
+                     bitset_get(keys, KEY_POWER2) ||
+                     bitset_get(keys, KEY_SLEEP) ||
+-                    bitset_get(keys, KEY_SUSPEND))
++                    bitset_get(keys, KEY_SUSPEND) ||
++                    bitset_get(keys, KEY_RESTART))
+                         return true;
+         }
+ 
+@@ -262,7 +276,7 @@ static int button_suitable(Button *b) {
+ static int button_set_mask(Button *b) {
+         unsigned long
+                 types[CONST_MAX(EV_KEY, EV_SW)/ULONG_BITS+1] = {},
+-                keys[CONST_MAX4(KEY_POWER, KEY_POWER2, KEY_SLEEP, KEY_SUSPEND)/ULONG_BITS+1] = {},
++                keys[CONST_MAX5(KEY_POWER, KEY_POWER2, KEY_SLEEP, KEY_SUSPEND, KEY_RESTART)/ULONG_BITS+1] = {},
+                 switches[CONST_MAX(SW_LID, SW_DOCK)/ULONG_BITS+1] = {};
+         struct input_mask mask;
+ 
+@@ -287,6 +301,7 @@ static int button_set_mask(Button *b) {
+         bitset_put(keys, KEY_POWER2);
+         bitset_put(keys, KEY_SLEEP);
+         bitset_put(keys, KEY_SUSPEND);
++        bitset_put(keys, KEY_RESTART);
+ 
+         mask = (struct input_mask) {
+                 .type = EV_KEY,
+diff --git a/src/login/logind-core.c b/src/login/logind-core.c
+index abe6eecffb..81ec4f2653 100644
+--- a/src/login/logind-core.c
++++ b/src/login/logind-core.c
+@@ -39,10 +39,12 @@ void manager_reset_config(Manager *m) {
+         m->handle_lid_switch = HANDLE_SUSPEND;
+         m->handle_lid_switch_ep = _HANDLE_ACTION_INVALID;
+         m->handle_lid_switch_docked = HANDLE_IGNORE;
++        m->handle_reboot_key = HANDLE_REBOOT;
+         m->power_key_ignore_inhibited = false;
+         m->suspend_key_ignore_inhibited = false;
+         m->hibernate_key_ignore_inhibited = false;
+         m->lid_switch_ignore_inhibited = true;
++        m->reboot_key_ignore_inhibited = false;
+ 
+         m->holdoff_timeout_usec = 30 * USEC_PER_SEC;
+ 
+@@ -698,6 +700,8 @@ bool manager_all_buttons_ignored(Manager *m) {
+                 return false;
+         if (m->handle_lid_switch_docked != HANDLE_IGNORE)
+                 return false;
++        if (m->handle_reboot_key != HANDLE_IGNORE)
++                return false;
+ 
+         return true;
+ }
+diff --git a/src/login/logind-dbus.c b/src/login/logind-dbus.c
+index dbac406035..61fd47999d 100644
+--- a/src/login/logind-dbus.c
++++ b/src/login/logind-dbus.c
+@@ -2616,6 +2616,7 @@ static int method_inhibit(sd_bus_message *message, void *userdata, sd_bus_error
+                         w == INHIBIT_IDLE                 ? "org.freedesktop.login1.inhibit-block-idle" :
+                         w == INHIBIT_HANDLE_POWER_KEY     ? "org.freedesktop.login1.inhibit-handle-power-key" :
+                         w == INHIBIT_HANDLE_SUSPEND_KEY   ? "org.freedesktop.login1.inhibit-handle-suspend-key" :
++                        w == INHIBIT_HANDLE_REBOOT_KEY    ? "org.freedesktop.login1.inhibit-handle-reboot-key" :
+                         w == INHIBIT_HANDLE_HIBERNATE_KEY ? "org.freedesktop.login1.inhibit-handle-hibernate-key" :
+                                                             "org.freedesktop.login1.inhibit-handle-lid-switch",
+                         NULL,
+diff --git a/src/login/logind-gperf.gperf b/src/login/logind-gperf.gperf
+index 214ac5c4a3..c49703698a 100644
+--- a/src/login/logind-gperf.gperf
++++ b/src/login/logind-gperf.gperf
+@@ -30,10 +30,12 @@ Login.HandleHibernateKey,           config_parse_handle_action,         0, offse
+ Login.HandleLidSwitch,              config_parse_handle_action,         0, offsetof(Manager, handle_lid_switch)
+ Login.HandleLidSwitchExternalPower, config_parse_handle_action,         0, offsetof(Manager, handle_lid_switch_ep)
+ Login.HandleLidSwitchDocked,        config_parse_handle_action,         0, offsetof(Manager, handle_lid_switch_docked)
++Login.HandleRebootKey,              config_parse_handle_action,         0, offsetof(Manager, handle_reboot_key)
+ Login.PowerKeyIgnoreInhibited,      config_parse_bool,                  0, offsetof(Manager, power_key_ignore_inhibited)
+ Login.SuspendKeyIgnoreInhibited,    config_parse_bool,                  0, offsetof(Manager, suspend_key_ignore_inhibited)
+ Login.HibernateKeyIgnoreInhibited,  config_parse_bool,                  0, offsetof(Manager, hibernate_key_ignore_inhibited)
+ Login.LidSwitchIgnoreInhibited,     config_parse_bool,                  0, offsetof(Manager, lid_switch_ignore_inhibited)
++Login.RebootKeyIgnoreInhibited,     config_parse_bool,                  0, offsetof(Manager, reboot_key_ignore_inhibited)
+ Login.HoldoffTimeoutSec,            config_parse_sec,                   0, offsetof(Manager, holdoff_timeout_usec)
+ Login.IdleAction,                   config_parse_handle_action,         0, offsetof(Manager, idle_action)
+ Login.IdleActionSec,                config_parse_sec,                   0, offsetof(Manager, idle_action_usec)
+diff --git a/src/login/logind-inhibit.c b/src/login/logind-inhibit.c
+index b1f45baaca..27b862e7c4 100644
+--- a/src/login/logind-inhibit.c
++++ b/src/login/logind-inhibit.c
+@@ -405,7 +405,15 @@ bool manager_is_inhibited(
+ }
+ 
+ const char *inhibit_what_to_string(InhibitWhat w) {
+-        static thread_local char buffer[97];
++        static thread_local char buffer[STRLEN(
++            "shutdown:"
++            "sleep:"
++            "idle:"
++            "handle-power-key:"
++            "handle-suspend-key:"
++            "handle-hibernate-key:"
++            "handle-lid-switch:"
++            "handle-reboot-key")+1];
+         char *p;
+ 
+         if (w < 0 || w >= _INHIBIT_WHAT_MAX)
+@@ -426,6 +434,8 @@ const char *inhibit_what_to_string(InhibitWhat w) {
+                 p = stpcpy(p, "handle-hibernate-key:");
+         if (w & INHIBIT_HANDLE_LID_SWITCH)
+                 p = stpcpy(p, "handle-lid-switch:");
++        if (w & INHIBIT_HANDLE_REBOOT_KEY)
++                p = stpcpy(p, "handle-reboot-key:");
+ 
+         if (p > buffer)
+                 *(p-1) = 0;
+@@ -455,6 +465,8 @@ InhibitWhat inhibit_what_from_string(const char *s) {
+                         what |= INHIBIT_HANDLE_HIBERNATE_KEY;
+                 else if (l == 17 && strneq(word, "handle-lid-switch", l))
+                         what |= INHIBIT_HANDLE_LID_SWITCH;
++                else if (l == 17 && strneq(word, "handle-reboot-key", l))
++                        what |= INHIBIT_HANDLE_REBOOT_KEY;
+                 else
+                         return _INHIBIT_WHAT_INVALID;
+         }
+diff --git a/src/login/logind-inhibit.h b/src/login/logind-inhibit.h
+index 650587106d..51095a0bde 100644
+--- a/src/login/logind-inhibit.h
++++ b/src/login/logind-inhibit.h
+@@ -11,7 +11,8 @@ typedef enum InhibitWhat {
+         INHIBIT_HANDLE_SUSPEND_KEY   = 1 << 4,
+         INHIBIT_HANDLE_HIBERNATE_KEY = 1 << 5,
+         INHIBIT_HANDLE_LID_SWITCH    = 1 << 6,
+-        _INHIBIT_WHAT_MAX            = 1 << 7,
++        INHIBIT_HANDLE_REBOOT_KEY    = 1 << 7,
++        _INHIBIT_WHAT_MAX            = 1 << 8,
+         _INHIBIT_WHAT_INVALID        = -1
+ } InhibitWhat;
+ 
+diff --git a/src/login/logind.conf.in b/src/login/logind.conf.in
+index a62c2b0b57..95f2d48d02 100644
+--- a/src/login/logind.conf.in
++++ b/src/login/logind.conf.in
+@@ -24,10 +24,12 @@
+ #HandleLidSwitch=suspend
+ #HandleLidSwitchExternalPower=suspend
+ #HandleLidSwitchDocked=ignore
++#HandleRebootKey=reboot
+ #PowerKeyIgnoreInhibited=no
+ #SuspendKeyIgnoreInhibited=no
+ #HibernateKeyIgnoreInhibited=no
+ #LidSwitchIgnoreInhibited=yes
++#RebootKeyIgnoreInhibited=no
+ #HoldoffTimeoutSec=30s
+ #IdleAction=ignore
+ #IdleActionSec=30min
+diff --git a/src/login/logind.h b/src/login/logind.h
+index b9b4a5113f..395306ced3 100644
+--- a/src/login/logind.h
++++ b/src/login/logind.h
+@@ -111,11 +111,13 @@ struct Manager {
+         HandleAction handle_lid_switch;
+         HandleAction handle_lid_switch_ep;
+         HandleAction handle_lid_switch_docked;
++        HandleAction handle_reboot_key;
+ 
+         bool power_key_ignore_inhibited;
+         bool suspend_key_ignore_inhibited;
+         bool hibernate_key_ignore_inhibited;
+         bool lid_switch_ignore_inhibited;
++        bool reboot_key_ignore_inhibited;
+ 
+         bool remove_ipc;
+ 
+diff --git a/src/login/org.freedesktop.login1.policy b/src/login/org.freedesktop.login1.policy
+index 83760e1580..882975849e 100644
+--- a/src/login/org.freedesktop.login1.policy
++++ b/src/login/org.freedesktop.login1.policy
+@@ -113,6 +113,17 @@
+                 </defaults>
+         </action>
+ 
++        <action id="org.freedesktop.login1.inhibit-handle-reboot-key">
++                <description gettext-domain="systemd">Allow applications to inhibit system handling of the reboot key</description>
++                <message gettext-domain="systemd">Authentication is required for an application to inhibit system handling of the reboot key.</message>
++                <defaults>
++                        <allow_any>no</allow_any>
++                        <allow_inactive>yes</allow_inactive>
++                        <allow_active>yes</allow_active>
++                </defaults>
++                <annotate key="org.freedesktop.policykit.imply">org.freedesktop.login1.inhibit-handle-suspend-key org.freedesktop.login1.inhibit-handle-hibernate-key org.freedesktop.login1.inhibit-handle-lid-switch</annotate>
++        </action>
++
+         <action id="org.freedesktop.login1.set-self-linger">
+                 <description gettext-domain="systemd">Allow non-logged-in user to run programs</description>
+                 <message gettext-domain="systemd">Explicit request is required to run programs as a non-logged-in user.</message>
+diff --git a/src/systemd/sd-messages.h b/src/systemd/sd-messages.h
+index 847b698ba4..3e9584c0b2 100644
+--- a/src/systemd/sd-messages.h
++++ b/src/systemd/sd-messages.h
+@@ -134,6 +134,8 @@ _SD_BEGIN_DECLARATIONS;
+ #define SD_MESSAGE_SYSTEM_UNDOCKED_STR    SD_ID128_MAKE_STR(51,e1,71,bd,58,52,48,56,81,10,14,4c,51,7c,ca,53)
+ #define SD_MESSAGE_POWER_KEY              SD_ID128_MAKE(b7,2e,a4,a2,88,15,45,a0,b5,0e,20,0e,55,b9,b0,71)
+ #define SD_MESSAGE_POWER_KEY_STR          SD_ID128_MAKE_STR(b7,2e,a4,a2,88,15,45,a0,b5,0e,20,0e,55,b9,b0,71)
++#define SD_MESSAGE_REBOOT_KEY             SD_ID128_MAKE(9f,a9,d2,c0,12,13,4e,c3,85,45,1f,fe,31,6f,97,d0)
++#define SD_MESSAGE_REBOOT_KEY_STR         SD_ID128_MAKE_STR(9f,a9,d2,c0,12,13,4e,c3,85,45,1f,fe,31,6f,97,d0)
+ #define SD_MESSAGE_SUSPEND_KEY            SD_ID128_MAKE(b7,2e,a4,a2,88,15,45,a0,b5,0e,20,0e,55,b9,b0,72)
+ #define SD_MESSAGE_SUSPEND_KEY_STR        SD_ID128_MAKE_STR(b7,2e,a4,a2,88,15,45,a0,b5,0e,20,0e,55,b9,b0,72)
+ #define SD_MESSAGE_HIBERNATE_KEY          SD_ID128_MAKE(b7,2e,a4,a2,88,15,45,a0,b5,0e,20,0e,55,b9,b0,73)

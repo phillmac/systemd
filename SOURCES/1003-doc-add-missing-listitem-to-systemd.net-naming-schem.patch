@@ -1,0 +1,79 @@
+From 8ac0c00fa9699f1cd096a4775cf0cf7879b81f37 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 9 Feb 2024 14:42:28 +0100
+Subject: [PATCH] doc: add missing `<listitem>` to
+ `systemd.net-naming-scheme.xml`
+
+rhel-only
+
+Related: RHEL-22426
+---
+ man/systemd.net-naming-scheme.xml | 16 ++++++++--------
+ 1 file changed, 8 insertions(+), 8 deletions(-)
+
+diff --git a/man/systemd.net-naming-scheme.xml b/man/systemd.net-naming-scheme.xml
+index 25e8bd9aea..11ef2ea02f 100644
+--- a/man/systemd.net-naming-scheme.xml
++++ b/man/systemd.net-naming-scheme.xml
+@@ -276,19 +276,19 @@
+         <varlistentry>
+           <term><constant>rhel-8.1</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+           <term><constant>rhel-8.2</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+           <term><constant>rhel-8.3</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+@@ -304,13 +304,13 @@
+         <varlistentry>
+           <term><constant>rhel-8.5</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.4</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.4</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+           <term><constant>rhel-8.6</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.4</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.4</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+@@ -331,19 +331,19 @@
+         <varlistentry>
+           <term><constant>rhel-8.8</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+           <term><constant>rhel-8.9</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <varlistentry>
+           <term><constant>rhel-8.10</constant></term>
+ 
+-          <para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para></listitem>
+         </varlistentry>
+ 
+         <para>Note that <constant>latest</constant> may be used to denote the latest scheme known to this

@@ -1,0 +1,29 @@
+From 140e598dcf6b86007b1daba42c31253521964b2e Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Thu, 29 Jul 2021 16:50:44 +0200
+Subject: [PATCH] exec-util: use close_all_fds_without_malloc() from freeze()
+
+(cherry picked from commit ab27b2fe56c6c4bd0295b248448adb1c698e9284)
+
+Resolves: RHEL-18302
+---
+ src/basic/process-util.c | 6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/src/basic/process-util.c b/src/basic/process-util.c
+index 6016d83d41..9e2237375d 100644
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -991,8 +991,10 @@ _noreturn_ void freeze(void) {
+ 
+         log_close();
+ 
+-        /* Make sure nobody waits for us on a socket anymore */
+-        close_all_fds(NULL, 0);
++        /* Make sure nobody waits for us (i.e. on one of our sockets) anymore. Note that we use
++         * close_all_fds_without_malloc() instead of plain close_all_fds() here, since we want this function
++         * to be compatible with being called from signal handlers. */
++        (void) close_all_fds_without_malloc(NULL, 0);
+ 
+         sync();
+ 

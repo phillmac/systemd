@@ -1,0 +1,32 @@
+From 21200fc506b1d15be6ed6d5b9ac70f1ec865f9bc Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Tue, 19 Sep 2023 09:53:35 +0200
+Subject: [PATCH] ci: add missing configuration for commit linter
+
+rhel-only
+
+Related: RHEL-1087
+---
+ .github/advanced-commit-linter.yml | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/.github/advanced-commit-linter.yml b/.github/advanced-commit-linter.yml
+index 0fb74a9dc8..86f0e911f2 100644
+--- a/.github/advanced-commit-linter.yml
++++ b/.github/advanced-commit-linter.yml
+@@ -11,6 +11,7 @@ policy:
+         - 'Resolves: #?'
+         - 'Related: #?'
+         - 'Reverts: #?'
++      type: bugzilla
+       issue-format:
+         - '\d+$'
+       url: 'https://bugzilla.redhat.com/show_bug.cgi?id='
+@@ -18,6 +19,7 @@ policy:
+         - 'Resolves: '
+         - 'Related: '
+         - 'Reverts: '
++      type: jira
+       issue-format:
+         - 'RHEL-\d+$'
+       url: 'https://issues.redhat.com/browse/'

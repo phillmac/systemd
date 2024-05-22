@@ -1,0 +1,29 @@
+From fd21fb2e2e3bbbd937d120197b11c740d608fb19 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 12 Jan 2024 16:03:09 +0100
+Subject: [PATCH] ci: increase the cron interval to 45 minutes
+
+This should help us to avoid hitting the rate limit on the GitHub API.
+
+rhel-only
+
+Related: RHEL-1087
+---
+ .github/workflows/source-git-automation-on-demand.yml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/source-git-automation-on-demand.yml b/.github/workflows/source-git-automation-on-demand.yml
+index 0c72f9f210..6aeee51e6d 100644
+--- a/.github/workflows/source-git-automation-on-demand.yml
++++ b/.github/workflows/source-git-automation-on-demand.yml
+@@ -1,8 +1,8 @@
+ name: Source git Automation Scheduled/On Demand
+ on:
+   schedule:
+-    # Workflow runs every 15 minutes
+-    - cron: '*/15 * * * *'
++    # Workflow runs every 45 minutes
++    - cron: '*/45 * * * *'
+   workflow_dispatch:
+     inputs:
+       pr-number:

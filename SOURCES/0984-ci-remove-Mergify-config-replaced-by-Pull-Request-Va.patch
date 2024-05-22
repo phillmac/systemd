@@ -1,0 +1,52 @@
+From 36266d377ee5e57e24cd3c45f6db2a29919798f3 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 20 Oct 2023 13:33:38 +0200
+Subject: [PATCH] ci: remove Mergify config - replaced by Pull Request
+ Validator
+
+rhel-only
+
+Related: RHEL-1087
+---
+ .mergify.yml | 32 --------------------------------
+ 1 file changed, 32 deletions(-)
+ delete mode 100644 .mergify.yml
+
+diff --git a/.mergify.yml b/.mergify.yml
+deleted file mode 100644
+index 624eb7291d..0000000000
+--- a/.mergify.yml
++++ /dev/null
+@@ -1,32 +0,0 @@
+-# doc: https://docs.mergify.com
+----
+-
+-pull_request_rules:
+-  - name: Add `needs-ci` label on CI fail
+-    conditions:
+-      - label!=ci-waived
+-      - or:
+-        # Unit tests
+-        - -check-success=build (stream8, GCC)
+-        - -check-success=build (stream8, GCC_ASAN)
+-        # CentOS Stream CI
+-        - -check-success=CentOS CI (CentOS Stream 8)
+-    actions:
+-      label:
+-        add:
+-          - needs-ci
+-
+-  - name: Remove `needs-ci` label on CI success
+-    conditions:
+-      - or:
+-        - label=ci-waived
+-        - and:
+-          # Unit tests
+-          - check-success=build (stream8, GCC)
+-          - check-success=build (stream8, GCC_ASAN)
+-          # CentOS Stream CI
+-          - check-success=CentOS CI (CentOS Stream 8)
+-    actions:
+-      label:
+-        remove:
+-          - needs-ci

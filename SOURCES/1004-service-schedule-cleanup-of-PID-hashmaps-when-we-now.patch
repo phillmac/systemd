@@ -1,0 +1,34 @@
+From 8bf7a6f42efba3ebe59872ba75233e75ffdf7c87 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Mon, 11 Dec 2023 16:09:02 +0100
+Subject: [PATCH] service: schedule cleanup of PID hashmaps when we now longer
+ have main_pid and we are in container
+
+RHEL-only
+
+Resolves: RHEL-5863
+---
+ src/core/service.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/service.c b/src/core/service.c
+index 0423f2c73e..82c09d59f0 100644
+--- a/src/core/service.c
++++ b/src/core/service.c
+@@ -34,6 +34,7 @@
+ #include "string-table.h"
+ #include "string-util.h"
+ #include "strv.h"
++#include "virt.h"
+ #include "unit-name.h"
+ #include "unit.h"
+ #include "utf8.h"
+@@ -3535,7 +3536,7 @@ static void service_sigchld_event(Unit *u, pid_t pid, int code, int status) {
+          * detect when the cgroup becomes empty. Note that the control process is always
+          * our child so it's pointless to watch all other processes. */
+         if (!control_pid_good(s))
+-                if (!s->main_pid_known || s->main_pid_alien)
++                if (!s->main_pid_known || s->main_pid_alien || (s->main_pid == 0 && detect_container() > 0))
+                         (void) unit_enqueue_rewatch_pids(u);
+ }
+ 

@@ -1,0 +1,37 @@
+From f4a9bdf74c23a55ea96de696155ce9a5dfa43850 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Mon, 27 Nov 2023 16:16:40 +0100
+Subject: [PATCH] fstab-generator: allow overriding path to /sysroot/etc/fstab
+ too
+
+Based on: 99e3d4767932bce5febb45e8543162d729d17425
+Related: RHEL-1087
+
+rhel-only
+---
+ src/fstab-generator/fstab-generator.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/fstab-generator/fstab-generator.c b/src/fstab-generator/fstab-generator.c
+index 105ddd2fd0..02f0bccd2f 100644
+--- a/src/fstab-generator/fstab-generator.c
++++ b/src/fstab-generator/fstab-generator.c
+@@ -503,13 +503,17 @@ static int add_mount(
+         return 0;
+ }
+ 
++static const char *sysroot_fstab_path(void) {
++    return getenv("SYSTEMD_SYSROOT_FSTAB") ?: "/sysroot/etc/fstab";
++}
++
+ static int parse_fstab(bool initrd) {
+         _cleanup_endmntent_ FILE *f = NULL;
+         const char *fstab;
+         struct mntent *me;
+         int r = 0;
+ 
+-        fstab = initrd ? "/sysroot/etc/fstab" : fstab_path();
++        fstab = initrd ? sysroot_fstab_path() : fstab_path();
+         f = setmntent(fstab, "re");
+         if (!f) {
+                 if (errno == ENOENT)

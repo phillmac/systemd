@@ -1,0 +1,70 @@
+From 957edb063f3e9751bbdc05bd973bb2190ab0e917 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Fri, 15 Mar 2019 15:13:25 +0100
+Subject: [PATCH] basic/fd-util: refuse "infinite" loop in close_all_fds()
+
+I had a test machine with ulimit -n set to 1073741816 through pam
+("session required pam_limits.so set_all", which copies the limits from PID 1,
+left over from testing of #10921).
+
+test-execute would "hang" and then fail with a timeout when running
+exec-inaccessiblepaths-proc.service. It turns out that the problem was in
+close_all_fds(), which would go to the fallback path of doing close()
+1073741813 times. Let's just fail if we hit this case. This only matters
+for cases where both /proc is inaccessible, and the *soft* limit has been
+raised.
+
+  (gdb) bt
+  #0  0x00007f7e2e73fdc8 in close () from target:/lib64/libc.so.6
+  #1  0x00007f7e2e42cdfd in close_nointr ()
+     from target:/home/zbyszek/src/systemd-work3/build-rawhide/src/shared/libsystemd-shared-241.so
+  #2  0x00007f7e2e42d525 in close_all_fds ()
+     from target:/home/zbyszek/src/systemd-work3/build-rawhide/src/shared/libsystemd-shared-241.so
+  #3  0x0000000000426e53 in exec_child ()
+  #4  0x0000000000429578 in exec_spawn ()
+  #5  0x00000000004ce1ab in service_spawn ()
+  #6  0x00000000004cff77 in service_enter_start ()
+  #7  0x00000000004d028f in service_enter_start_pre ()
+  #8  0x00000000004d16f2 in service_start ()
+  #9  0x00000000004568f4 in unit_start ()
+  #10 0x0000000000416987 in test ()
+  #11 0x0000000000417632 in test_exec_inaccessiblepaths ()
+  #12 0x0000000000419362 in run_tests ()
+  #13 0x0000000000419632 in main ()
+
+(cherry picked from commit 6a461d1f59850ff27bd254a3b71fe9ade0523e76)
+
+Related: RHEL-18302
+---
+ src/basic/fd-util.c | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/src/basic/fd-util.c b/src/basic/fd-util.c
+index fea93d2039..5d0df11d7e 100644
+--- a/src/basic/fd-util.c
++++ b/src/basic/fd-util.c
+@@ -24,6 +24,10 @@
+ #include "stdio-util.h"
+ #include "util.h"
+ 
++/* The maximum number of iterations in the loop to close descriptors in the fallback case
++ * when /proc/self/fd/ is inaccessible. */
++#define MAX_FD_LOOP_LIMIT (1024*1024)
++
+ int close_nointr(int fd) {
+         assert(fd >= 0);
+ 
+@@ -227,6 +231,13 @@ int close_all_fds(const int except[], size_t n_except) {
+                 if (max_fd < 0)
+                         return max_fd;
+ 
++                /* Refuse to do the loop over more too many elements. It's better to fail immediately than to
++                 * spin the CPU for a long time. */
++                if (max_fd > MAX_FD_LOOP_LIMIT)
++                        return log_debug_errno(EPERM,
++                                               "/proc/self/fd is inaccessible. Refusing to loop over %d potential fds.",
++                                               max_fd);
++
+                 for (fd = 3; fd >= 0; fd = fd < max_fd ? fd + 1 : -1) {
+                         int q;
+ 

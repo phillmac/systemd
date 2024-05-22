@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        78%{?dist}
+Release:        82%{?dist}
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1029,6 +1029,36 @@ Patch0976: 0976-tmpfiles-don-t-complain-if-we-can-t-enable-pstore-in.patch
 Patch0977: 0977-pstore-don-t-enable-crash_kexec_post_notifiers-by-de.patch
 Patch0978: 0978-core-when-Delegate-yes-is-set-for-a-unit-run-ExecSta.patch
 Patch0979: 0979-man-link-Delegate-documentation-up-with-the-markdown.patch
+Patch0980: 0980-ci-Extend-source-git-automation.patch
+Patch0981: 0981-ci-add-missing-configuration-for-commit-linter.patch
+Patch0982: 0982-ci-add-Red-Hat-Enterprise-Linux-8-to-the-list-of-sup.patch
+Patch0983: 0983-ci-enable-source-git-automation-to-validate-reviews-.patch
+Patch0984: 0984-ci-remove-Mergify-config-replaced-by-Pull-Request-Va.patch
+Patch0985: 0985-ci-enable-auto-merge-GH-Action.patch
+Patch0986: 0986-fstab-generator-allow-overriding-etc-fstab-with-SYST.patch
+Patch0987: 0987-fstab-generator-allow-overriding-path-to-sysroot-etc.patch
+Patch0988: 0988-test-backport-TEST-81-GENERATORS-fstab-generator-onl.patch
+Patch0989: 0989-resolved-actually-check-authenticated-flag-of-SOA-tr.patch
+Patch0990: 0990-fd-util-rework-how-we-determine-highest-possible-fd.patch
+Patch0991: 0991-basic-fd-util-refuse-infinite-loop-in-close_all_fds.patch
+Patch0992: 0992-fd-util-split-out-inner-fallback-loop-of-close_all_f.patch
+Patch0993: 0993-exec-util-use-close_all_fds_without_malloc-from-free.patch
+Patch0994: 0994-ci-use-source-git-automation-composite-Action.patch
+Patch0995: 0995-ci-increase-the-cron-interval-to-45-minutes.patch
+Patch0996: 0996-ci-add-all-Z-Stream-versions-to-array-of-allowed-ver.patch
+Patch0997: 0997-tree-wide-always-declare-bitflag-enums-the-same-way.patch
+Patch0998: 0998-login-Add-KEY_RESTART-handling.patch
+Patch0999: 0999-analyze-security-fix-recursive-call-of-syscall_names.patch
+Patch1000: 1000-analyze-security-do-not-assign-badness-to-filtered-o.patch
+Patch1001: 1001-analyze-security-include-an-actual-syscall-name-in-t.patch
+Patch1002: 1002-udev-net_id-introduce-naming-scheme-for-RHEL-8.10.patch
+Patch1003: 1003-doc-add-missing-listitem-to-systemd.net-naming-schem.patch
+Patch1004: 1004-service-schedule-cleanup-of-PID-hashmaps-when-we-now.patch
+Patch1005: 1005-man-update-link-to-RHEL-documentation.patch
+Patch1006: 1006-ci-add-configuration-for-regression-sniffer-GA.patch
+Patch1007: 1007-coredump-actually-store-parsed-unit-in-the-context.patch
+Patch1008: 1008-resolved-limit-the-number-of-signature-validations-i.patch
+Patch1009: 1009-resolved-reduce-the-maximum-nsec3-iterations-to-100.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1659,6 +1689,44 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Thu Mar 07 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82
+- ci: add configuration for regression sniffer GA (RHEL-1087)
+- coredump: actually store parsed unit in the context (RHEL-18302)
+- resolved: limit the number of signature validations in a transaction (RHEL-26644)
+- resolved: reduce the maximum nsec3 iterations to 100 (RHEL-26644)
+
+* Mon Feb 26 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-81
+- man: update link to RHEL documentation (RHEL-26355)
+
+* Thu Feb 15 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-80
+- fd-util: rework how we determine highest possible fd (RHEL-18302)
+- basic/fd-util: refuse "infinite" loop in close_all_fds() (RHEL-18302)
+- fd-util: split out inner fallback loop of close_all_fds() as close_all_fds_without_malloc() (RHEL-18302)
+- exec-util: use close_all_fds_without_malloc() from freeze() (RHEL-18302)
+- ci: use source-git-automation composite Action (RHEL-1087)
+- ci: increase the cron interval to 45 minutes (RHEL-1087)
+- ci: add all Z-Stream versions to array of allowed versions (RHEL-1087)
+- tree-wide: always declare bitflag enums the same way (RHEL-2857)
+- login: Add KEY_RESTART handling (RHEL-2857)
+- analyze security: fix recursive call of syscall_names_in_filter() (RHEL-5991)
+- analyze-security: do not assign badness to filtered-out syscalls (RHEL-5991)
+- analyze-security: include an actual syscall name in the message (RHEL-5991)
+- udev/net_id: introduce naming scheme for RHEL-8.10 (RHEL-22426)
+- doc: add missing `<listitem>` to `systemd.net-naming-scheme.xml` (RHEL-22426)
+- service: schedule cleanup of PID hashmaps when we now longer have main_pid and we are in container (RHEL-5863)
+
+* Mon Jan 08 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-79
+- ci: Extend source-git-automation (RHEL-1087)
+- ci: add missing configuration for commit linter (RHEL-1087)
+- ci: add `Red Hat Enterprise Linux 8` to the list of supported products (RHEL-1087)
+- ci: enable source-git automation to validate reviews and ci results (RHEL-1087)
+- ci: remove Mergify config - replaced by Pull Request Validator (RHEL-1087)
+- ci: enable auto-merge GH Action (RHEL-1087)
+- fstab-generator: allow overriding /etc/fstab with $SYSTEMD_FSTAB (RHEL-1087)
+- fstab-generator: allow overriding path to /sysroot/etc/fstab too (RHEL-1087)
+- test: backport TEST-81-GENERATORS (fstab-generator only) (RHEL-1087)
+- resolved: actually check authenticated flag of SOA transaction (RHEL-6213)
+
 * Tue Aug 22 2023 systemd maintenance team <systemd-maint@redhat.com> - 239-78
 - login: add a missing error check for session_set_leader() (#2158167)
 - logind: reset session leader if we know for a fact that it is gone (#2158167)

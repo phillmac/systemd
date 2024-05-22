@@ -1,0 +1,28 @@
+From c8fe27ea2c560a213c3e3968fa76b5dd84e181f5 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Sat, 1 Aug 2020 11:28:09 +0200
+Subject: [PATCH] analyze-security: do not assign badness to filtered-out
+ syscalls
+
+Fixes #16451, https://bugzilla.redhat.com/show_bug.cgi?id=1856273.
+
+(cherry picked from commit 01ecb3674ad3650bcbb14155b2dcbd4b9f4ed57e)
+
+Resolves: RHEL-5991
+---
+ src/analyze/analyze-security.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/analyze/analyze-security.c b/src/analyze/analyze-security.c
+index 5ef5d52e75..7c937e3587 100644
+--- a/src/analyze/analyze-security.c
++++ b/src/analyze/analyze-security.c
+@@ -549,7 +549,7 @@ static int assess_system_call_filter(
+                                 b = 10;
+                         } else {
+                                 (void) asprintf(&d, "System call blacklist defined for service, and %s is included", f->name);
+-                                b = 5;
++                                b = 0;
+                         }
+                 }
+         }
