@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        82%{?dist}
+Release:        82%{?dist}.1
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1059,6 +1059,10 @@ Patch1006: 1006-ci-add-configuration-for-regression-sniffer-GA.patch
 Patch1007: 1007-coredump-actually-store-parsed-unit-in-the-context.patch
 Patch1008: 1008-resolved-limit-the-number-of-signature-validations-i.patch
 Patch1009: 1009-resolved-reduce-the-maximum-nsec3-iterations-to-100.patch
+Patch1010: 1010-pid1-by-default-make-user-units-inherit-their-umask-.patch
+Patch1011: 1011-pam-add-call-to-pam_umask.patch
+Patch1012: 1012-ci-deploy-systemd-man-to-GitHub-Pages.patch
+Patch1013: 1013-ci-src-git-update-list-of-supported-products.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1689,6 +1693,12 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Thu Apr 11 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.1
+- pid1: by default make user units inherit their umask from the user manager (RHEL-28048)
+- pam: add call to pam_umask (RHEL-28048)
+- ci: deploy systemd man to GitHub Pages (RHEL-32494)
+- ci(src-git): update list of supported products (RHEL-32494)
+
 * Thu Mar 07 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82
 - ci: add configuration for regression sniffer GA (RHEL-1087)
 - coredump: actually store parsed unit in the context (RHEL-18302)

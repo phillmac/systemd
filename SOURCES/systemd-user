@@ -9,4 +9,5 @@ session  required pam_selinux.so close
 session  required pam_selinux.so nottys open
 session  required pam_loginuid.so
 session  required pam_namespace.so
+session  optional pam_umask.so silent
 session  include system-auth

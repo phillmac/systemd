@@ -1,0 +1,81 @@
+From 045ba12c6337760f0a7f8b0ceb9f998b309e025f Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 9 Feb 2024 14:48:02 +0100
+Subject: [PATCH] ci: deploy systemd man to GitHub Pages
+
+rhel-only
+
+Related: RHEL-32494
+
+Co-authored-by: Frantisek Sumsal <frantisek@sumsal.cz>
+---
+ .github/workflows/deploy-man-pages.yml | 60 ++++++++++++++++++++++++++
+ 1 file changed, 60 insertions(+)
+ create mode 100644 .github/workflows/deploy-man-pages.yml
+
+diff --git a/.github/workflows/deploy-man-pages.yml b/.github/workflows/deploy-man-pages.yml
+new file mode 100644
+index 0000000000..9da38a1687
+--- /dev/null
++++ b/.github/workflows/deploy-man-pages.yml
+@@ -0,0 +1,60 @@
++name: Deploy systemd man to Pages
++
++on:
++  push:
++    branches: [ rhel-8.10.0 ]
++    paths:
++      - man/*
++      - .github/workflows/deploy-man-pages.yml
++  schedule:
++    # Run every Monday at 4:00 AM UTC
++    - cron: 0 4 * * 1
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
++# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
++concurrency:
++  group: pages
++  cancel-in-progress: false
++
++jobs:
++  # Single deploy job since we're just deploying
++  deploy:
++    environment:
++      name: github-pages
++      url: ${{ steps.deployment.outputs.page_url }}
++    runs-on: ubuntu-latest
++
++    permissions:
++      pages: write
++      id-token: write
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Install dependencies
++        run: |
++          RELEASE="$(lsb_release -cs)"
++          sudo add-apt-repository -y --no-update --enable-source
++          sudo apt-get -y update
++          sudo apt-get -y build-dep systemd
++
++      - name: Build HTML man pages
++        run: |
++          meson setup build
++          ninja -C build man/html
++
++      - name: Setup Pages
++        uses: actions/configure-pages@v4
++
++      - name: Upload artifact
++        uses: actions/upload-pages-artifact@v3
++        with:
++          path: ./build/man
++
++      - name: Deploy to GitHub Pages
++        id: deployment
++        uses: actions/deploy-pages@v4

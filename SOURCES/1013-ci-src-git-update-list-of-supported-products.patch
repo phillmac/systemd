@@ -1,0 +1,24 @@
+From 604d2f1c8b6ecb46be7f70c5be7ae6fc6be04cab Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 11 Apr 2024 10:14:51 +0200
+Subject: [PATCH] ci(src-git): update list of supported products
+
+rhel-only
+
+Related: RHEL-32494
+---
+ .github/tracker-validator.yml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/.github/tracker-validator.yml b/.github/tracker-validator.yml
+index b09f702dd9..1bb684e722 100644
+--- a/.github/tracker-validator.yml
++++ b/.github/tracker-validator.yml
+@@ -16,5 +16,5 @@ products:
+   - rhel-8.8.0.z
+   - rhel-8.9.0
+   - rhel-8.9.0.z
+-  - rhel-8.10.0
+-  - rhel-8.10.0.z
++  - rhel-8.10
++  - rhel-8.10.z
