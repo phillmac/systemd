@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        82%{?dist}.1
+Release:        82%{?dist}.2
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1516,10 +1516,6 @@ chmod g+s /run/log/journal/ /run/log/journal/`cat /etc/machine-id 2>/dev/null` /
 # Apply ACL to the journal directory
 setfacl -Rnm g:wheel:rx,d:g:wheel:rx,g:adm:rx,d:g:adm:rx /var/log/journal/ &>/dev/null || :
 
-# Stop-gap until rsyslog.rpm does this on its own. (This is supposed
-# to fail when the link already exists)
-ln -s /usr/lib/systemd/system/rsyslog.service /etc/systemd/system/syslog.service &>/dev/null || :
-
 # Remove spurious /etc/fstab entries from very old installations
 # https://bugzilla.redhat.com/show_bug.cgi?id=1009023
 if [ -e /etc/fstab ]; then
@@ -1693,6 +1689,9 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Tue Jul 23 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.2
+- spec: do not create symlink /etc/systemd/system/syslog.service (RHEL-13179)
+
 * Thu Apr 11 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.1
 - pid1: by default make user units inherit their umask from the user manager (RHEL-28048)
 - pam: add call to pam_umask (RHEL-28048)
