@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        82%{?dist}.2
+Release:        82%{?dist}.3
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1063,6 +1063,14 @@ Patch1010: 1010-pid1-by-default-make-user-units-inherit-their-umask-.patch
 Patch1011: 1011-pam-add-call-to-pam_umask.patch
 Patch1012: 1012-ci-deploy-systemd-man-to-GitHub-Pages.patch
 Patch1013: 1013-ci-src-git-update-list-of-supported-products.patch
+Patch1014: 1014-ci-update-actions-upload-artifact-to-v4.patch
+Patch1015: 1015-ci-drop-unused-variable.patch
+Patch1016: 1016-ci-reduce-ASLR-entropy.patch
+Patch1017: 1017-test-skip-the-symlink-part-of-test_touch_file-in-GH-.patch
+Patch1018: 1018-core-add-possibility-to-not-track-certain-unit-types.patch
+Patch1019: 1019-logind-don-t-setup-idle-session-watch-for-lock-scree.patch
+Patch1020: 1020-logind-tighten-for-which-classes-of-sessions-we-do-s.patch
+Patch1021: 1021-ci-point-C8S-containers-to-the-Vault.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1689,6 +1697,14 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Thu Nov 07 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.3
+- ci: update actions/upload-artifact to `v4` (RHEL-32494)
+- ci: drop unused variable (RHEL-32494)
+- core: add possibility to not track certain unit types (RHEL-5877)
+- logind: don't setup idle session watch for lock-screen and greeter (RHEL-19215)
+- logind: tighten for which classes of sessions we do stop-on-idle (RHEL-19215)
+- ci: point C8S containers to the Vault (RHEL-1087)
+
 * Tue Jul 23 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.2
 - spec: do not create symlink /etc/systemd/system/syslog.service (RHEL-13179)
 

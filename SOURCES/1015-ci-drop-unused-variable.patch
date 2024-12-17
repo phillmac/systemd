@@ -1,0 +1,24 @@
+From 72040693da79d7ef3d1f210866ee1f651b720247 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 25 Apr 2024 16:31:18 +0200
+Subject: [PATCH] ci: drop unused variable
+
+rhel-only
+
+Related: RHEL-32494
+---
+ .github/workflows/deploy-man-pages.yml | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/.github/workflows/deploy-man-pages.yml b/.github/workflows/deploy-man-pages.yml
+index 9da38a1687..c65c9b62ee 100644
+--- a/.github/workflows/deploy-man-pages.yml
++++ b/.github/workflows/deploy-man-pages.yml
+@@ -37,7 +37,6 @@ jobs:
+ 
+       - name: Install dependencies
+         run: |
+-          RELEASE="$(lsb_release -cs)"
+           sudo add-apt-repository -y --no-update --enable-source
+           sudo apt-get -y update
+           sudo apt-get -y build-dep systemd

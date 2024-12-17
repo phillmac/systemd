@@ -1,0 +1,89 @@
+From a4e0b7ab90c8bc6ecb7bd883f19e5a5834ae9058 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Wed, 13 Mar 2024 12:41:17 +0100
+Subject: [PATCH] test: skip the symlink part of test_touch_file() in GH
+ Actions
+
+Our (RHEL 8) touch_file() is not clever enough and does chmod() on a
+symlink, which fails with EOPNOTSUPP on newer kernels. This is not an
+issue on the RHEL 8 kernel, where doing chmod() on a symlink works
+(albeit only on tmpfs) but in GH Actions we run in a container, and with
+the underlying kernel doing chmod() on a symlink fails even on tmpfs:
+
+RHEL 8:
+~# mount -t tmpfs tmpfs /tmp
+~# (cd /tmp; ln -s symlink dangling; ln -s /etc/os-release symlink)
+~# (cd /var/tmp; ln -s symlink dangling; ln -s /etc/os-release symlink)
+~# gcc -o main main.c -D_GNU_SOURCE
+~# ./main /tmp/dangling
+chmod(/proc/self/fd/3)=0 (0)
+~# ./main /tmp/symlink
+chmod(/proc/self/fd/3)=0 (0)
+~# ./main /var/tmp/dangling
+chmod(/proc/self/fd/3)=-1 (95)
+~# ./main /var/tmp/symlink
+chmod(/proc/self/fd/3)=-1 (95)
+
+Newer kernel:
+~# uname -r
+6.7.4-200.fc39.x86_64
+~# ./main /tmp/dangling
+chmod(/proc/self/fd/3)=-1 (95)
+~# ./main /tmp/symlink
+chmod(/proc/self/fd/3)=-1 (95)
+~# ./main /var/tmp/dangling
+chmod(/proc/self/fd/3)=-1 (95)
+~# ./main /var/tmp/symlink
+chmod(/proc/self/fd/3)=-1 (95)
+
+Backporting the necessary patches would be way too risky so late in the
+RHEL 8 cycle, so let's just skip the offending test when running in GH
+Actions. To do that we have to jump through a couple of hoops, since
+RHEL 8 systemd can't detect docker. Oh well.
+
+See: #434
+
+RHEL-only
+---
+ src/test/test-fs-util.c | 21 ++++++++++++---------
+ 1 file changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/src/test/test-fs-util.c b/src/test/test-fs-util.c
+index aa32629f62..a3428f8c0d 100644
+--- a/src/test/test-fs-util.c
++++ b/src/test/test-fs-util.c
+@@ -15,6 +15,7 @@
+ #include "stdio-util.h"
+ #include "string-util.h"
+ #include "strv.h"
++#include "tests.h"
+ #include "user-util.h"
+ #include "util.h"
+ #include "virt.h"
+@@ -544,15 +545,17 @@ static void test_touch_file(void) {
+                 assert_se(timespec_load(&st.st_mtim) == test_mtime);
+         }
+ 
+-        a = strjoina(p, "/lnk");
+-        assert_se(symlink("target", a) >= 0);
+-        assert_se(touch_file(a, false, test_mtime, test_uid, test_gid, 0640) >= 0);
+-        assert_se(lstat(a, &st) >= 0);
+-        assert_se(st.st_uid == test_uid);
+-        assert_se(st.st_gid == test_gid);
+-        assert_se(S_ISLNK(st.st_mode));
+-        assert_se((st.st_mode & 0777) == 0640);
+-        assert_se(timespec_load(&st.st_mtim) == test_mtime);
++        if (!streq_ptr(ci_environment(), "github-actions")) {
++                a = strjoina(p, "/lnk");
++                assert_se(symlink("target", a) >= 0);
++                assert_se(touch_file(a, false, test_mtime, test_uid, test_gid, 0640) >= 0);
++                assert_se(lstat(a, &st) >= 0);
++                assert_se(st.st_uid == test_uid);
++                assert_se(st.st_gid == test_gid);
++                assert_se(S_ISLNK(st.st_mode));
++                assert_se((st.st_mode & 0777) == 0640);
++                assert_se(timespec_load(&st.st_mtim) == test_mtime);
++        }
+ }
+ 
+ static void test_unlinkat_deallocate(void) {

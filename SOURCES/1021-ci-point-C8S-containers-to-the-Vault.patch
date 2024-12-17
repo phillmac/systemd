@@ -1,0 +1,27 @@
+From 3aae10768d08007dc087306431da60f85087ae57 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Wed, 26 Jun 2024 13:16:27 +0200
+Subject: [PATCH] ci: point C8S containers to the Vault
+
+Temporarily point repos in C8S containers to the Vault (since C8S is
+EOL), until we figure out a _proper_ solution.
+
+Related: RHEL-1087
+---
+ .github/workflows/unit_tests.sh | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/.github/workflows/unit_tests.sh b/.github/workflows/unit_tests.sh
+index 3859433720..7cc7da164c 100755
+--- a/.github/workflows/unit_tests.sh
++++ b/.github/workflows/unit_tests.sh
+@@ -138,6 +138,9 @@ for phase in "${PHASES[@]}"; do
+ 
+             # Beautiful workaround for Fedora's version of Docker
+             sleep 1
++            # FIXME?: Point C8S repos to the Vault, since C8S is EOL
++            $DOCKER_EXEC bash -xec "sed -i 's/^mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*"
++            $DOCKER_EXEC bash -xec "sed -i 's|#baseurl=http://mirror.centos.org|baseurl=https://vault.centos.org|g' /etc/yum.repos.d/CentOS-*"
+             $DOCKER_EXEC dnf makecache
+             # Install and enable EPEL
+             $DOCKER_EXEC dnf -q -y install epel-release dnf-utils "${ADDITIONAL_DEPS[@]}"
