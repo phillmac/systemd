@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        82%{?dist}.3
+Release:        82%{?dist}.4
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1071,6 +1071,7 @@ Patch1018: 1018-core-add-possibility-to-not-track-certain-unit-types.patch
 Patch1019: 1019-logind-don-t-setup-idle-session-watch-for-lock-scree.patch
 Patch1020: 1020-logind-tighten-for-which-classes-of-sessions-we-do-s.patch
 Patch1021: 1021-ci-point-C8S-containers-to-the-Vault.patch
+Patch1022: 1022-core-fix-member-access-within-null-pointer.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1697,6 +1698,9 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Tue Jan 28 2025 systemd maintenance team <systemd-maint@redhat.com> - 239-82.4
+- core: fix member access within null pointer (RHEL-76308)
+
 * Thu Nov 07 2024 systemd maintenance team <systemd-maint@redhat.com> - 239-82.3
 - ci: update actions/upload-artifact to `v4` (RHEL-32494)
 - ci: drop unused variable (RHEL-32494)

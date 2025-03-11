@@ -1,0 +1,30 @@
+From 8c2ed0727cdde516d062e62e127d3dc46cddb895 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Fri, 12 Oct 2018 04:24:27 +0900
+Subject: [PATCH] core: fix member access within null pointer
+
+config_parse_tasks_max() is also used for parsing system.conf or
+user.conf. In that case, userdata is NULL.
+
+Fixes #10362.
+
+(cherry picked from commit 958b8c7bd7a3cf1e710faf8c19a528cc94c214fe)
+
+Resolves: RHEL-76308
+---
+ src/core/load-fragment.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/load-fragment.c b/src/core/load-fragment.c
+index f6505cf83c..4bfa21a677 100644
+--- a/src/core/load-fragment.c
++++ b/src/core/load-fragment.c
+@@ -3123,7 +3123,7 @@ int config_parse_tasks_max(
+         int r;
+ 
+         if (isempty(rvalue)) {
+-                *tasks_max = u->manager->default_tasks_max;
++                *tasks_max = u ? u->manager->default_tasks_max : UINT64_MAX;
+                 return 0;
+         }
+ 
