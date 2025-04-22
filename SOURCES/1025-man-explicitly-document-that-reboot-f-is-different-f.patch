@@ -1,0 +1,34 @@
+From 559a9e5b910781b114684803bbc4ba021c113edd Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 17 Sep 2022 01:25:44 +0900
+Subject: [PATCH] man: explicitly document that "reboot -f" is different from
+ "systemctl reboot -f"
+
+Closes #24696.
+
+(cherry picked from commit cb19517490104553907bb0b118cd2005d6e379cc)
+
+Resolves: RHEL-81056
+---
+ man/halt.xml | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/man/halt.xml b/man/halt.xml
+index f82ab19f5f..23bebb32b4 100644
+--- a/man/halt.xml
++++ b/man/halt.xml
+@@ -88,8 +88,12 @@
+         <term><option>-f</option></term>
+         <term><option>--force</option></term>
+ 
+-        <listitem><para>Force immediate halt, power-off, reboot. Do
+-        not contact the init system.</para></listitem>
++        <listitem>
++          <para>Force immediate halt, power-off, reboot. If specified, the command does not contact the init
++          system. In most cases, filesystems are not properly unmounted before shutdown. For example, the
++          command <command>reboot -f</command> is mostly equivalent to <command>systemctl reboot -ff</command>,
++          instead of <command>systemctl reboot -f</command>.</para>
++        </listitem>
+       </varlistentry>
+ 
+       <varlistentry>

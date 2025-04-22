@@ -1,0 +1,34 @@
+From f94b6151997df8a74b5931324be4d50c7c1bf912 Mon Sep 17 00:00:00 2001
+From: Ludwig Nussel <ludwig.nussel@suse.de>
+Date: Tue, 15 Feb 2022 11:49:26 +0100
+Subject: [PATCH] Revert "man: fix description of --force in halt(8) (#7392)"
+
+This reverts commit 5d9adb5b60b815b477ba9e6b19ef0fd7e1854a38.
+
+(cherry picked from commit 4e076fc8852614823789c75a0487bf24de3fe9ec)
+
+Resolves: RHEL-81056
+---
+ man/halt.xml | 9 ++-------
+ 1 file changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/man/halt.xml b/man/halt.xml
+index 19857cea84..f82ab19f5f 100644
+--- a/man/halt.xml
++++ b/man/halt.xml
+@@ -88,13 +88,8 @@
+         <term><option>-f</option></term>
+         <term><option>--force</option></term>
+ 
+-        <listitem><para>Force immediate halt, power-off, or reboot. When
+-        specified once, this results in an immediate but clean shutdown
+-        by the system manager. When specified twice, this results in an
+-        immediate shutdown without contacting the system manager. See the
+-        description of <option>--force</option> in
+-        <citerefentry><refentrytitle>systemctl</refentrytitle><manvolnum>1</manvolnum></citerefentry>
+-        for more details.</para></listitem>
++        <listitem><para>Force immediate halt, power-off, reboot. Do
++        not contact the init system.</para></listitem>
+       </varlistentry>
+ 
+       <varlistentry>

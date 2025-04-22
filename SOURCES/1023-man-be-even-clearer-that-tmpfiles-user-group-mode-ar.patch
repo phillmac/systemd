@@ -1,0 +1,44 @@
+From 687f9b3e04a65d2f39f15e7e0090de940c08ff37 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 8 Nov 2023 10:56:07 +0100
+Subject: [PATCH] man: be even clearer that tmpfiles user/group/mode are
+ applied on existing inodes
+
+I think it was clear already, but let's be even clearer.
+
+Fixes: #29774
+(cherry picked from commit 3cb938bd12b3603984b982e9b73e4cabd4a608e3)
+
+Resolves: RHEL-77145
+---
+ man/tmpfiles.d.xml | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/man/tmpfiles.d.xml b/man/tmpfiles.d.xml
+index e2e2eac228..1c4b575c65 100644
+--- a/man/tmpfiles.d.xml
++++ b/man/tmpfiles.d.xml
+@@ -500,6 +500,11 @@ r! /tmp/.X[0-9]*-lock</programlisting>
+       sticky/SUID/SGID bit is removed unless applied to a
+       directory. This functionality is particularly useful in
+       conjunction with <varname>Z</varname>.</para>
++
++      <para>By default the access mode of listed inodes is set to the specified mode regardless if it is
++      created anew, or already existed. Optionally, if prefixed with <literal>:</literal>, the configured
++      access mode is only applied when creating new inodes, and if the inode the line refers to
++      already exists, its access mode is left in place unmodified.</para>
+     </refsect2>
+ 
+     <refsect2>
+@@ -515,6 +520,11 @@ r! /tmp/.X[0-9]*-lock</programlisting>
+       <varname>r</varname>, <varname>R</varname>,
+       <varname>L</varname>, <varname>t</varname>, and
+       <varname>a</varname> lines.</para>
++
++      <para>By default the ownership of listed inodes is set to the specified user/group regardless if it is
++      created anew, or already existed. Optionally, if prefixed with <literal>:</literal>, the configured
++      user/group information is only applied when creating new inodes, and if the inode the line refers to
++      already exists, its user/group is left in place unmodified.</para>
+     </refsect2>
+ 
+     <refsect2>

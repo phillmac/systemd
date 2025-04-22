@@ -13,7 +13,7 @@
 Name:           systemd
 Url:            http://www.freedesktop.org/wiki/Software/systemd
 Version:        239
-Release:        82%{?dist}.4
+Release:        82%{?dist}.5
 # For a breakdown of the licensing, see README
 License:        LGPLv2+ and MIT and GPLv2+
 Summary:        System and Service Manager
@@ -1072,6 +1072,9 @@ Patch1019: 1019-logind-don-t-setup-idle-session-watch-for-lock-scree.patch
 Patch1020: 1020-logind-tighten-for-which-classes-of-sessions-we-do-s.patch
 Patch1021: 1021-ci-point-C8S-containers-to-the-Vault.patch
 Patch1022: 1022-core-fix-member-access-within-null-pointer.patch
+Patch1023: 1023-man-be-even-clearer-that-tmpfiles-user-group-mode-ar.patch
+Patch1024: 1024-Revert-man-fix-description-of-force-in-halt-8-7392.patch
+Patch1025: 1025-man-explicitly-document-that-reboot-f-is-different-f.patch
 
 %ifarch %{ix86} x86_64 aarch64
 %global have_gnu_efi 1
@@ -1698,6 +1701,11 @@ fi
 %files tests -f .file-list-tests
 
 %changelog
+* Wed Mar 05 2025 systemd maintenance team <systemd-maint@redhat.com> - 239-82.5
+- man: be even clearer that tmpfiles user/group/mode are applied on existing inodes (RHEL-77145)
+- Revert "man: fix description of --force in halt(8) (#7392)" (RHEL-81056)
+- man: explicitly document that "reboot -f" is different from "systemctl reboot -f" (RHEL-81056)
+
 * Tue Jan 28 2025 systemd maintenance team <systemd-maint@redhat.com> - 239-82.4
 - core: fix member access within null pointer (RHEL-76308)
 
