@@ -1,0 +1,203 @@
+From ec9f1ba4bf2b17aa2d10c1196271ce164f4e7c91 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Mon, 13 Jan 2025 17:06:35 +0100
+Subject: [PATCH] core: serialize API bus id and validate before deserializing
+ bus tracks
+
+(cherry picked from commit 1446e3c3921067e3a6228a3e172b5dfd95437136)
+
+Resolves: RHEL-73780
+---
+ src/core/dbus.c              | 55 +++++++++++++++++++-----------------
+ src/core/dbus.h              |  1 -
+ src/core/manager-serialize.c |  8 +++++-
+ src/core/manager.h           | 11 +++++---
+ src/shared/bus-util.c        |  2 +-
+ src/shared/bus-util.h        |  2 +-
+ 6 files changed, 45 insertions(+), 34 deletions(-)
+
+diff --git a/src/core/dbus.c b/src/core/dbus.c
+index 58cd1ee175..a2a2611a03 100644
+--- a/src/core/dbus.c
++++ b/src/core/dbus.c
+@@ -5,6 +5,7 @@
+ #include <unistd.h>
+ 
+ #include "sd-bus.h"
++#include "sd-id128.h"
+ 
+ #include "alloc-util.h"
+ #include "bus-common-errors.h"
+@@ -774,6 +775,24 @@ static int bus_on_connection(sd_event_source *s, int fd, uint32_t revents, void
+         return 0;
+ }
+ 
++static int bus_track_coldplug(sd_bus *bus, sd_bus_track **t, char * const *l) {
++        int r;
++
++        assert(bus);
++        assert(t);
++
++        if (strv_isempty(l))
++                return 0;
++
++        if (!*t) {
++                r = sd_bus_track_new(bus, t, NULL, NULL);
++                if (r < 0)
++                        return r;
++        }
++
++        return bus_track_add_name_many(*t, l);
++}
++
+ static int bus_setup_api(Manager *m, sd_bus *bus) {
+         char *name;
+         Unit *u;
+@@ -860,10 +879,15 @@ int bus_init_api(Manager *m) {
+         if (r < 0)
+                 return log_error_errno(r, "Failed to set up API bus: %m");
+ 
+-        (void) bus_track_coldplug(bus, &m->subscribed, /* recursive= */ false, m->subscribed_as_strv);
++        r = bus_get_instance_id(bus, &m->bus_id);
++        if (r < 0)
++                log_warning_errno(r, "Failed to query API bus instance ID, not deserializing subscriptions: %m");
++        else if (sd_id128_is_null(m->deserialized_bus_id) || sd_id128_equal(m->bus_id, m->deserialized_bus_id))
++                (void) bus_track_coldplug(bus, &m->subscribed, m->subscribed_as_strv);
+         m->subscribed_as_strv = strv_free(m->subscribed_as_strv);
+-        m->api_bus = TAKE_PTR(bus);
++        m->deserialized_bus_id = SD_ID128_NULL;
+ 
++        m->api_bus = TAKE_PTR(bus);
+         return 0;
+ }
+ 
+@@ -1015,6 +1039,9 @@ static void destroy_bus(Manager *m, sd_bus **bus) {
+                         log_warning_errno(r, "Failed to serialize api subscribers, ignoring: %m");
+                 strv_free_and_replace(m->subscribed_as_strv, subscribed);
+ 
++                m->deserialized_bus_id = m->bus_id;
++                m->bus_id = SD_ID128_NULL;
++
+                 m->subscribed = sd_bus_track_unref(m->subscribed);
+         }
+ 
+@@ -1163,30 +1190,6 @@ void bus_track_serialize(sd_bus_track *t, FILE *f, const char *prefix) {
+         }
+ }
+ 
+-int bus_track_coldplug(sd_bus *bus, sd_bus_track **t, bool recursive, char **l) {
+-        int r;
+-
+-        assert(t);
+-
+-        if (strv_isempty(l))
+-                return 0;
+-
+-        if (!bus)
+-                return 0;
+-
+-        if (!*t) {
+-                r = sd_bus_track_new(bus, t, NULL, NULL);
+-                if (r < 0)
+-                        return r;
+-        }
+-
+-        r = sd_bus_track_set_recursive(*t, recursive);
+-        if (r < 0)
+-                return r;
+-
+-        return bus_track_add_name_many(*t, l);
+-}
+-
+ uint64_t manager_bus_n_queued_write(Manager *m) {
+         uint64_t c = 0;
+         sd_bus *b;
+diff --git a/src/core/dbus.h b/src/core/dbus.h
+index eb1baf6049..0f81102fc1 100644
+--- a/src/core/dbus.h
++++ b/src/core/dbus.h
+@@ -19,7 +19,6 @@ void bus_done(Manager *m);
+ int bus_fdset_add_all(Manager *m, FDSet *fds);
+ 
+ void bus_track_serialize(sd_bus_track *t, FILE *f, const char *prefix);
+-int bus_track_coldplug(sd_bus *bus, sd_bus_track **t, bool recursive, char **l);
+ 
+ int bus_foreach_bus(Manager *m, sd_bus_track *subscribed2, int (*send_message)(sd_bus *bus, void *userdata), void *userdata);
+ 
+diff --git a/src/core/manager-serialize.c b/src/core/manager-serialize.c
+index bc29ac91c6..b225799ed9 100644
+--- a/src/core/manager-serialize.c
++++ b/src/core/manager-serialize.c
+@@ -158,6 +158,7 @@ int manager_serialize(
+         (void) serialize_ratelimit(f, "dump-ratelimit", &m->dump_ratelimit);
+         (void) serialize_ratelimit(f, "reload-reexec-ratelimit", &m->reload_reexec_ratelimit);
+ 
++        (void) serialize_id128(f, "bus-id", m->bus_id);
+         bus_track_serialize(m->subscribed, f, "subscribed");
+ 
+         r = dynamic_user_serialize(m, f, fds);
+@@ -491,7 +492,12 @@ int manager_deserialize(Manager *m, FILE *f, FDSet *fds) {
+                         manager_deserialize_gid_refs_one(m, val);
+                 else if ((val = startswith(l, "exec-runtime=")))
+                         (void) exec_shared_runtime_deserialize_one(m, val, fds);
+-                else if ((val = startswith(l, "subscribed="))) {
++                else if ((val = startswith(l, "bus-id="))) {
++
++                        r = sd_id128_from_string(val, &m->deserialized_bus_id);
++                        if (r < 0)
++                                return r;
++                } else if ((val = startswith(l, "subscribed="))) {
+ 
+                         r = strv_extend(&m->subscribed_as_strv, val);
+                         if (r < 0)
+diff --git a/src/core/manager.h b/src/core/manager.h
+index 7016eab2d3..c5bd242968 100644
+--- a/src/core/manager.h
++++ b/src/core/manager.h
+@@ -335,13 +335,16 @@ struct Manager {
+         int private_listen_fd;
+         sd_event_source *private_listen_event_source;
+ 
+-        /* Contains all the clients that are subscribed to signals via
+-        the API bus. Note that private bus connections are always
+-        considered subscribes, since they last for very short only,
+-        and it is much simpler that way. */
++        /* Contains all the clients that are subscribed to signals via the API bus. Note that private bus
++         * connections are always considered subscribes, since they last for very short only, and it is
++         * much simpler that way. */
+         sd_bus_track *subscribed;
+         char **subscribed_as_strv;
+ 
++        /* The bus id of API bus acquired through org.freedesktop.DBus.GetId, which before deserializing
++         * subscriptions we'd use to verify the bus is still the same instance as before. */
++        sd_id128_t bus_id, deserialized_bus_id;
++
+         /* This is used during reloading: before the reload we queue
+          * the reply message here, and afterwards we send it */
+         sd_bus_message *pending_reload_message;
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index 8eb3fbbf54..9255dbc9b6 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -686,7 +686,7 @@ int bus_path_decode_unique(const char *path, const char *prefix, char **ret_send
+         return 1;
+ }
+ 
+-int bus_track_add_name_many(sd_bus_track *t, char **l) {
++int bus_track_add_name_many(sd_bus_track *t, char * const *l) {
+         int r = 0;
+ 
+         assert(t);
+diff --git a/src/shared/bus-util.h b/src/shared/bus-util.h
+index fe85d815b8..024b54648d 100644
+--- a/src/shared/bus-util.h
++++ b/src/shared/bus-util.h
+@@ -62,7 +62,7 @@ int bus_log_connect_error(int r, BusTransport transport, RuntimeScope scope);
+ int bus_path_encode_unique(sd_bus *b, const char *prefix, const char *sender_id, const char *external_id, char **ret_path);
+ int bus_path_decode_unique(const char *path, const char *prefix, char **ret_sender, char **ret_external);
+ 
+-int bus_track_add_name_many(sd_bus_track *t, char **l);
++int bus_track_add_name_many(sd_bus_track *t, char * const *l);
+ int bus_track_to_strv(sd_bus_track *t, char ***ret);
+ 
+ int bus_open_system_watch_bind_with_description(sd_bus **ret, const char *description);

@@ -1,0 +1,27 @@
+From 926f5ab6bf0e3541106e6a6f95af4cbdec50582b Mon Sep 17 00:00:00 2001
+From: cvlc12 <97767846+cvlc12@users.noreply.github.com>
+Date: Wed, 11 Dec 2024 22:09:11 +0100
+Subject: [PATCH] man: update example in systemd-measure.xml (#35506)
+
+In the example from systemd-measure(1), do not bind to PCR 7 in
+addition to the PCR policy.
+
+As long as this is still done by default, see #35280.
+
+(cherry picked from commit 693038fce47a819c5eebeb4fce39c9ac991acf84)
+---
+ man/systemd-measure.xml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/man/systemd-measure.xml b/man/systemd-measure.xml
+index 5d697dd62f..368c94f700 100644
+--- a/man/systemd-measure.xml
++++ b/man/systemd-measure.xml
+@@ -328,6 +328,7 @@ $ ukify build \
+      <programlisting># systemd-cryptenroll --tpm2-device=auto \
+      --tpm2-public-key=tpm2-pcr-public-key.pem \
+      --tpm2-signature=tpm2-pcr-signature.json \
++     --tpm2-pcrs="" \
+      /dev/sda5</programlisting>
+ 
+      <para>And then unlock the device with the signature:</para>

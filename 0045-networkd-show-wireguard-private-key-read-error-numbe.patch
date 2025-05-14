@@ -1,0 +1,25 @@
+From b5dc1922f9bd0a64cf17be8c503baba58bf5ba82 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 16 Dec 2024 17:19:59 +0100
+Subject: [PATCH] networkd: show wireguard private key read error number
+
+Noticed while looking at #35641
+
+(cherry picked from commit 0543b02cf8211353c0bb1065e09614f551944a41)
+---
+ src/network/netdev/wireguard.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/network/netdev/wireguard.c b/src/network/netdev/wireguard.c
+index 8d1dddf828..5a58e1082c 100644
+--- a/src/network/netdev/wireguard.c
++++ b/src/network/netdev/wireguard.c
+@@ -1198,7 +1198,7 @@ static int wireguard_verify(NetDev *netdev, const char *filename) {
+         r = wireguard_read_key_file(w->private_key_file, w->private_key);
+         if (r < 0)
+                 return log_netdev_error_errno(netdev, r,
+-                                              "Failed to read private key from %s. Ignoring network device.",
++                                              "Failed to read private key from '%s', ignoring network device: %m",
+                                               w->private_key_file);
+ 
+         if (eqzero(w->private_key)) {

@@ -1,0 +1,26 @@
+From bcda7cc1b1121594ea34e3ccf7074a4386407f7b Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 23 Dec 2024 21:30:32 +0100
+Subject: [PATCH] docs: Explicitly mention ~/.local/bin in section on
+ installing mkosi
+
+(cherry picked from commit 54b4ec887066b12fe97ac28d7ed5108a23f262de)
+---
+ docs/HACKING.md | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index d1202dee4e..de3f66dd55 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -33,7 +33,9 @@ for testing purposes.
+ First, install `mkosi` from the
+ [GitHub repository](https://github.com/systemd/mkosi#running-mkosi-from-the-repository).
+ Note that it's not possible to use your distribution's packaged version of mkosi
+-as mkosi has to be installed outside of `/usr` for the following steps to work.
++as mkosi has to be installed outside of `/usr` for the following steps to work. When
++installing mkosi from the github repository, make sure to symlink it to `~/.local/bin`
++instead of `/usr/local/bin` if you want to add it to your `$PATH`.
+ 
+ Then, you can build and run systemd executables as follows:
+ 

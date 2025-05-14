@@ -1,0 +1,33 @@
+From a65b5131829c7c80e657b4929a85746436c81b2b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 2 Jan 2025 21:15:02 +0900
+Subject: [PATCH] systemctl: certainly ignore ENOENT in checking inhibitors
+
+Fixes a bug caused by 804874d26ac73e0af07c4c5d7165c95372f03f6d.
+
+Follow-up for 084f361b509cbffe7ffd5ab6085469f76f799fe5 and
+a1417e5563acb73a0accdc12b3af91e4ec1c7f46.
+
+Note, ERRNO_IS_NEG_DISCONNECT() includes ENONET rather than ENOENT...
+So, ENOENT needs to be handled explicitly.
+
+Fixes #35757 and #35806.
+
+(cherry picked from commit 66f379b63ddac8c72b9130df86a82b68ec42c119)
+---
+ src/systemctl/systemctl-logind.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/systemctl/systemctl-logind.c b/src/systemctl/systemctl-logind.c
+index d7b373ce0b..792529eaa0 100644
+--- a/src/systemctl/systemctl-logind.c
++++ b/src/systemctl/systemctl-logind.c
+@@ -152,7 +152,7 @@ int logind_check_inhibitors(enum action a) {
+                 return 0;
+ 
+         r = acquire_bus(BUS_FULL, &bus);
+-        if (ERRNO_IS_NEG_DISCONNECT(r) && geteuid() == 0)
++        if ((ERRNO_IS_NEG_DISCONNECT(r) || r == -ENOENT) && geteuid() == 0)
+                 return 0; /* When D-Bus is not running (ECONNREFUSED) or D-Bus socket is not created (ENOENT),
+                            * allow root to force a shutdown. E.g. when running at the emergency console. */
+         if (r < 0)

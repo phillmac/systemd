@@ -1,0 +1,27 @@
+From f0d596d9db52d683a1a27323e79e1f901efee357 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 6 Feb 2025 14:59:28 +0000
+Subject: [PATCH] mkosi: extend util-linux-script config drop-in to F43
+
+Fixes packit test
+
+TEST-74-AUX-UTILS.sh[1104]: + script -ec 'networkctl edit --runtime "$NETWORK_NAME"' /dev/null
+TEST-74-AUX-UTILS.sh[1154]: .//usr/lib/systemd/tests/testdata/units/TEST-74-AUX-UTILS.networkctl.sh: line 53: script: command not found
+
+(cherry picked from commit 01b45354559b2fc651441b6b0025ae28daddd06e)
+---
+ mkosi.conf.d/10-fedora/mkosi.conf.d/rawhide-42.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.conf.d/10-fedora/mkosi.conf.d/rawhide-42.conf b/mkosi.conf.d/10-fedora/mkosi.conf.d/rawhide-42.conf
+index 97e108f5e7..78e1fbe751 100644
+--- a/mkosi.conf.d/10-fedora/mkosi.conf.d/rawhide-42.conf
++++ b/mkosi.conf.d/10-fedora/mkosi.conf.d/rawhide-42.conf
+@@ -3,6 +3,7 @@
+ [Match]
+ Release=|rawhide
+ Release=|42
++Release=|43
+ 
+ [Content]
+ Packages=util-linux-script

@@ -1,0 +1,30 @@
+From 4fc9748a2773655e1ad55745cb2302b4a809f137 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 16:44:12 +0100
+Subject: [PATCH] userdb: reset errno before getpwent()
+
+errno handling for NSS is always a bit weird since NSS modules generally
+are not particularly careful with it. Hence let's initialize errno
+explicitly before we invoke getpwent() so that we know it's in a
+reasonable state afterwards on failure, or zero if not.
+
+We do this in most places we use NSS, including in userdb when it comes
+to getgrent(), just for getpwent() we don't so far. Address that.
+
+(cherry picked from commit 83e3b96d0a3b665b7b7a291500fa354a7760a917)
+---
+ src/shared/userdb.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index ff83d4bf90..29acebae19 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -773,6 +773,7 @@ int userdb_iterator_get(UserDBIterator *iterator, UserRecord **ret) {
+                 /* If NSS isn't covered elsewhere, let's iterate through it first, since it probably contains
+                  * the more traditional sources, which are probably good to show first. */
+ 
++                errno = 0;
+                 pw = getpwent();
+                 if (pw) {
+                         _cleanup_free_ char *buffer = NULL;

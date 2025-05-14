@@ -1,0 +1,59 @@
+From c4195568cc5571f7130df4809de8784b34b3121c Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 15 Jan 2025 12:58:36 +0100
+Subject: [PATCH] ci: Stop archiving packages
+
+This takes up a lot of storage space and we're almost hitting the
+limit so since nobody's actually using these and we just started
+doing nightly builds in OBS, let's drop this and point people towards
+OBS for nightly packages in the future.
+
+(cherry picked from commit e9b9fc080f0616d08269c7e5946d2f389dff83ec)
+---
+ .github/workflows/mkosi.yml | 12 ------------
+ docs/HACKING.md             | 12 ------------
+ 2 files changed, 24 deletions(-)
+
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 4c176e971f..6f87b76a6c 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -221,15 +221,3 @@ jobs:
+             build/test/journal/*.journal
+             build/meson-logs/*
+           retention-days: 7
+-
+-      - name: Archive packages
+-        uses: actions/upload-artifact@v4
+-        if: (success() || failure()) && (github.repository == 'systemd/systemd' || github.repository == 'systemd/systemd-stable')
+-        with:
+-          name: ci-mkosi-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.distro }}-${{ matrix.release }}-packages
+-          path: |
+-            build/mkosi.output/*.rpm
+-            build/mkosi.output/*.deb
+-            build/mkosi.output/*.ddeb
+-            build/mkosi.output/*.pkg.tar
+-          retention-days: 4
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index b6aeff11c3..fb9eea47f0 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -147,18 +147,6 @@ dnf downgrade "systemd*" # Fedora/CentOS
+ # TODO: Other distributions
+ ```
+ 
+-Additionally, for each pull request, the built distribution packages are
+-attached as CI artifacts to the pull request CI jobs, which means that users can
+-download and install them to test out if a pull request fixes the issue that
+-they reported. To download the packages from a pull request, click on the
+-`Checks` tab. Then click on the `mkosi` workflow in the list of workflows on the
+-left of the `Checks` page. Finally, scroll down to find the list of CI
+-artifacts. In this list of artifacts you can find artifacts containing
+-distribution packages. To install these, download the artifact which is a zip
+-archive, extract the zip archive to access the individual packages, and install
+-them with your package manager in the same way as described above for packages
+-that were built locally.
+-
+ ## Templating engines in .in files
+ 
+ Some source files are generated during build. We use two templating engines:

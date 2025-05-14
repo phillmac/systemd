@@ -1,0 +1,33 @@
+From 986e51805b0b8af92742e9d67719f3353616e89b Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Mon, 6 Jan 2025 10:45:21 +0000
+Subject: [PATCH] CI: add OBS workflow integration to build packages on push to
+ main
+
+When main is updated, packages for Arch/Debian/Ubuntu/SUSE will be built and published
+on OBS:
+
+https://download.opensuse.org/repositories/home:/bluca:/systemd/
+https://build.opensuse.org/project/show/home:bluca:systemd
+(cherry picked from commit 0b5f9269398d1422bb7ff3f928a4ffe67332ff63)
+---
+ .obs/workflows.yml | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+ create mode 100644 .obs/workflows.yml
+
+diff --git a/.obs/workflows.yml b/.obs/workflows.yml
+new file mode 100644
+index 0000000000..5e417f9398
+--- /dev/null
++++ b/.obs/workflows.yml
+@@ -0,0 +1,10 @@
++rebuild:
++  steps:
++    - trigger_services:
++        project: home:bluca:systemd
++        package: systemd
++  filters:
++    event: push
++    branches:
++      only:
++        - main

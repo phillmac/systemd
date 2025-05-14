@@ -1,0 +1,16 @@
+From 876ee10e0eb4bbb0920bdab7817a9f06cc34910f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Thu, 13 Feb 2025 18:48:27 +0100
+Subject: [PATCH] meson: bump version to 257.3
+
+---
+ meson.version | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.version b/meson.version
+index f813cadc5d..198eb843d0 100644
+--- a/meson.version
++++ b/meson.version
+@@ -1 +1 @@
+-257.2
++257.3

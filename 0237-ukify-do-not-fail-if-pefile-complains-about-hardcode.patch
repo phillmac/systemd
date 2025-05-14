@@ -1,0 +1,39 @@
+From 87224a2d4efa30b48407f71aad3ee2df591fe224 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 30 Jan 2025 01:19:59 +0000
+Subject: [PATCH] ukify: do not fail if pefile complains about hardcoded 256MB
+ limit
+
+pefile has an hardcoded limit to 256MB per section:
+
+https://github.com/erocarrera/pefile/issues/396
+
+When building an initrd with large firmware files and
+lots of kernel modules, this limit can be reached.
+Skip over those warnings.
+
+(cherry picked from commit 32caed550f5a81eb87d2e39bc83917df2898d844)
+---
+ src/ukify/ukify.py | 8 +++++++-
+ 1 file changed, 7 insertions(+), 1 deletion(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index 7a9f63e1d4..6ad4298ebe 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -892,8 +892,14 @@ def pe_add_sections(uki: UKI, output: str) -> None:
+     )
+     pe = pefile.PE(data=pe.write(), fast_load=True)
+ 
++    # pefile has an hardcoded limit of 256MB, which is not enough when building an initrd with large firmware
++    # files and all kernel modules. See: https://github.com/erocarrera/pefile/issues/396
+     warnings = pe.get_warnings()
+-    if warnings:
++    for w in warnings:
++        if 'VirtualSize is extremely large' in w:
++            continue
++        if 'VirtualAddress is beyond' in w:
++            continue
+         raise PEError(f'pefile warnings treated as errors: {warnings}')
+ 
+     security = pe.OPTIONAL_HEADER.DATA_DIRECTORY[pefile.DIRECTORY_ENTRY['IMAGE_DIRECTORY_ENTRY_SECURITY']]

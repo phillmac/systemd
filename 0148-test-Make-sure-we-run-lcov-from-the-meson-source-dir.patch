@@ -1,0 +1,36 @@
+From 030cf80fe55443e12d8ae34f44c2faf5991acf04 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 22 Jan 2025 14:55:45 +0100
+Subject: [PATCH] test: Make sure we run lcov from the meson source directory
+
+In ac75c5192797082c1965ab30be4711490f2937bc, we accidentally changed
+the working directory that the tools executed in the wrapper script
+are invoked in. This broke our invocations of lcov. Let's explicitly
+run those in the meson source directory again to fix the coverage
+workflow.
+
+(cherry picked from commit d3d501e94930c3865f13c881a23980941cce079f)
+---
+ test/integration-test-wrapper.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index cc6e9656fd..79348bbf62 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -326,6 +326,7 @@ def process_coverage(args: argparse.Namespace, summary: Summary, name: str, jour
+                     '--quiet',
+                 ],
+                 check=True,
++                cwd=os.fspath(args.meson_source_dir),
+             )  # fmt: skip
+ 
+             subprocess.run(
+@@ -338,6 +339,7 @@ def process_coverage(args: argparse.Namespace, summary: Summary, name: str, jour
+                     '--quiet',
+                 ],
+                 check=True,
++                cwd=os.fspath(args.meson_source_dir),
+             )  # fmt: skip
+ 
+             Path(f'{output}.new').unlink()

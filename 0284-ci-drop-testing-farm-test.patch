@@ -1,0 +1,29 @@
+From ee0b5e44b263718912a1cb8081f6b9127d10836a Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 16 Jan 2025 14:42:48 +0100
+Subject: [PATCH] ci: drop testing farm test
+
+Test doesn't work on source-git repos, so let's drop it.
+
+rhel-only: ci
+
+Related: RHEL-57603
+---
+ .packit.yml | 7 -------
+ 1 file changed, 7 deletions(-)
+
+diff --git a/.packit.yml b/.packit.yml
+index 9d6e6c1e4e..a5d9aca0e1 100644
+--- a/.packit.yml
++++ b/.packit.yml
+@@ -48,10 +48,3 @@ jobs:
+   - centos-stream-10-ppc64le
+   - centos-stream-10-s390x
+   - centos-stream-10-x86_64
+-
+-- job: tests
+-  trigger: pull_request
+-  fmf_path: test/fmf
+-  tmt_plan: ci
+-  targets:
+-  - centos-stream-10-x86_64

@@ -1,0 +1,39 @@
+From 6e50633c85c58faf3f247cdc21ea59edb888b5d0 Mon Sep 17 00:00:00 2001
+From: Lukas Nykryn <lnykryn@redhat.com>
+Date: Mon, 5 Sep 2016 12:47:09 +0200
+Subject: [PATCH] unit: don't add Requires for tmp.mount
+
+rhel-only: policy
+
+Related: RHEL-40924
+---
+ src/core/mount.c | 2 +-
+ src/core/unit.c  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/mount.c b/src/core/mount.c
+index 689ef5672d..f16e46e276 100644
+--- a/src/core/mount.c
++++ b/src/core/mount.c
+@@ -314,7 +314,7 @@ static int mount_add_mount_dependencies(Mount *m) {
+                         if (r < 0)
+                                 return r;
+ 
+-                        if (UNIT(m)->fragment_path) {
++                        if (UNIT(m)->fragment_path && !streq(UNIT(m)->id, "tmp.mount")) {
+                                 /* If we have fragment configuration, then make this dependency required/wanted */
+                                 r = unit_add_dependency(
+                                                 other,
+diff --git a/src/core/unit.c b/src/core/unit.c
+index 1a5fffcc15..ac893ac82a 100644
+--- a/src/core/unit.c
++++ b/src/core/unit.c
+@@ -1529,7 +1529,7 @@ static int unit_add_mount_dependencies(Unit *u) {
+                                         return r;
+                                 changed = changed || r > 0;
+ 
+-                                if (m->fragment_path) {
++                                if (m->fragment_path && !streq(m->id, "tmp.mount")) {
+                                         r = unit_add_dependency(
+                                                         u,
+                                                         unit_mount_dependency_type_to_dependency_type(t),

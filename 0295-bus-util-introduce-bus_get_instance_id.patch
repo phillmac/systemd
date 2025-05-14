@@ -1,0 +1,58 @@
+From e92f809870c24f13eee4dbf50d0725eab9c8d8ea Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Mon, 13 Jan 2025 16:42:34 +0100
+Subject: [PATCH] bus-util: introduce bus_get_instance_id()
+
+(cherry picked from commit a9a8d2e12fe01b928135895f00c5bca465b7d13b)
+
+Resolves: RHEL-73780
+---
+ src/shared/bus-util.c | 23 +++++++++++++++++++++++
+ src/shared/bus-util.h |  2 ++
+ 2 files changed, 25 insertions(+)
+
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index 1fda013697..8eb3fbbf54 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -905,6 +905,29 @@ int bus_query_sender_pidref(
+         return bus_creds_get_pidref(creds, ret);
+ }
+ 
++int bus_get_instance_id(sd_bus *bus, sd_id128_t *ret) {
++        _cleanup_(sd_bus_message_unrefp) sd_bus_message *reply = NULL;
++        int r;
++
++        assert(bus);
++        assert(ret);
++
++        r = sd_bus_call_method(bus,
++                               "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus", "GetId",
++                               /* error = */ NULL, &reply,
++                               NULL);
++        if (r < 0)
++                return r;
++
++        const char *id;
++
++        r = sd_bus_message_read_basic(reply, 's', &id);
++        if (r < 0)
++                return r;
++
++        return sd_id128_from_string(id, ret);
++}
++
+ static const char* const bus_transport_table[] = {
+         [BUS_TRANSPORT_LOCAL]   = "local",
+         [BUS_TRANSPORT_REMOTE]  = "remote",
+diff --git a/src/shared/bus-util.h b/src/shared/bus-util.h
+index e49ba66a10..fe85d815b8 100644
+--- a/src/shared/bus-util.h
++++ b/src/shared/bus-util.h
+@@ -78,4 +78,6 @@ int bus_register_malloc_status(sd_bus *bus, const char *destination);
+ int bus_creds_get_pidref(sd_bus_creds *c, PidRef *ret);
+ int bus_query_sender_pidref(sd_bus_message *m, PidRef *ret);
+ 
++int bus_get_instance_id(sd_bus *bus, sd_id128_t *ret);
++
+ const char* bus_transport_to_string(BusTransport transport) _const_;

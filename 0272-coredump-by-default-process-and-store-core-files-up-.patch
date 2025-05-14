@@ -1,0 +1,30 @@
+From 733ed7a01bcb70f20d535f914cc11fbd4149a676 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Fri, 5 Apr 2024 15:56:58 +0200
+Subject: [PATCH] coredump: by default process and store core files up to 1GiB
+
+This brings policy inline with RHEL-9.
+
+rhel-only: policy
+
+Related: RHEL-46778
+---
+ src/coredump/coredump.conf | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/coredump/coredump.conf b/src/coredump/coredump.conf
+index 181aede9da..1a65655fda 100644
+--- a/src/coredump/coredump.conf
++++ b/src/coredump/coredump.conf
+@@ -19,9 +19,8 @@
+ [Coredump]
+ #Storage=external
+ #Compress=yes
+-# On 32-bit, the default is 1G instead of 32G.
+-#ProcessSizeMax=32G
+-#ExternalSizeMax=32G
++ProcessSizeMax=1G
++ExternalSizeMax=1G
+ #JournalSizeMax=767M
+ #MaxUse=
+ #KeepFree=

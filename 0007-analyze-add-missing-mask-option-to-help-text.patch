@@ -1,0 +1,24 @@
+From bbeb07ad24f5a4e2e391dc761fa05f3b39b29077 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 11 Dec 2024 10:31:58 +0100
+Subject: [PATCH] analyze: add missing --mask option to --help text
+
+Follow-up for: 3e7a029c2856e7814b930443cc2d4fb089377592
+
+(cherry picked from commit 4d09f976f6c10729619c7f4c87dd121aa34d019b)
+---
+ src/analyze/analyze.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/analyze/analyze.c b/src/analyze/analyze.c
+index 0db3547a49..e21f12c65e 100644
+--- a/src/analyze/analyze.c
++++ b/src/analyze/analyze.c
+@@ -284,6 +284,7 @@ static int help(int argc, char *argv[], void *userdata) {
+                "     --root=PATH             Operate on an alternate filesystem root\n"
+                "     --image=PATH            Operate on disk image as filesystem root\n"
+                "     --image-policy=POLICY   Specify disk image dissection policy\n"
++               "  -m --mask                  Parse parameter as numeric capability mask\n"
+                "\nSee the %2$s for details.\n",
+                program_invocation_short_name,
+                link,

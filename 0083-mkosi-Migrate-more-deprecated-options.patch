@@ -1,0 +1,63 @@
+From d9bf9ede93027aaeb2726b359b12838e0b617528 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 6 Jan 2025 12:07:53 +0100
+Subject: [PATCH] mkosi: Migrate more deprecated options
+
+(cherry picked from commit 28baef47a3098bd82b27c0a629df6c5f885693e7)
+---
+ .github/workflows/coverage.yml   | 2 +-
+ .github/workflows/mkosi.yml      | 2 +-
+ test/integration-test-wrapper.py | 7 +++----
+ 3 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index cea1e84af2..e678283143 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -64,7 +64,7 @@ jobs:
+                   COVERAGE=1
+ 
+           [Runtime]
+-          QemuMem=4G
++          RAM=4G
+           EOF
+ 
+       - name: Generate secure boot key
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 873ed589b6..d4b37f72b0 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -171,7 +171,7 @@ jobs:
+           SELinuxRelabel=${{ matrix.relabel }}
+ 
+           [Runtime]
+-          QemuMem=4G
++          RAM=4G
+           EOF
+ 
+       - name: Generate secure boot key
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index d44e8f8bd6..ef6df8840f 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -479,9 +479,8 @@ def main() -> None:
+         '--runtime-network=none',
+         '--runtime-scratch=no',
+         *args.mkosi_args,
+-        '--qemu-firmware',
+-        args.firmware,
+-        *(['--qemu-kvm', 'no'] if int(os.getenv('TEST_NO_KVM', '0')) else []),
++        '--firmware', args.firmware,
++        *(['--kvm', 'no'] if int(os.getenv('TEST_NO_KVM', '0')) else []),
+         '--kernel-command-line-extra',
+         ' '.join(
+             [
+@@ -504,7 +503,7 @@ def main() -> None:
+         ),
+         '--credential', f"journal.storage={'persistent' if sys.stderr.isatty() else args.storage}",
+         *(['--runtime-build-sources=no'] if not sys.stderr.isatty() else []),
+-        'qemu' if args.vm or os.getuid() != 0 or os.getenv('TEST_PREFER_QEMU', '0') == '1' else 'boot',
++        'vm' if args.vm or os.getuid() != 0 or os.getenv('TEST_PREFER_QEMU', '0') == '1' else 'boot',
+     ]  # fmt: skip
+ 
+     result = subprocess.run(cmd)

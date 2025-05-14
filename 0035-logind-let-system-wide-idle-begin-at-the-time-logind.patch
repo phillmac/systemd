@@ -1,0 +1,67 @@
+From 9d36809256c6d92c6d8358769479ad2c2b695664 Mon Sep 17 00:00:00 2001
+From: Florian Schmaus <flo@geekplace.eu>
+Date: Sat, 16 Nov 2024 10:29:35 +0100
+Subject: [PATCH] logind: let system-wide idle begin at the time logind was
+ initialized
+
+Initialize the start of the system-wide idle time with the time logind was
+initialized and not with the start of the Unix epoch. This means that systemd
+will not repport a unreasonable long idle time (around 54 years at the time of
+writing this), especially at in the early boot, while no login manager session,
+e.g,. gdm, had a chance to provide a more accurate start of the idle period.
+
+Fixes #35163
+
+(cherry picked from commit 718b31138b9a93f262259f297ad6b521454decc6)
+---
+ src/login/logind-core.c | 6 +++++-
+ src/login/logind.c      | 2 ++
+ src/login/logind.h      | 2 ++
+ 3 files changed, 9 insertions(+), 1 deletion(-)
+
+diff --git a/src/login/logind-core.c b/src/login/logind-core.c
+index fad276f195..9892285805 100644
+--- a/src/login/logind-core.c
++++ b/src/login/logind-core.c
+@@ -407,10 +407,14 @@ int manager_get_user_by_pid(Manager *m, pid_t pid, User **ret) {
+ int manager_get_idle_hint(Manager *m, dual_timestamp *t) {
+         Session *s;
+         bool idle_hint;
+-        dual_timestamp ts = DUAL_TIMESTAMP_NULL;
++        dual_timestamp ts;
+ 
+         assert(m);
+ 
++        /* Initialize the baseline timestamp with the time the manager got initialized to avoid reporting
++         * unreasonable large idle periods starting with the Unix epoch. */
++        ts = m->init_ts;
++
+         idle_hint = !manager_is_inhibited(m, INHIBIT_IDLE, /* block= */ true, t, false, false, 0, NULL);
+ 
+         HASHMAP_FOREACH(s, m->sessions) {
+diff --git a/src/login/logind.c b/src/login/logind.c
+index f88a2004fd..8dc1781edf 100644
+--- a/src/login/logind.c
++++ b/src/login/logind.c
+@@ -100,6 +100,8 @@ static int manager_new(Manager **ret) {
+ 
+         (void) sd_event_set_watchdog(m->event, true);
+ 
++        dual_timestamp_now(&m->init_ts);
++
+         manager_reset_config(m);
+ 
+         *ret = TAKE_PTR(m);
+diff --git a/src/login/logind.h b/src/login/logind.h
+index 1e17b610bc..ce7e76e761 100644
+--- a/src/login/logind.h
++++ b/src/login/logind.h
+@@ -145,6 +145,8 @@ struct Manager {
+         struct stat efi_loader_entry_one_shot_stat;
+ 
+         CalendarSpec *maintenance_time;
++
++        dual_timestamp init_ts;
+ };
+ 
+ void manager_reset_config(Manager *m);

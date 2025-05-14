@@ -1,0 +1,144 @@
+From dd5c8cacbdc9ce7e5f678a963c92d68e9fe88879 Mon Sep 17 00:00:00 2001
+From: Antonio Alvarez Feijoo <antonio.feijoo@suse.com>
+Date: Mon, 30 Dec 2024 17:39:16 +0100
+Subject: [PATCH] mkosi: switch to github mirror of openSUSE sources from
+ build.opensuse.org
+
+The current src.opensuse.org is very unstable and commit hashes are reset (or
+even removed) every now and then. While the official repo is not fixed, let's
+move to a more stable source, the github mirror of code.opensuse.org, maintained
+since 2019.
+
+(cherry picked from commit 07638ce2a46c99300e21d7b54e9404fdce488d53)
+---
+ .../mkosi.conf.d/opensuse/mkosi.build.chroot     | 16 ++++++++--------
+ .../build/mkosi.conf.d/opensuse/mkosi.conf       |  7 ++++---
+ .../build/mkosi.conf.d/opensuse/mkosi.prepare    | 14 +++++++-------
+ 3 files changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+index c9089b78c4..8c4fb9bd6f 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+@@ -4,8 +4,8 @@ set -e
+ 
+ . mkosi.functions
+ 
+-if [[ ! -f "pkg/$PKG_SUBDIR/systemd.spec" ]]; then
+-    echo "spec not found at pkg/$PKG_SUBDIR/systemd.spec, run mkosi once with -ff to make sure the spec is cloned" >&2
++if [[ ! -f "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec" ]]; then
++    echo "spec not found at pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec, run mkosi once with -ff to make sure the spec is cloned" >&2
+     exit 1
+ fi
+ 
+@@ -14,7 +14,7 @@ TS="${SOURCE_DATE_EPOCH:-$(date +%s)}"
+ # The openSUSE filelists hardcode the manpage compression extension. This causes rpmbuild errors since we
+ # disable manpage compression as the files cannot be found. Fix the issue by removing the compression
+ # extension.
+-find "pkg/$PKG_SUBDIR" -name "files.*" -exec sed --in-place 's/\.gz$//' {} \;
++find "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}" -name "files.*" -exec sed --in-place 's/\.gz$//' {} \;
+ 
+ if [[ "$(rpm --eval "%{lua:print(rpm.vercmp('$(rpm --version | cut -d ' ' -f3)', '4.20'))}")" == "-1" ]]; then
+     # Fix the %install override so debuginfo packages are generated.
+@@ -58,10 +58,10 @@ if ((COVERAGE)); then
+ fi
+ 
+ # TODO: Drop when the spec is fixed (either the patch is adapted or not applied when building for upstream).
+-sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR/systemd.spec"
++sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
+ # TODO: Drop when the opensuse spec uses README.md instead of README.testsuite.
+-sed --in-place 's/README.testsuite/README.md/' "pkg/$PKG_SUBDIR/systemd.spec"
++sed --in-place 's/README.testsuite/README.md/' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
+ build() {
+     IFS=
+@@ -81,7 +81,7 @@ build() {
+         --with upstream \
+         $( ((WITH_TESTS)) || echo "--nocheck") \
+         --define "_topdir /var/tmp" \
+-        --define "_sourcedir $PWD/pkg/$PKG_SUBDIR" \
++        --define "_sourcedir $PWD/pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}" \
+         --define "_rpmdir $BUILDDIR" \
+         ${BUILDDIR:+"--define=_vpath_builddir $BUILDDIR"} \
+         --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+@@ -103,7 +103,7 @@ build() {
+         --define "_find_debuginfo_opts --unique-debug-src-base \"%{name}\"" \
+         --noclean \
+         "$@" \
+-        "pkg/$PKG_SUBDIR/systemd.spec"
++        "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
+     EXIT_STATUS=$?
+ 
+@@ -127,7 +127,7 @@ if ! build; then
+     # warnings.
+     rm systemd.lang
+ 
+-    grep -v ".debug" /tmp/unpackaged-files >>"pkg/$PKG_SUBDIR/files.systemd"
++    grep -v ".debug" /tmp/unpackaged-files >>"pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/files.systemd"
+     build --noprep --nocheck
+ fi
+ 
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+index 4e83002c91..a374207e4d 100644
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+@@ -5,9 +5,10 @@ Distribution=opensuse
+ 
+ [Build]
+ Environment=
+-        GIT_URL=https://src.opensuse.org/pool/systemd
+-        GIT_BRANCH=devel
+-        GIT_COMMIT=cfdec97b3a3d459b1a74a6be33372fed9558fe6d5bef4ece4d7fb94905057c75
++        GIT_URL=https://github.com/bmwiedemann/openSUSE
++        GIT_SUBDIR=packages/s/systemd
++        GIT_BRANCH=master
++        GIT_COMMIT=1477f2646dd26ee3b166f26bd380a173fb649939
+         PKG_SUBDIR=opensuse
+ 
+ [Content]
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.prepare b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.prepare
+index c4a9580715..de736a570f 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.prepare
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.prepare
+@@ -6,13 +6,13 @@ if [[ "$1" == "build" ]]; then
+     exit 0
+ fi
+ 
+-if [[ ! -f "pkg/$PKG_SUBDIR/systemd.spec" ]]; then
+-    echo "spec not found at pkg/$PKG_SUBDIR/systemd.spec, run mkosi once with -ff to make sure the spec is cloned" >&2
++if [[ ! -f "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec" ]]; then
++    echo "spec not found at pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec, run mkosi once with -ff to make sure the spec is cloned" >&2
+     exit 1
+ fi
+ 
+ # TODO: Drop when the spec is fixed (either the patch is adapted or not applied when building for upstream).
+-sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR/systemd.spec"
++sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
+ mkosi-chroot \
+     rpmspec \
+@@ -20,8 +20,8 @@ mkosi-chroot \
+     --query \
+     --buildrequires \
+     --define "_topdir /var/tmp" \
+-    --define "_sourcedir $PWD/pkg/$PKG_SUBDIR" \
+-    "pkg/$PKG_SUBDIR/systemd.spec" |
++    --define "_sourcedir $PWD/pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}" \
++    "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec" |
+         grep --invert-match --regexp systemd --regexp /bin/sh --regexp "rpmlib(" --regexp udev |
+         sort --unique |
+         tee /tmp/buildrequires |
+@@ -34,9 +34,9 @@ until mkosi-chroot \
+     --build-in-place \
+     --with upstream \
+     --define "_topdir /var/tmp" \
+-    --define "_sourcedir $PWD/pkg/$PKG_SUBDIR" \
++    --define "_sourcedir $PWD/pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}" \
+     --define "_build_name_fmt %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
+-    "pkg/$PKG_SUBDIR/systemd.spec"
++    "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ do
+     EXIT_STATUS=$?
+     if [[ $EXIT_STATUS -ne 11 ]]; then

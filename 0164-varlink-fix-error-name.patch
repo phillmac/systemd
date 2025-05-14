@@ -1,0 +1,36 @@
+From d912615408d4fb351a6add62b40cfa511e2e760a Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 21 Jan 2025 18:34:21 +0100
+Subject: [PATCH] varlink: fix error name
+
+The documentation and code agree on the same name, since always, but
+when I put together the IDL I made a mistake and insert a "Not" that
+wasn't supposed to be there.
+
+Let's correct that.
+
+(cherry picked from commit bd9553d6775a954704f0e37bf3b54b98212f4b0f)
+---
+ src/shared/varlink-io.systemd.UserDatabase.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/shared/varlink-io.systemd.UserDatabase.c b/src/shared/varlink-io.systemd.UserDatabase.c
+index 3dc72c0257..a9484484e3 100644
+--- a/src/shared/varlink-io.systemd.UserDatabase.c
++++ b/src/shared/varlink-io.systemd.UserDatabase.c
+@@ -32,7 +32,7 @@ static SD_VARLINK_DEFINE_METHOD_FULL(
+ static SD_VARLINK_DEFINE_ERROR(NoRecordFound);
+ static SD_VARLINK_DEFINE_ERROR(BadService);
+ static SD_VARLINK_DEFINE_ERROR(ServiceNotAvailable);
+-static SD_VARLINK_DEFINE_ERROR(ConflictingRecordNotFound);
++static SD_VARLINK_DEFINE_ERROR(ConflictingRecordFound);
+ static SD_VARLINK_DEFINE_ERROR(EnumerationNotSupported);
+ 
+ /* As per https://systemd.io/USER_GROUP_API/ */
+@@ -45,5 +45,5 @@ SD_VARLINK_DEFINE_INTERFACE(
+                 &vl_error_NoRecordFound,
+                 &vl_error_BadService,
+                 &vl_error_ServiceNotAvailable,
+-                &vl_error_ConflictingRecordNotFound,
++                &vl_error_ConflictingRecordFound,
+                 &vl_error_EnumerationNotSupported);

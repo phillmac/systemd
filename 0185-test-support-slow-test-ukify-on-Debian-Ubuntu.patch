@@ -1,0 +1,25 @@
+From 534b837ba8c796f61743f99e147be5769603ae13 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sun, 26 Jan 2025 17:35:06 +0000
+Subject: [PATCH] test: support slow test-ukify on Debian/Ubuntu
+
+Kernels are installed in /boot/ so find them there too
+
+(cherry picked from commit 25a253084a16dcc077592ff85d62f69fa940d1de)
+---
+ src/ukify/test/test_ukify.py | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/ukify/test/test_ukify.py b/src/ukify/test/test_ukify.py
+index 6c427623ea..61d465fca1 100755
+--- a/src/ukify/test/test_ukify.py
++++ b/src/ukify/test/test_ukify.py
+@@ -408,6 +408,8 @@ def test_help_error(capsys):
+ @pytest.fixture(scope='session')
+ def kernel_initrd():
+     items = sorted(glob.glob('/lib/modules/*/vmlinuz'))
++    if not items:
++        items = sorted(glob.glob('/boot/vmlinuz*'))
+     if not items:
+         return None
+ 

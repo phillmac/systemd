@@ -1,0 +1,25 @@
+From dc979fd773a9c8a35845a319477cba23d56ec06e Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 27 Jan 2025 11:26:29 +0100
+Subject: [PATCH] mkosi: Bump minimum version to 25
+
+Let's require everyone to be on the now officially released mkosi 25.
+
+(cherry picked from commit e9fb163857223da6ea020b0bfd12581e9ea707ae)
+---
+ mkosi.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.conf b/mkosi.conf
+index 559901dfff..63d36710ac 100644
+--- a/mkosi.conf
++++ b/mkosi.conf
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
+ [Config]
+-MinimumVersion=25~devel
++MinimumVersion=25
+ Dependencies=
+         exitrd
+         initrd

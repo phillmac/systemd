@@ -1,0 +1,24 @@
+From 3dbbf85013040972df4974b7a24b1b603fd5bdea Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 14 Jan 2025 09:52:40 +0100
+Subject: [PATCH] test: Only move journal file if we didn't just unlink it
+
+(cherry picked from commit 1d77ac19cfa1c9b194d7e9805430ab6fd38ba97e)
+---
+ test/integration-test-wrapper.py | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index 5321faef57..a7bf5ea606 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -556,8 +556,7 @@ def main() -> None:
+         and not sanitizer
+     ):
+         journal_file.unlink(missing_ok=True)
+-
+-    if os.getenv('TEST_JOURNAL_USE_TMP', '0') == '1':
++    elif os.getenv('TEST_JOURNAL_USE_TMP', '0') == '1':
+         dst = args.meson_build_dir / f'test/journal/{name}.journal'
+         dst.parent.mkdir(parents=True, exist_ok=True)
+         shutil.move(journal_file, dst)

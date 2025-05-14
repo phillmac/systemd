@@ -1,0 +1,28 @@
+From ab003df561f93b2d765e2e060a76187967c0ff57 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 24 Jan 2025 23:37:33 +0000
+Subject: [PATCH] man: fix reference to non-existing ukify parameter
+
+The --extend parameter was removed by https://github.com/systemd/systemd/pull/34608
+and a --join-profile was added instead, fix leftover reference in manpage
+
+Follow-up for 3891d57c4f768cb648e1a85483216eadae0b101e
+
+(cherry picked from commit fd39606c258789d63a345feb6b492f6d2944d9a6)
+---
+ man/ukify.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/ukify.xml b/man/ukify.xml
+index c3b8d920d1..fc68d83772 100644
+--- a/man/ukify.xml
++++ b/man/ukify.xml
+@@ -453,7 +453,7 @@
+ 
+           <listitem><para>A path to a UKI profile to place in an <literal>.profile</literal> section. This
+           option is useful for creating multi-profile UKIs, and is typically used in combination with
+-          <option>--extend=</option>, to extend the specified UKI with an additional profile.</para>
++          <option>--join-profile=</option>, to extend the specified UKI with an additional profile.</para>
+ 
+           <xi:include href="version-info.xml" xpointer="v257"/></listitem>
+         </varlistentry>

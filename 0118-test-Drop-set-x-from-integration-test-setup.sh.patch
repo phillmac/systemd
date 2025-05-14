@@ -1,0 +1,22 @@
+From 16ae6d001d3875352bf2f219df4940c373dec42b Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 9 Jan 2025 11:27:51 +0100
+Subject: [PATCH] test: Drop set -x from integration-test-setup.sh
+
+(cherry picked from commit 90538ede55ac9d40dc513f64f052c687672cae89)
+---
+ test/integration-test-setup.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/integration-test-setup.sh b/test/integration-test-setup.sh
+index d7c384a97c..c67f938acf 100755
+--- a/test/integration-test-setup.sh
++++ b/test/integration-test-setup.sh
+@@ -1,6 +1,6 @@
+ #!/usr/bin/env bash
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+-set -eux
++set -eu
+ set -o pipefail
+ 
+ case "$1" in

@@ -1,0 +1,53 @@
+From a86ee384de6953b4bfdfd37e083887959d74e9ae Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Wed, 1 Aug 2018 10:58:28 +0200
+Subject: [PATCH] logind: set RemoveIPC to false by default
+
+RHEL-only: bugfix
+
+Related: RHEL-40924
+---
+ man/logind.conf.xml      | 2 +-
+ src/login/logind-core.c  | 2 +-
+ src/login/logind.conf.in | 2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/man/logind.conf.xml b/man/logind.conf.xml
+index 66240b58fe..3265b134e0 100644
+--- a/man/logind.conf.xml
++++ b/man/logind.conf.xml
+@@ -376,7 +376,7 @@
+         user fully logs out. Takes a boolean argument. If enabled, the user may not consume IPC resources after the
+         last of the user's sessions terminated. This covers System V semaphores, shared memory and message queues, as
+         well as POSIX shared memory and message queues. Note that IPC objects of the root user and other system users
+-        are excluded from the effect of this setting. Defaults to <literal>yes</literal>.</para>
++        are excluded from the effect of this setting. Defaults to <literal>no</literal>.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v212"/></listitem>
+       </varlistentry>
+diff --git a/src/login/logind-core.c b/src/login/logind-core.c
+index 9892285805..197b1e8cd2 100644
+--- a/src/login/logind-core.c
++++ b/src/login/logind-core.c
+@@ -36,7 +36,7 @@ void manager_reset_config(Manager *m) {
+ 
+         m->n_autovts = 6;
+         m->reserve_vt = 6;
+-        m->remove_ipc = true;
++        m->remove_ipc = false;
+         m->inhibit_delay_max = 5 * USEC_PER_SEC;
+         m->user_stop_delay = 10 * USEC_PER_SEC;
+ 
+diff --git a/src/login/logind.conf.in b/src/login/logind.conf.in
+index 2e06b9a050..d6f6938867 100644
+--- a/src/login/logind.conf.in
++++ b/src/login/logind.conf.in
+@@ -47,7 +47,7 @@
+ #IdleActionSec=30min
+ #RuntimeDirectorySize=10%
+ #RuntimeDirectoryInodesMax=
+-#RemoveIPC=yes
++#RemoveIPC=no
+ #InhibitorsMax=8192
+ #SessionsMax=8192
+ #StopIdleSessionSec=infinity

@@ -1,0 +1,25 @@
+From 7eba6cdd2f1cf507c3308d4ea9f6d89e67faf35f Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 19 Dec 2024 11:45:43 +0000
+Subject: [PATCH] mkosi: switch debian/ubuntu to ci/v257-stable branch
+
+Packaging has diverged from main due to new files
+---
+ mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
+index 6914a9ed59..321dc5422f 100644
+--- a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
+@@ -8,8 +8,8 @@ Distribution=|ubuntu
+ Environment=
+         GIT_URL=https://salsa.debian.org/systemd-team/systemd.git
+         GIT_SUBDIR=debian
+-        GIT_BRANCH=debian/master
+-        GIT_COMMIT=e8b7c9a4dda2888fec41ac020e1194cfdf57eb5d
++        GIT_BRANCH=ci/v257-stable
++        GIT_COMMIT=20150867b7123aa825e3320227aed642e6cc9a08
+         PKG_SUBDIR=debian
+ 
+ [Content]

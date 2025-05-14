@@ -1,0 +1,27 @@
+From 6e8f67eac6a3c7b159559f21e2146fce608d483e Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Sun, 9 Feb 2025 23:21:08 +0100
+Subject: [PATCH] bootctl: also shown whether stub loader partition data was
+ passed
+
+Let's make the stub and loader output sections more alike, and say in
+both cases whether we recieved that data from the boot phase or not the
+same way.
+
+(cherry picked from commit 26bfd97216ab55664214d1e0fac7065e5573a36b)
+---
+ src/bootctl/bootctl-status.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/bootctl/bootctl-status.c b/src/bootctl/bootctl-status.c
+index 3b46632b92..9a4c233581 100644
+--- a/src/bootctl/bootctl-status.c
++++ b/src/bootctl/bootctl-status.c
+@@ -508,6 +508,7 @@ int verb_status(int argc, char *argv[], void *userdata) {
+ 
+                         sd_id128_t stub_partition_uuid = SD_ID128_NULL;
+                         (void) efi_stub_get_device_part_uuid(&stub_partition_uuid);
++                        print_yes_no_line(/* first= */ false, !sd_id128_is_null(stub_partition_uuid), "Stub loader set partition information");
+ 
+                         if (!sd_id128_is_null(stub_partition_uuid)) {
+                                 if (!(!sd_id128_is_null(esp_uuid) && sd_id128_equal(esp_uuid, stub_partition_uuid)) &&

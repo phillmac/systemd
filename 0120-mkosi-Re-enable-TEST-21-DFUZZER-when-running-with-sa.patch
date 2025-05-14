@@ -1,0 +1,93 @@
+From 13f4c782dd5bc2e6b7d852869b590122b7ad301c Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 7 Jan 2025 15:01:02 +0100
+Subject: [PATCH] mkosi: Re-enable TEST-21-DFUZZER when running with sanitizers
+
+Similar to how CentOS CI did it previously, let's only run
+TEST-21-DFUZZER when built with sanitizers for maximum effect.
+
+(cherry picked from commit 103e92810a4bd3f01d2a49d85ef9575d60a8d244)
+---
+ .github/workflows/mkosi.yml      | 8 ++++++++
+ test/TEST-21-DFUZZER/meson.build | 1 -
+ 2 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index a043022ce0..592ed41051 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -61,6 +61,7 @@ jobs:
+             cflags: "-O2 -D_FORTIFY_SOURCE=3"
+             relabel: no
+             vm: 1
++            skip: TEST-21-DFUZZER
+           - distro: debian
+             release: testing
+             sanitizers: ""
+@@ -68,6 +69,7 @@ jobs:
+             cflags: "-Og"
+             relabel: no
+             vm: 0
++            skip: TEST-21-DFUZZER
+           - distro: ubuntu
+             release: noble
+             sanitizers: ""
+@@ -75,6 +77,7 @@ jobs:
+             cflags: "-Og"
+             relabel: no
+             vm: 0
++            skip: TEST-21-DFUZZER
+           - distro: fedora
+             release: "41"
+             sanitizers: ""
+@@ -82,6 +85,7 @@ jobs:
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
++            skip: TEST-21-DFUZZER
+           - distro: fedora
+             release: rawhide
+             sanitizers: address,undefined
+@@ -96,6 +100,7 @@ jobs:
+             cflags: "-Og"
+             relabel: no
+             vm: 0
++            skip: TEST-21-DFUZZER
+           - distro: centos
+             release: "9"
+             sanitizers: ""
+@@ -103,6 +108,7 @@ jobs:
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
++            skip: TEST-21-DFUZZER
+           - distro: centos
+             release: "10"
+             sanitizers: ""
+@@ -110,6 +116,7 @@ jobs:
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
++            skip: TEST-21-DFUZZER
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+@@ -195,6 +202,7 @@ jobs:
+             mkosi sandbox \
+             env \
+             TEST_PREFER_QEMU=${{ matrix.vm }} \
++            TEST_SKIP=${{ matrix.skip }} \
+             meson test \
+             -C build \
+             --no-rebuild \
+diff --git a/test/TEST-21-DFUZZER/meson.build b/test/TEST-21-DFUZZER/meson.build
+index f57be63380..932f0c5f0e 100644
+--- a/test/TEST-21-DFUZZER/meson.build
++++ b/test/TEST-21-DFUZZER/meson.build
+@@ -6,6 +6,5 @@ integration_tests += [
+                 'timeout' : 3600,
+                 'priority' : 50,
+                 'vm' : true,
+-                'enabled' : false,
+         },
+ ]

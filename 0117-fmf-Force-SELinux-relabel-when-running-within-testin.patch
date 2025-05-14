@@ -1,0 +1,27 @@
+From 93efcc17c66fcb80c1d81d262878e780bc8f4fbe Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 16:03:06 +0100
+Subject: [PATCH] fmf: Force SELinux relabel when running within testing farm
+
+We expect to run as root within testing farm and to have permissions
+to do selinux relabelling so let's enable it explicitly.
+
+(cherry picked from commit e1c883bf32f3922bfc977701062e353c0a0a4ac5)
+---
+ test/fmf/integration-tests/test.sh | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index fccfa15c72..8cea79cf30 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -78,6 +78,9 @@ fi
+ 
+ if [[ -n "${TESTING_FARM_REQUEST_ID:-}" ]]; then
+     tee --append mkosi.local.conf <<EOF
++[Content]
++SELinuxRelabel=yes
++
+ [Build]
+ ToolsTreeSandboxTrees=
+         /etc/yum.repos.d/:/etc/yum.repos.d/

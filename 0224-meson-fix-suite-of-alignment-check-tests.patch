@@ -1,0 +1,30 @@
+From 11c7f32dfb4807e1aaf84362016c2da4dba3b204 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 8 Feb 2025 02:20:02 +0900
+Subject: [PATCH] meson: fix suite of alignment check tests
+
+Follow-up for 97318131fd06a5bc35454da81dcbbc84f16d9940.
+
+By default, suite of each built test is determined by the directory of
+the source file. Hence, before the mentioned commit, all tests in
+src/boot/efi/ are in the 'efi' suite. The commit changed the directory
+tree, but forgot to update the name of the test suite.
+
+(cherry picked from commit 576e98a72c2f6b0145c63c3f3fec1b9194a60539)
+---
+ src/boot/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/boot/meson.build b/src/boot/meson.build
+index 29c5455dbd..9370274d96 100644
+--- a/src/boot/meson.build
++++ b/src/boot/meson.build
+@@ -424,7 +424,7 @@ foreach efi_elf_binary : efi_elf_binaries
+         test('check-alignment-@0@'.format(name),
+              check_efi_alignment_py,
+              args : exe.full_path(),
+-             suite : 'efi')
++             suite : 'boot')
+ endforeach
+ 
+ alias_target('systemd-boot', boot_targets)

@@ -1,0 +1,22 @@
+From 0fd88aa06db2982be08817d7b9e461141ef9b5b7 Mon Sep 17 00:00:00 2001
+From: David Tardon <dtardon@redhat.com>
+Date: Thu, 5 Aug 2021 15:26:13 +0200
+Subject: [PATCH] journald.conf: don't touch current audit settings
+
+RHEL-only: policy
+
+Related: RHEL-40924
+---
+ src/journal/journald.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/journal/journald.conf b/src/journal/journald.conf
+index 9a12ca7657..fe519f03e2 100644
+--- a/src/journal/journald.conf
++++ b/src/journal/journald.conf
+@@ -47,4 +47,4 @@
+ #MaxLevelSocket=debug
+ #LineMax=48K
+ #ReadKMsg=yes
+-#Audit=yes
++Audit=

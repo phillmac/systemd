@@ -1,0 +1,36 @@
+From c026cecac33c3b19b1a466304058eb0f7f71187b Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 11 Dec 2024 13:40:10 +0000
+Subject: [PATCH] test-fd-util: compare FDs to /bin/sh instead of /dev/null
+
+/dev/null is a character device, so same_fd() in the fallback path
+that compares fstat will fail, as that bails out if the fd refers
+to a char device. This happens on kernels without F_DUPFD_QUERY and
+without kcmp.
+
+/* test_same_fd */
+Assertion 'same_fd(d, e) > 0' failed at src/test/test-fd-util.c:111, function test_same_fd(). Aborting.
+
+Fixes #35552
+
+(cherry picked from commit 3b32d333e88f2a66651d58e32e01599fa84c3d19)
+---
+ src/test/test-fd-util.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/test/test-fd-util.c b/src/test/test-fd-util.c
+index 5817d92725..a359efa052 100644
+--- a/src/test/test-fd-util.c
++++ b/src/test/test-fd-util.c
+@@ -76,9 +76,9 @@ TEST(same_fd) {
+ 
+         assert_se(pipe2(p, O_CLOEXEC) >= 0);
+         assert_se((a = fcntl(p[0], F_DUPFD, 3)) >= 0);
+-        assert_se((b = open("/dev/null", O_RDONLY|O_CLOEXEC)) >= 0);
++        assert_se((b = open("/bin/sh", O_RDONLY|O_CLOEXEC)) >= 0);
+         assert_se((c = fcntl(a, F_DUPFD, 3)) >= 0);
+-        assert_se((d = open("/dev/null", O_RDONLY|O_CLOEXEC|O_PATH)) >= 0); /* O_PATH changes error returns in F_DUPFD_QUERY, let's test explicitly */
++        assert_se((d = open("/bin/sh", O_RDONLY|O_CLOEXEC|O_PATH)) >= 0); /* O_PATH changes error returns in F_DUPFD_QUERY, let's test explicitly */
+         assert_se((e = fcntl(d, F_DUPFD, 3)) >= 0);
+ 
+         assert_se(same_fd(p[0], p[0]) > 0);

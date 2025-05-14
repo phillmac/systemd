@@ -1,0 +1,72 @@
+From 7713732dfd1f59d55e1e7e02b48f224ea672eda9 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 10 Jan 2025 14:27:33 +0100
+Subject: [PATCH] test: Add option to save in progress test journals to /tmp
+
+The journal isn't the best at being fast, especially when writing
+to disk and not to memory, which can cause integration tests to
+grind to a halt on beefy systems due to all the systemd-journal-remote
+instances not being able to write journal entries to disk fast enough.
+
+Let's introduce an option to allow writing in progress test journals
+to use /tmp which can be used on beefy systems with lots of memory to
+speed things up.
+
+(cherry picked from commit e49fdecd161b3d391e55311652fda3220d851fa1)
+---
+ test/README.testsuite            |  4 ++++
+ test/integration-test-wrapper.py | 12 +++++++++++-
+ 2 files changed, 15 insertions(+), 1 deletion(-)
+
+diff --git a/test/README.testsuite b/test/README.testsuite
+index 6b367aa673..e33c08f33a 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -151,6 +151,10 @@ that make use of `run_testcases`.
+ 
+ `TEST_SKIP_TESTCASE=testcase`: takes a space separated list of testcases to skip.
+ 
++`TEST_JOURNAL_USE_TMP=1`: Write test journal to `/tmp` while the test is in
++progress and only move the journal to its final location in the build directory
++(`$BUILD_DIR/test/journal`) when the test is finished.
++
+ ### SELinux AVCs
+ 
+ To have `TEST-06-SELINUX` check for SELinux denials, write the following to
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index d9d92fcba3..1c28cf3776 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -10,6 +10,7 @@ import json
+ import os
+ import re
+ import shlex
++import shutil
+ import subprocess
+ import sys
+ import tempfile
+@@ -441,7 +442,11 @@ def main() -> None:
+             """
+         )
+ 
+-    journal_file = (args.meson_build_dir / (f'test/journal/{name}.journal')).absolute()
++    if os.getenv('TEST_JOURNAL_USE_TMP', '0') == '1':
++        journal_file = Path(f'/tmp/systemd-integration-tests/journal/{name.journal}')
++    else:
++        journal_file = (args.meson_build_dir / f'test/journal/{name}.journal').absolute()
++
+     journal_file.unlink(missing_ok=True)
+ 
+     if not sys.stderr.isatty():
+@@ -551,6 +556,11 @@ def main() -> None:
+     ):
+         journal_file.unlink(missing_ok=True)
+ 
++    if os.getenv('TEST_JOURNAL_USE_TMP', '0') == '1':
++        dst = args.meson_build_dir / f'test/journal/{name}.journal'
++        dst.parent.mkdir(parents=True, exist_ok=True)
++        shutil.move(journal_file, dst)
++
+     if shell or (result.returncode in (args.exit_code, 77) and not coredumps and not sanitizer):
+         exit(0 if shell or result.returncode == args.exit_code else 77)
+ 

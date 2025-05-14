@@ -1,0 +1,32 @@
+From d07300405f955af8e94d4aee7d921ef05ee07fa2 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 29 Jan 2025 14:43:06 +0100
+Subject: [PATCH] ukify: Fix two typing issues
+
+(cherry picked from commit 2d6ae4319ccecdde7a87d12cb439a892afdec943)
+---
+ src/ukify/ukify.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index 4919076098..141dd24ccb 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -1442,7 +1442,7 @@ def inspect_section(
+     data = section.get_data(length=size)
+     digest = sha256(data).hexdigest()
+ 
+-    struct = {
++    struct: dict[str, Union[int, str]] = {
+         'size': size,
+         'sha256': digest,
+     }
+@@ -1461,7 +1461,7 @@ def inspect_section(
+     if opts.json == 'off':
+         print(f'{name}:\n  size: {size} bytes\n  sha256: {digest}')
+         if ttype == 'text':
+-            text = textwrap.indent(struct['text'].rstrip(), ' ' * 4)
++            text = textwrap.indent(cast(str, struct['text']).rstrip(), ' ' * 4)
+             print(f'  text:\n{text}')
+ 
+     return name, struct

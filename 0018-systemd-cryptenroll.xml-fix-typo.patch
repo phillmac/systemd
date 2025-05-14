@@ -1,0 +1,23 @@
+From df38ba869ceaf15ee7d5962660d644403c068f7a Mon Sep 17 00:00:00 2001
+From: Carlo Teubner <carlo@cteubner.net>
+Date: Wed, 11 Dec 2024 22:40:07 +0000
+Subject: [PATCH] systemd-cryptenroll.xml: fix typo
+
+(cherry picked from commit dfbd4d8bc5f18746051929e32f772078d6782e90)
+---
+ man/systemd-cryptenroll.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/systemd-cryptenroll.xml b/man/systemd-cryptenroll.xml
+index f3c23adfd0..fb36f455ba 100644
+--- a/man/systemd-cryptenroll.xml
++++ b/man/systemd-cryptenroll.xml
+@@ -634,7 +634,7 @@
+         <para>Note the difference between <option>--tpm2-pcrs=</option> and
+         <option>--tpm2-public-key-pcrs=</option>: the former binds decryption to the current, specific PCR
+         values; the latter binds decryption to any set of PCR values for which a signature by the specified
+-        public key can be provided. The latter is hence more useful in scenarios where software updates shell
++        public key can be provided. The latter is hence more useful in scenarios where software updates shall
+         be possible without losing access to all previously encrypted LUKS2 volumes. Like with
+         <option>--tpm2-pcrs=</option>, names defined in the table above can also be used to specify the
+         registers, for instance

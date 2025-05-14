@@ -1,0 +1,44 @@
+From 31fd7f6077e1400450b57c4a1357d476e79b76d8 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 21 Jan 2025 04:03:05 +0900
+Subject: [PATCH] udev-control: move setting of log level to
+ manager_adjust_config()
+
+No functional change, just refactoring.
+
+(cherry picked from commit b5a10b2127207c6ddb64ed05d01bc211ccef2981)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-config.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/udev/udev-config.c b/src/udev/udev-config.c
+index d511691ab2..86a99a5381 100644
+--- a/src/udev/udev-config.c
++++ b/src/udev/udev-config.c
+@@ -320,6 +320,8 @@ void manager_set_log_level(Manager *manager, int log_level) {
+ static void manager_adjust_config(UdevConfig *config) {
+         assert(config);
+ 
++        log_set_max_level(config->log_level);
++
+         if (config->timeout_usec < MIN_WORKER_TIMEOUT_USEC) {
+                 log_debug("Timeout (%s) for processing event is too small, using the default: %s",
+                           FORMAT_TIMESPAN(config->timeout_usec, 1),
+@@ -411,7 +413,6 @@ int manager_load(Manager *manager, int argc, char *argv[]) {
+         if (arg_debug)
+                 log_set_target(LOG_TARGET_CONSOLE);
+ 
+-        log_set_max_level(manager->config.log_level);
+         manager_adjust_config(&manager->config);
+         return 1;
+ }
+@@ -424,7 +425,6 @@ UdevReloadFlags manager_reload_config(Manager *manager) {
+         manager->config_by_udev_conf = UDEV_CONFIG_INIT;
+         manager_parse_udev_config(&manager->config_by_udev_conf);
+         manager_merge_config(manager);
+-        log_set_max_level(manager->config.log_level);
+         manager_adjust_config(&manager->config);
+ 
+         if (manager->config.resolve_name_timing != old.resolve_name_timing)

@@ -1,0 +1,52 @@
+From f74784cde741c73d6b2416830610c01ddbaaea0f Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 25 Jan 2025 04:48:00 +0900
+Subject: [PATCH] resolved: stop mdns/llmnr if no interface request it after
+ bus method
+
+(cherry picked from commit 269da24c5a3713bea1f1650334e23ce09f6136b2)
+---
+ src/resolve/resolved-link-bus.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+
+diff --git a/src/resolve/resolved-link-bus.c b/src/resolve/resolved-link-bus.c
+index 5e9e5bf17a..1c26dcbc66 100644
+--- a/src/resolve/resolved-link-bus.c
++++ b/src/resolve/resolved-link-bus.c
+@@ -14,6 +14,8 @@
+ #include "resolve-util.h"
+ #include "resolved-bus.h"
+ #include "resolved-link-bus.h"
++#include "resolved-llmnr.h"
++#include "resolved-mdns.h"
+ #include "resolved-resolv-conf.h"
+ #include "socket-netlink.h"
+ #include "stdio-util.h"
+@@ -517,6 +519,8 @@ int bus_link_method_set_llmnr(sd_bus_message *message, void *userdata, sd_bus_er
+ 
+                 (void) link_save_user(l);
+ 
++                manager_llmnr_maybe_stop(l->manager);
++
+                 log_link_info(l, "Bus client set LLMNR setting: %s", resolve_support_to_string(mode));
+         }
+ 
+@@ -567,6 +571,8 @@ int bus_link_method_set_mdns(sd_bus_message *message, void *userdata, sd_bus_err
+ 
+                 (void) link_save_user(l);
+ 
++                manager_mdns_maybe_stop(l->manager);
++
+                 log_link_info(l, "Bus client set MulticastDNS setting: %s", resolve_support_to_string(mode));
+         }
+ 
+@@ -769,6 +775,9 @@ int bus_link_method_revert(sd_bus_message *message, void *userdata, sd_bus_error
+         (void) manager_write_resolv_conf(l->manager);
+         (void) manager_send_changed(l->manager, "DNS");
+ 
++        manager_llmnr_maybe_stop(l->manager);
++        manager_mdns_maybe_stop(l->manager);
++
+         return sd_bus_reply_method_return(message, NULL);
+ }
+ 

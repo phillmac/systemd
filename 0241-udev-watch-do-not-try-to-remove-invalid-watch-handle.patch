@@ -1,0 +1,42 @@
+From d32f4bcaf274e208568a5e6151c0a81d00d80438 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 12 Feb 2025 09:23:33 +0900
+Subject: [PATCH] udev-watch: do not try to remove invalid watch handle
+
+When a new device is processed, there should be no watch handle for
+the device, hence udev_watch_clear() provides -1. Let's not try to call
+inotify_rm_watch() in that case.
+
+This should not change any behavior. Just for suppressing spurious
+debugging log:
+=====
+(udev-worker)[3626140]: zram1: Removing watch handle -1.
+=====
+
+(cherry picked from commit b3b442062045eac61a9dd3ed73b650dfb5be0b46)
+---
+ src/udev/udev-watch.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/udev/udev-watch.c b/src/udev/udev-watch.c
+index 9bd34af858..82db39fecd 100644
+--- a/src/udev/udev-watch.c
++++ b/src/udev/udev-watch.c
+@@ -161,7 +161,7 @@ static int udev_watch_clear(sd_device *dev, int dirfd, int *ret_wd) {
+ 
+         if (ret_wd)
+                 *ret_wd = wd;
+-        r = 0;
++        r = 1;
+ 
+ finalize:
+         /* 5. remove symlink ID -> wd.
+@@ -249,7 +249,7 @@ int udev_watch_end(int inotify_fd, sd_device *dev) {
+ 
+         /* First, clear symlinks. */
+         r = udev_watch_clear(dev, dirfd, &wd);
+-        if (r < 0)
++        if (r <= 0)
+                 return r;
+ 
+         /* Then, remove inotify watch. */

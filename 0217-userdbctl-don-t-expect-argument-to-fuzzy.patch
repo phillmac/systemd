@@ -1,0 +1,32 @@
+From 92661cbce56ca05a26271b367089302966b0989c Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 11:55:24 +0100
+Subject: [PATCH] userdbctl: don't expect argument to --fuzzy
+
+The getopt() parser was completely wrong, it expected an argument where
+wasn't expected or processes.
+
+The test cases only passed by accident because they use the "user" verb
+which is also the default verb. It would be accidently read as argument
+for --fuzzy and ignored.
+
+Fix that.
+
+(cherry picked from commit 165275fe803d0d001a0991014da928e44ed25941)
+---
+ src/userdb/userdbctl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
+index bc69175b10..d295ca5495 100644
+--- a/src/userdb/userdbctl.c
++++ b/src/userdb/userdbctl.c
+@@ -1227,7 +1227,7 @@ static int parse_argv(int argc, char *argv[]) {
+                 { "chain",        no_argument,       NULL, ARG_CHAIN        },
+                 { "uid-min",      required_argument, NULL, ARG_UID_MIN      },
+                 { "uid-max",      required_argument, NULL, ARG_UID_MAX      },
+-                { "fuzzy",        required_argument, NULL, 'z'              },
++                { "fuzzy",        no_argument,       NULL, 'z'              },
+                 { "disposition",  required_argument, NULL, ARG_DISPOSITION  },
+                 { "boundaries",   required_argument, NULL, ARG_BOUNDARIES   },
+                 {}

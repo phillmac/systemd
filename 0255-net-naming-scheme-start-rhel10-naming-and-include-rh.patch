@@ -1,0 +1,318 @@
+From fda607614c4854678e1bfe1c27e82996e86a59fb Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Tue, 25 Jun 2024 14:00:45 +0200
+Subject: [PATCH] net-naming-scheme: start rhel10 naming and include rhel8 and
+ rhel9 ones
+
+Also add RHEL8,9,10 versions to version-info.xml file
+
+rhel-only: feature
+
+Resolves: RHEL-22621
+---
+ man/systemd.net-naming-scheme.xml | 187 ++++++++++++++++++++++++++++++
+ man/version-info.xml              |  33 ++++++
+ src/shared/netif-naming-scheme.c  |  17 +++
+ src/shared/netif-naming-scheme.h  |  20 ++++
+ 4 files changed, 257 insertions(+)
+
+diff --git a/man/systemd.net-naming-scheme.xml b/man/systemd.net-naming-scheme.xml
+index 19967af880..5965f293dc 100644
+--- a/man/systemd.net-naming-scheme.xml
++++ b/man/systemd.net-naming-scheme.xml
+@@ -540,7 +540,194 @@
+           <xi:include href="version-info.xml" xpointer="v257"/>
+           </listitem>
+         </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-10.0</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>v255</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-10.0"/>
++          </listitem>
++        </varlistentry>
++      </variablelist>
++      <para>By default <constant>rhel-10.0</constant> is used.</para>
++
++      <refsect2>
++      <title>RHEL-9 schemes</title>
++      <para>It is also possible to pick a scheme from RHEL-9</para>
++      <variablelist>
++        <varlistentry>
++          <term><constant>rhel-9.0</constant></term>
++
++          <listitem><para>Since version <constant>v247</constant> we no longer set
++          <varname>ID_NET_NAME_SLOT</varname> if we detect that a PCI device associated with a slot is a PCI
++          bridge as that would create naming conflict when there are more child devices on that bridge. Now,
++          this is relaxed and we will use slot information to generate the name based on it but only if
++          the PCI device has multiple functions. This is safe because distinct function number is a part of
++          the device name for multifunction devices.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-9.0"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-9.1</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-9.0</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-9.1"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-9.2</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-9.0</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-9.2"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-9.3</constant></term>
++
++          <listitem><para>Naming was changed for SR-IOV virtual device representors.</para>
++
++          <para>The <literal>r<replaceable>slot</replaceable></literal> suffix was added to differentiate SR-IOV
++          virtual device representors attached to a single physical device interface.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-9.3"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-9.4</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-9.3</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-9.4"/>
++          </listitem>
++        </varlistentry>
++      </variablelist>
++      </refsect2>
++
++      <refsect2>
++      <title>RHEL-8 schemes</title>
++      <para>It is also possible to pick a scheme from RHEL-8</para>
++      <variablelist>
++        <varlistentry>
++          <term><constant>rhel-8.0</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>v239</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.0"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.1</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.1"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.2</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.2"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.3</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.0</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.3"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.4</constant></term>
++
++          <listitem><para>If the PCI slot is assocated with PCI bridge and that has multiple child network
++          controllers then all of them might derive the same value of <varname>ID_NET_NAME_SLOT</varname>
++          property. That could cause naming conflict if the property is selected as a device name. Now, we detect the
++          situation, slot - bridge relation, and we don't produce the <varname>ID_NET_NAME_SLOT</varname> property to
++          avoid possible naming conflict.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.4"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.5</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.4</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.5"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.6</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.4</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.6"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++         <term><constant>rhel-8.7</constant></term>
++
++          <listitem><para>PCI hotplug slot names for the s390 PCI driver are a hexadecimal representation
++          of the <filename>function_id</filename> device attribute. This attribute is now used to build the
++          <varname>ID_NET_NAME_SLOT</varname>. Before that, all slot names were parsed as decimal
++          numbers, which could either result in an incorrect value of the <varname>ID_NET_NAME_SLOT</varname>
++          property or none at all.</para>
++
++          <para>Some firmware and hypervisor implementations report unreasonable high numbers for the onboard
++          index. To prevent the generation of bogus onbard interface names, index numbers greater than 16381
++          (2^14-1) were ignored. For s390 PCI devices index values up to 65535 (2^16-1) are valid. To account
++          for that, the limit is increased to now 65535.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.7"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.8</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.8"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.9</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.9"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>rhel-8.10</constant></term>
++
++          <listitem><para>Same as naming scheme <constant>rhel-8.7</constant>.</para>
++
++          <xi:include href="version-info.xml" xpointer="rhel-8.10"/>
++          </listitem>
++        </varlistentry>
+       </variablelist>
++      </refsect2>
+ 
+     <para>Note that <constant>latest</constant> may be used to denote the latest scheme known (to this
+     particular version of systemd).</para>
+diff --git a/man/version-info.xml b/man/version-info.xml
+index 54440febd0..325f6eaa3e 100644
+--- a/man/version-info.xml
++++ b/man/version-info.xml
+@@ -84,4 +84,37 @@
+   <para id="v258">Added in version 258.</para>
+   <para id="v259">Added in version 259.</para>
+   <para id="v260">Added in version 260.</para>
++  <para id="rhel-8.0">Added in rhel-8.0.</para>
++  <para id="rhel-8.1">Added in rhel-8.1.</para>
++  <para id="rhel-8.2">Added in rhel-8.2.</para>
++  <para id="rhel-8.3">Added in rhel-8.3.</para>
++  <para id="rhel-8.4">Added in rhel-8.4.</para>
++  <para id="rhel-8.5">Added in rhel-8.5.</para>
++  <para id="rhel-8.6">Added in rhel-8.6.</para>
++  <para id="rhel-8.7">Added in rhel-8.7.</para>
++  <para id="rhel-8.8">Added in rhel-8.8.</para>
++  <para id="rhel-8.9">Added in rhel-8.9.</para>
++  <para id="rhel-8.10">Added in rhel-8.10.</para>
++  <para id="rhel-9.0">Added in rhel-9.0.</para>
++  <para id="rhel-9.1">Added in rhel-9.1.</para>
++  <para id="rhel-9.2">Added in rhel-9.2.</para>
++  <para id="rhel-9.3">Added in rhel-9.3.</para>
++  <para id="rhel-9.4">Added in rhel-9.4.</para>
++  <para id="rhel-9.5">Added in rhel-9.5.</para>
++  <para id="rhel-9.6">Added in rhel-9.6.</para>
++  <para id="rhel-9.7">Added in rhel-9.7.</para>
++  <para id="rhel-9.8">Added in rhel-9.8.</para>
++  <para id="rhel-9.9">Added in rhel-9.9.</para>
++  <para id="rhel-9.10">Added in rhel-9.10.</para>
++  <para id="rhel-10.0">Added in rhel-10.0.</para>
++  <para id="rhel-10.1">Added in rhel-10.1.</para>
++  <para id="rhel-10.2">Added in rhel-10.2.</para>
++  <para id="rhel-10.3">Added in rhel-10.3.</para>
++  <para id="rhel-10.4">Added in rhel-10.4.</para>
++  <para id="rhel-10.5">Added in rhel-10.5.</para>
++  <para id="rhel-10.6">Added in rhel-10.6.</para>
++  <para id="rhel-10.7">Added in rhel-10.7.</para>
++  <para id="rhel-10.8">Added in rhel-10.8.</para>
++  <para id="rhel-10.9">Added in rhel-10.9.</para>
++  <para id="rhel-10.10">Added in rhel-10.10.</para>
+ </refsect1>
+diff --git a/src/shared/netif-naming-scheme.c b/src/shared/netif-naming-scheme.c
+index 67b7eb4d90..b85dd3dadf 100644
+--- a/src/shared/netif-naming-scheme.c
++++ b/src/shared/netif-naming-scheme.c
+@@ -25,6 +25,23 @@ static const NamingScheme naming_schemes[] = {
+         { "v254", NAMING_V254 },
+         { "v255", NAMING_V255 },
+         { "v257", NAMING_V257 },
++        { "rhel-8.0", NAMING_RHEL_8_0 },
++        { "rhel-8.1", NAMING_RHEL_8_1 },
++        { "rhel-8.2", NAMING_RHEL_8_2 },
++        { "rhel-8.3", NAMING_RHEL_8_3 },
++        { "rhel-8.4", NAMING_RHEL_8_4 },
++        { "rhel-8.5", NAMING_RHEL_8_5 },
++        { "rhel-8.6", NAMING_RHEL_8_6 },
++        { "rhel-8.7", NAMING_RHEL_8_7 },
++        { "rhel-8.8", NAMING_RHEL_8_8 },
++        { "rhel-8.9", NAMING_RHEL_8_9 },
++        { "rhel-8.10", NAMING_RHEL_8_10 },
++        { "rhel-9.0", NAMING_RHEL_9_0 },
++        { "rhel-9.1", NAMING_RHEL_9_1 },
++        { "rhel-9.2", NAMING_RHEL_9_2 },
++        { "rhel-9.3", NAMING_RHEL_9_3 },
++        { "rhel-9.4", NAMING_RHEL_9_4 },
++        { "rhel-10.0", NAMING_RHEL_10_0 },
+         /* … add more schemes here, as the logic to name devices is updated … */
+ 
+         EXTRA_NET_NAMING_MAP
+diff --git a/src/shared/netif-naming-scheme.h b/src/shared/netif-naming-scheme.h
+index 3ab1d752c8..2cf7d3f3ba 100644
+--- a/src/shared/netif-naming-scheme.h
++++ b/src/shared/netif-naming-scheme.h
+@@ -66,6 +66,26 @@ typedef enum NamingSchemeFlags {
+         NAMING_V255 = NAMING_V254 & ~NAMING_BRIDGE_MULTIFUNCTION_SLOT,
+         NAMING_V257 = NAMING_V255 | NAMING_FIRMWARE_NODE_SUN | NAMING_DEVICETREE_PORT_ALIASES,
+ 
++        NAMING_RHEL_8_0 = NAMING_V239,
++        NAMING_RHEL_8_1 = NAMING_V239,
++        NAMING_RHEL_8_2 = NAMING_V239,
++        NAMING_RHEL_8_3 = NAMING_V239,
++        NAMING_RHEL_8_4 = NAMING_V239 | NAMING_BRIDGE_NO_SLOT,
++        NAMING_RHEL_8_5 = NAMING_RHEL_8_4,
++        NAMING_RHEL_8_6 = NAMING_RHEL_8_4,
++        NAMING_RHEL_8_7 = NAMING_RHEL_8_4 | NAMING_SLOT_FUNCTION_ID | NAMING_16BIT_INDEX,
++        NAMING_RHEL_8_8 = NAMING_RHEL_8_7,
++        NAMING_RHEL_8_9 = NAMING_RHEL_8_7,
++        NAMING_RHEL_8_10 = NAMING_RHEL_8_7,
++
++        NAMING_RHEL_9_0 = NAMING_V250 | NAMING_BRIDGE_MULTIFUNCTION_SLOT,
++        NAMING_RHEL_9_1 = NAMING_RHEL_9_0,
++        NAMING_RHEL_9_2 = NAMING_RHEL_9_0,
++        NAMING_RHEL_9_3 = NAMING_RHEL_9_0 | NAMING_SR_IOV_R,
++        NAMING_RHEL_9_4 = NAMING_RHEL_9_3,
++
++        NAMING_RHEL_10_0 = NAMING_V257,
++
+         EXTRA_NET_NAMING_SCHEMES
+ 
+         _NAMING_SCHEME_FLAGS_INVALID = -EINVAL,

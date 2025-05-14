@@ -1,0 +1,44 @@
+From d80ab6aed678ed89327d86ced9fedd24b5baccd3 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 11 Dec 2024 12:10:13 +0000
+Subject: [PATCH] test-capability: CAP_LINUX_IMMUTABLE is not available in
+ unprivileged containers
+
+have ambient caps: yes
+Capabilities:cap_chown,cap_dac_override,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_net_bind_service,cap_net_raw,cap_sys_chroot,cap_mknod,cap_audit_write,cap_setfcap=ep
+Failed to drop auxiliary groups list: Operation not permitted
+Failed to change group ID: Operation not permitted
+Capabilities:cap_dac_override,cap_net_raw=ep
+Capabilities:cap_dac_override=ep
+Successfully forked off '(getambient)' as PID 12505.
+Skipping PR_SET_MM, as we don't have privileges.
+Ambient capability cap_linux_immutable requested but missing from bounding set, suppressing automatically.
+Assertion 'x < 0 || FLAGS_SET(c, UINT64_C(1) << CAP_LINUX_IMMUTABLE)' failed at src/test/test-capability.c:273, function test_capability_get_ambient(). Aborting.
+(getambient) terminated by signal ABRT.
+src/test/test-capability.c:258: Assertion failed: expected "r" to succeed, but got error: Protocol error
+
+Partially fixes #35552
+
+(cherry picked from commit 058a07635f3ff70cc99943dcf4f2a079bc9c28b9)
+---
+ src/test/test-capability.c | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/src/test/test-capability.c b/src/test/test-capability.c
+index 51bd806348..127f5e3d87 100644
+--- a/src/test/test-capability.c
++++ b/src/test/test-capability.c
+@@ -254,6 +254,13 @@ static void test_capability_get_ambient(void) {
+ 
+         ASSERT_OK(capability_get_ambient(&c));
+ 
++        r = prctl(PR_CAPBSET_READ, CAP_MKNOD);
++        if (r <= 0)
++                return (void) log_tests_skipped("Lacking CAP_MKNOD, skipping getambient test.");
++        r = prctl(PR_CAPBSET_READ, CAP_LINUX_IMMUTABLE);
++        if (r <= 0)
++                return (void) log_tests_skipped("Lacking CAP_LINUX_IMMUTABLE, skipping getambient test.");
++
+         r = safe_fork("(getambient)", FORK_RESET_SIGNALS|FORK_DEATHSIG_SIGTERM|FORK_WAIT|FORK_LOG, NULL);
+         ASSERT_OK(r);
+ 

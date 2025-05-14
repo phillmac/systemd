@@ -1,0 +1,47 @@
+From 286d0a946414723c335db88670d3b5104dfc805e Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 23 Jan 2025 10:35:06 +0100
+Subject: [PATCH] mkosi: Add back --preserve-env when running integrationt
+ tests
+
+The test wrapper script depends on various github actions environment
+variables so let's make sure those are propagated.
+
+(cherry picked from commit 6733b07d43f3524b66b5ab79a96cad192d2280fc)
+---
+ .github/workflows/coverage.yml | 5 ++++-
+ .github/workflows/mkosi.yml    | 5 ++++-
+ 2 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 034c228828..7fc7518dcc 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -104,7 +104,10 @@ jobs:
+ 
+       - name: Run integration tests
+         run: |
+-          sudo mkosi sandbox \
++          # --preserve-env makes sure all the github actions environment variables are propagated which are
++          # used in integration-test-wrapper.py to construct the `gh` command line to download the journals
++          # of failed tests.
++          sudo --preserve-env mkosi sandbox \
+             meson test \
+             -C build \
+             --no-rebuild \
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 7a4c7b6d16..6f6df0ddf9 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -209,7 +209,10 @@ jobs:
+               MAX_LINES=()
+           fi
+ 
+-          sudo mkosi sandbox \
++          # --preserve-env makes sure all the github actions environment variables are propagated which are
++          # used in integration-test-wrapper.py to construct the `gh` command line to download the journals
++          # of failed tests.
++          sudo --preserve-env mkosi sandbox \
+             env \
+             TEST_PREFER_QEMU=${{ matrix.vm }} \
+             TEST_SKIP=${{ matrix.skip }} \

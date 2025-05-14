@@ -1,0 +1,25 @@
+From b3951fb0a8e1d0b1158602567dfc1cfb4ef50f49 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 5 Jan 2025 03:09:29 +0900
+Subject: [PATCH] sd-device: add missing debugging log
+
+It was unexpectedly dropped by 660087dc9c4a5c610da99e7b6b1772e371eb0a80.
+
+(cherry picked from commit 7e5238625ed4a879c2fe8ff7e457021d174bf083)
+---
+ src/libsystemd/sd-device/sd-device.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libsystemd/sd-device/sd-device.c b/src/libsystemd/sd-device/sd-device.c
+index 01fa90b1ff..94dfd2ef13 100644
+--- a/src/libsystemd/sd-device/sd-device.c
++++ b/src/libsystemd/sd-device/sd-device.c
+@@ -234,7 +234,7 @@ int device_set_syspath(sd_device *device, const char *_syspath, bool verify) {
+ 
+                 r = path_simplify_alloc(_syspath, &syspath);
+                 if (r < 0)
+-                        return r;
++                        return log_oom_debug();
+         }
+ 
+         assert_se(devpath = startswith(syspath, "/sys"));

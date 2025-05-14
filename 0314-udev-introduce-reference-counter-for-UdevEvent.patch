@@ -1,0 +1,143 @@
+From 9702ed206cb97d6b437965abaf139a2628055e75 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 5 Dec 2024 03:12:03 +0900
+Subject: [PATCH] udev: introduce reference counter for UdevEvent
+
+No functional change, preparation for later commits.
+
+(cherry picked from commit 4a90166488a4018effbf471df5e057f901f0b52d)
+
+Resolves: RHEL-75774
+---
+ src/udev/test-udev-rule-runner.c | 2 +-
+ src/udev/test-udev-spawn.c       | 2 +-
+ src/udev/udev-event.c            | 5 ++++-
+ src/udev/udev-event.h            | 8 +++++---
+ src/udev/udev-worker.c           | 2 +-
+ src/udev/udevadm-test-builtin.c  | 2 +-
+ src/udev/udevadm-test.c          | 2 +-
+ 7 files changed, 14 insertions(+), 9 deletions(-)
+
+diff --git a/src/udev/test-udev-rule-runner.c b/src/udev/test-udev-rule-runner.c
+index d123c8ad1b..9a04abf590 100644
+--- a/src/udev/test-udev-rule-runner.c
++++ b/src/udev/test-udev-rule-runner.c
+@@ -89,7 +89,7 @@ static int fake_filesystems(void) {
+ 
+ static int run(int argc, char *argv[]) {
+         _cleanup_(udev_rules_freep) UdevRules *rules = NULL;
+-        _cleanup_(udev_event_freep) UdevEvent *event = NULL;
++        _cleanup_(udev_event_unrefp) UdevEvent *event = NULL;
+         _cleanup_(sd_device_unrefp) sd_device *dev = NULL;
+         const char *devpath, *devname, *action;
+         int r;
+diff --git a/src/udev/test-udev-spawn.c b/src/udev/test-udev-spawn.c
+index a6079e3c61..a2b9aad3a7 100644
+--- a/src/udev/test-udev-spawn.c
++++ b/src/udev/test-udev-spawn.c
+@@ -12,7 +12,7 @@
+ 
+ static void test_event_spawn_core(bool with_pidfd, const char *cmd, char *result_buf, size_t buf_size) {
+         _cleanup_(sd_device_unrefp) sd_device *dev = NULL;
+-        _cleanup_(udev_event_freep) UdevEvent *event = NULL;
++        _cleanup_(udev_event_unrefp) UdevEvent *event = NULL;
+ 
+         assert_se(setenv("SYSTEMD_PIDFD", yes_no(with_pidfd), 1) >= 0);
+ 
+diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
+index 9141a9d2a7..6a7c34b162 100644
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -29,6 +29,7 @@ UdevEvent* udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
+                 return NULL;
+ 
+         *event = (UdevEvent) {
++                .n_ref = 1,
+                 .worker = worker,
+                 .rtnl = worker ? sd_netlink_ref(worker->rtnl) : NULL,
+                 .dev = sd_device_ref(dev),
+@@ -44,7 +45,7 @@ UdevEvent* udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
+         return event;
+ }
+ 
+-UdevEvent* udev_event_free(UdevEvent *event) {
++static UdevEvent* udev_event_free(UdevEvent *event) {
+         if (!event)
+                 return NULL;
+ 
+@@ -60,6 +61,8 @@ UdevEvent* udev_event_free(UdevEvent *event) {
+         return mfree(event);
+ }
+ 
++DEFINE_TRIVIAL_REF_UNREF_FUNC(UdevEvent, udev_event, udev_event_free);
++
+ static int device_rename(sd_device *device, const char *name) {
+         _cleanup_free_ char *new_syspath = NULL;
+         const char *s;
+diff --git a/src/udev/udev-event.h b/src/udev/udev-event.h
+index 186cfa541f..11e2c700e6 100644
+--- a/src/udev/udev-event.h
++++ b/src/udev/udev-event.h
+@@ -21,9 +21,10 @@ typedef struct UdevRules UdevRules;
+ typedef struct UdevWorker UdevWorker;
+ 
+ typedef struct UdevEvent {
++        unsigned n_ref;
++
+         UdevWorker *worker;
+         sd_netlink *rtnl;
+-
+         sd_device *dev;
+         sd_device *dev_parent;
+         sd_device *dev_db_clone;
+@@ -54,8 +55,9 @@ typedef struct UdevEvent {
+ } UdevEvent;
+ 
+ UdevEvent* udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode);
+-UdevEvent* udev_event_free(UdevEvent *event);
+-DEFINE_TRIVIAL_CLEANUP_FUNC(UdevEvent*, udev_event_free);
++UdevEvent* udev_event_ref(UdevEvent *event);
++UdevEvent* udev_event_unref(UdevEvent *event);
++DEFINE_TRIVIAL_CLEANUP_FUNC(UdevEvent*, udev_event_unref);
+ 
+ int udev_event_execute_rules(UdevEvent *event, UdevRules *rules);
+ 
+diff --git a/src/udev/udev-worker.c b/src/udev/udev-worker.c
+index 0c57551a37..44287e4774 100644
+--- a/src/udev/udev-worker.c
++++ b/src/udev/udev-worker.c
+@@ -171,7 +171,7 @@ static int worker_mark_block_device_read_only(sd_device *dev) {
+ }
+ 
+ static int worker_process_device(UdevWorker *worker, sd_device *dev) {
+-        _cleanup_(udev_event_freep) UdevEvent *udev_event = NULL;
++        _cleanup_(udev_event_unrefp) UdevEvent *udev_event = NULL;
+         _cleanup_close_ int fd_lock = -EBADF;
+         int r;
+ 
+diff --git a/src/udev/udevadm-test-builtin.c b/src/udev/udevadm-test-builtin.c
+index 5815f2cc78..382897efd4 100644
+--- a/src/udev/udevadm-test-builtin.c
++++ b/src/udev/udevadm-test-builtin.c
+@@ -74,7 +74,7 @@ static int parse_argv(int argc, char *argv[]) {
+ }
+ 
+ int builtin_main(int argc, char *argv[], void *userdata) {
+-        _cleanup_(udev_event_freep) UdevEvent *event = NULL;
++        _cleanup_(udev_event_unrefp) UdevEvent *event = NULL;
+         _cleanup_(sd_device_unrefp) sd_device *dev = NULL;
+         UdevBuiltinCommand cmd;
+         int r;
+diff --git a/src/udev/udevadm-test.c b/src/udev/udevadm-test.c
+index 863eab87a5..09d1150dd7 100644
+--- a/src/udev/udevadm-test.c
++++ b/src/udev/udevadm-test.c
+@@ -99,7 +99,7 @@ static int parse_argv(int argc, char *argv[]) {
+ 
+ int test_main(int argc, char *argv[], void *userdata) {
+         _cleanup_(udev_rules_freep) UdevRules *rules = NULL;
+-        _cleanup_(udev_event_freep) UdevEvent *event = NULL;
++        _cleanup_(udev_event_unrefp) UdevEvent *event = NULL;
+         _cleanup_(sd_device_unrefp) sd_device *dev = NULL;
+         sigset_t mask, sigmask_orig;
+         int r;

@@ -1,0 +1,35 @@
+From c7ac125cac1a0efcbd5f7e63433d8652887c0714 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 7 Jan 2025 20:23:02 +0900
+Subject: [PATCH] TEST-17-UDEV: wait for udevd being restarted after exit
+ control command
+
+Also wait for created devices being processed before running tests.
+
+(cherry picked from commit d5c4c4d45c6075f5a1dde024d7a4717b71f369a2)
+
+Resolves: RHEL-75774
+---
+ test/units/TEST-17-UDEV.10.sh | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/test/units/TEST-17-UDEV.10.sh b/test/units/TEST-17-UDEV.10.sh
+index 6820e76679..be342b3468 100755
+--- a/test/units/TEST-17-UDEV.10.sh
++++ b/test/units/TEST-17-UDEV.10.sh
+@@ -28,9 +28,15 @@ blk="$(mktemp)"
+ dd if=/dev/zero of="$blk" bs=1M count=1
+ loopdev="$(losetup --show -f "$blk")"
+ 
++# Wait for devices created in the above being processed.
++udevadm settle --timeout 30
++
+ udevadm -h
+ 
++INVOCATION_ID=$(systemctl show --property InvocationID --value systemd-udevd.service)
+ udevadm control -e
++# Wait for systemd-udevd.service being restarted.
++timeout 30 bash -ec "while [[ \"\$(systemctl show --property InvocationID --value systemd-udevd.service)\" == \"$INVOCATION_ID\" ]]; do sleep .5; done"
+ udevadm control -l emerg
+ udevadm control -l alert
+ udevadm control -l crit

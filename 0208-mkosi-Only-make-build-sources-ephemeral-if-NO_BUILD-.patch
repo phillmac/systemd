@@ -1,0 +1,44 @@
+From bef269772c8854c90b7a680a71f0514ae779fcd2 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 6 Feb 2025 14:53:02 +0100
+Subject: [PATCH] mkosi: Only make build sources ephemeral if NO_BUILD is not
+ enabled
+
+If we're not building distribution packages from source, there's no
+need to make the build sources ephemeral so don't enable the setting
+if NO_BUILD is enabled.
+
+(cherry picked from commit f26ded4e31b433d3bb6ee4dc3e02e28f7a1d223f)
+---
+ mkosi.conf                 | 1 -
+ mkosi.conf.d/20-build.conf | 3 ++-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.conf b/mkosi.conf
+index e4c866c9ba..954012ee0f 100644
+--- a/mkosi.conf
++++ b/mkosi.conf
+@@ -33,7 +33,6 @@ OutputDirectory=build/mkosi.output
+ ToolsTree=default
+ BuildDirectory=build/mkosi.builddir
+ CacheDirectory=build/mkosi.cache
+-BuildSourcesEphemeral=yes
+ Incremental=yes
+ 
+ [Validation]
+diff --git a/mkosi.conf.d/20-build.conf b/mkosi.conf.d/20-build.conf
+index 8c16d9b9f8..f9b4a0aaf5 100644
+--- a/mkosi.conf.d/20-build.conf
++++ b/mkosi.conf.d/20-build.conf
+@@ -1,9 +1,10 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
+-# Add a dependency on the build image unless NO_BUILD=1.
++# Add a dependency on the build image and make the build sources ephemeral unless NO_BUILD=1.
+ 
+ [Match]
+ Environment=!NO_BUILD=1
+ 
+ [Config]
+ Dependencies=build
++BuildSourcesEphemeral=yes

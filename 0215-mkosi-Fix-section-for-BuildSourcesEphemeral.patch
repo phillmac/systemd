@@ -1,0 +1,23 @@
+From d28d7fd0cac3c945a4807eec2652db42ff79bc91 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 7 Feb 2025 12:04:15 +0100
+Subject: [PATCH] mkosi: Fix section for BuildSourcesEphemeral=
+
+Followup for f26ded4e31b433d3bb6ee4dc3e02e28f7a1d223f
+
+(cherry picked from commit 398d435f3c14959041cc690d2e71b388c1b94ccd)
+---
+ mkosi.conf.d/20-build.conf | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/mkosi.conf.d/20-build.conf b/mkosi.conf.d/20-build.conf
+index f9b4a0aaf5..83bc23e82c 100644
+--- a/mkosi.conf.d/20-build.conf
++++ b/mkosi.conf.d/20-build.conf
+@@ -7,4 +7,6 @@ Environment=!NO_BUILD=1
+ 
+ [Config]
+ Dependencies=build
++
++[Build]
+ BuildSourcesEphemeral=yes

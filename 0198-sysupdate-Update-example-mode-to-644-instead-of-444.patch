@@ -1,0 +1,30 @@
+From 7358b67ad1e2eb865bd5628ff6c20a13439ff3d0 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 4 Feb 2025 11:42:42 +0100
+Subject: [PATCH] sysupdate: Update example mode to 644 instead of 444
+
+The UKI file has to be writable to be able to do boot counting in
+the UEFI firmware which involves renaming the file by writing to
+the file metadata which requires the file to be writable in the FAT
+filesystem.
+
+Fixes #36170
+
+(cherry picked from commit 0e470e1cc32776f7b57f57640193d6dd0df97a5b)
+---
+ man/sysupdate.d.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/sysupdate.d.xml b/man/sysupdate.d.xml
+index bec423705c..5f108dacb1 100644
+--- a/man/sysupdate.d.xml
++++ b/man/sysupdate.d.xml
+@@ -977,7 +977,7 @@ PathRelativeTo=boot
+ MatchPattern=foobarOS_@v+@l-@d.efi \
+              foobarOS_@v+@l.efi \
+              foobarOS_@v.efi
+-Mode=0444
++Mode=0644
+ TriesLeft=3
+ TriesDone=0
+ InstancesMax=2</programlisting></para>

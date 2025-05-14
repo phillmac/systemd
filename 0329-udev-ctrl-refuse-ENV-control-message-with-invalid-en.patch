@@ -1,0 +1,47 @@
+From 618742f92e739fc800d066b17bccd1e44cfc6981 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 22 Dec 2024 06:34:33 +0900
+Subject: [PATCH] udev-ctrl: refuse ENV control message with invalid
+ environment assignment
+
+Previously, udevd accepts an arbitrary pair of key and value.
+Let's make the environment variable assignment more strict for safety.
+
+Note, we already refuse environment variables with the same way in
+net/link-config.c.
+
+(cherry picked from commit bbb0dbe6b1fad7c8d8250f5dff334a2de8766559)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-manager.c | 12 ++++--------
+ 1 file changed, 4 insertions(+), 8 deletions(-)
+
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index 2c87e8bb9e..83b0a90ccf 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -871,19 +871,15 @@ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrl
+                 log_debug("Received udev control message (RELOAD)");
+                 manager_reload(manager, /* force = */ true);
+                 break;
+-        case UDEV_CTRL_SET_ENV: {
+-                const char *eq;
+-
+-                eq = strchr(value->buf, '=');
+-                if (!eq) {
+-                        log_error("Invalid key format '%s'", value->buf);
+-                        return 1;
++        case UDEV_CTRL_SET_ENV:
++                if (!udev_property_assignment_is_valid(value->buf)) {
++                        log_debug("Received invalid udev control message(SET_ENV, %s), ignoring.", value->buf);
++                        break;
+                 }
+ 
+                 log_debug("Received udev control message(SET_ENV, %s)", value->buf);
+                 manager_set_environment(manager, STRV_MAKE(value->buf));
+                 break;
+-        }
+         case UDEV_CTRL_SET_CHILDREN_MAX:
+                 if (value->intval < 0) {
+                         log_debug("Received invalid udev control message (SET_MAX_CHILDREN, %i), ignoring.", value->intval);

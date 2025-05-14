@@ -1,0 +1,26 @@
+From bcf740e4a3caa32b3a920512833b68fc6d530125 Mon Sep 17 00:00:00 2001
+From: Ronan Pigott <ronan@rjp.ie>
+Date: Thu, 28 Nov 2024 12:52:45 -0700
+Subject: [PATCH] manager: add list of subscribers to dump info
+
+This is handy for debugging.
+
+(cherry picked from commit 91713841491d0d4775566ed59f621f0f9a2413b5)
+---
+ src/core/manager-dump.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/core/manager-dump.c b/src/core/manager-dump.c
+index a12d50c91e..7e678fa03e 100644
+--- a/src/core/manager-dump.c
++++ b/src/core/manager-dump.c
+@@ -77,6 +77,9 @@ static void manager_dump_header(Manager *m, FILE *f, const char *prefix) {
+                                 timestamp_is_set(t->realtime) ? FORMAT_TIMESTAMP(t->realtime) :
+                                                                 FORMAT_TIMESPAN(t->monotonic, 1));
+         }
++
++        for (const char *n = sd_bus_track_first(m->subscribed); n; n = sd_bus_track_next(m->subscribed))
++                fprintf(f, "%sSubscribed: %s\n", strempty(prefix), n);
+ }
+ 
+ void manager_dump(Manager *m, FILE *f, char **patterns, const char *prefix) {

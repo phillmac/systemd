@@ -1,0 +1,28 @@
+From d2a27c0be47ed2f47a7f4c52d44fd05f8dc92cf2 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Wed, 17 Jul 2024 12:19:03 +0200
+Subject: [PATCH] packit: drop the libarchive workaround
+
+As it's not needed anymore.
+
+rhel-only: ci
+
+Related: RHEL-40924
+---
+ .packit.yml | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/.packit.yml b/.packit.yml
+index 88d74d29af..d16e630817 100644
+--- a/.packit.yml
++++ b/.packit.yml
+@@ -36,9 +36,6 @@ actions:
+     - 'sed -i "/^CONFIGURE_OPTS=(/a--werror" .packit_rpm/systemd.spec'
+     # Ignore unpackaged standalone binaries
+     - "sed -i 's/assert False,.*/pass/' .packit_rpm/split-files.py"
+-    # Temporarily add libarchive-devel build dep and libarchive runtime dep
+-    # until the change propagates to Rawhide's specfile
+-    - "sed -ri '0,/^BuildRequires: .+$/s//&\\nBuildRequires: libarchive-devel\\nRequires: libarchive/' .packit_rpm/systemd.spec"
+ 
+ # Available targets can be listed via `copr-cli list-chroots`
+ jobs:

@@ -1,0 +1,75 @@
+From 36e9a4f8f81753bf7688cf512b26efecb1cdcc73 Mon Sep 17 00:00:00 2001
+From: Lukas Nykryn <lnykryn@redhat.com>
+Date: Thu, 22 Aug 2024 13:42:11 +0200
+Subject: [PATCH] netif-naming-scheme: rename rhel-10.0 to rhel-10.0.beta
+
+rhel-only: policy
+Related: RHEL-55728
+---
+ man/systemd.net-naming-scheme.xml | 6 +++---
+ man/version-info.xml              | 1 +
+ src/shared/netif-naming-scheme.c  | 2 +-
+ src/shared/netif-naming-scheme.h  | 2 +-
+ 4 files changed, 6 insertions(+), 5 deletions(-)
+
+diff --git a/man/systemd.net-naming-scheme.xml b/man/systemd.net-naming-scheme.xml
+index 8c2979f420..18c1d95a74 100644
+--- a/man/systemd.net-naming-scheme.xml
++++ b/man/systemd.net-naming-scheme.xml
+@@ -542,15 +542,15 @@
+         </varlistentry>
+ 
+         <varlistentry>
+-          <term><constant>rhel-10.0</constant></term>
++          <term><constant>rhel-10.0-beta</constant></term>
+ 
+           <listitem><para>Same as naming scheme <constant>v255</constant>.</para>
+ 
+-          <xi:include href="version-info.xml" xpointer="rhel-10.0"/>
++          <xi:include href="version-info.xml" xpointer="rhel-10.0.beta"/>
+           </listitem>
+         </varlistentry>
+       </variablelist>
+-      <para>By default <constant>rhel-10.0</constant> is used.</para>
++      <para>By default <constant>rhel-10.0-beta</constant> is used.</para>
+ 
+       <refsect2>
+       <title>RHEL-9 schemes</title>
+diff --git a/man/version-info.xml b/man/version-info.xml
+index 325f6eaa3e..c1138dfe22 100644
+--- a/man/version-info.xml
++++ b/man/version-info.xml
+@@ -106,6 +106,7 @@
+   <para id="rhel-9.8">Added in rhel-9.8.</para>
+   <para id="rhel-9.9">Added in rhel-9.9.</para>
+   <para id="rhel-9.10">Added in rhel-9.10.</para>
++  <para id="rhel-10.0.beta">Added in rhel-10.0-beta.</para>
+   <para id="rhel-10.0">Added in rhel-10.0.</para>
+   <para id="rhel-10.1">Added in rhel-10.1.</para>
+   <para id="rhel-10.2">Added in rhel-10.2.</para>
+diff --git a/src/shared/netif-naming-scheme.c b/src/shared/netif-naming-scheme.c
+index 553ad13269..45646af6a6 100644
+--- a/src/shared/netif-naming-scheme.c
++++ b/src/shared/netif-naming-scheme.c
+@@ -42,7 +42,7 @@ static const NamingScheme naming_schemes[] = {
+         { "rhel-9.3", NAMING_RHEL_9_3 },
+         { "rhel-9.4", NAMING_RHEL_9_4 },
+         { "rhel-9.5", NAMING_RHEL_9_5 },
+-        { "rhel-10.0", NAMING_RHEL_10_0 },
++        { "rhel-10.0-beta", NAMING_RHEL_10_0_BETA },
+         /* … add more schemes here, as the logic to name devices is updated … */
+ 
+         EXTRA_NET_NAMING_MAP
+diff --git a/src/shared/netif-naming-scheme.h b/src/shared/netif-naming-scheme.h
+index 35ab0a98da..c511ee86f5 100644
+--- a/src/shared/netif-naming-scheme.h
++++ b/src/shared/netif-naming-scheme.h
+@@ -85,7 +85,7 @@ typedef enum NamingSchemeFlags {
+         NAMING_RHEL_9_4 = NAMING_RHEL_9_3,
+         NAMING_RHEL_9_5 = NAMING_RHEL_9_4 & ~NAMING_BRIDGE_MULTIFUNCTION_SLOT,
+ 
+-        NAMING_RHEL_10_0 = NAMING_V257,
++        NAMING_RHEL_10_0_BETA = NAMING_V255 | NAMING_FIRMWARE_NODE_SUN,
+ 
+         EXTRA_NET_NAMING_SCHEMES
+ 

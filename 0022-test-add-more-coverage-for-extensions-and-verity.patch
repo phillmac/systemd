@@ -1,0 +1,48 @@
+From 06467e1dbc0fbf3346a990e6d6a02b1bfc5e8a1c Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 00:50:45 +0000
+Subject: [PATCH] test: add more coverage for extensions and verity
+
+(cherry picked from commit c7fcb08324774c62bd2a786b03a7104a33049db6)
+---
+ test/units/TEST-50-DISSECT.dissect.sh | 6 ++++++
+ test/units/util.sh                    | 2 ++
+ 2 files changed, 8 insertions(+)
+
+diff --git a/test/units/TEST-50-DISSECT.dissect.sh b/test/units/TEST-50-DISSECT.dissect.sh
+index 09cb676200..f2b4db5133 100755
+--- a/test/units/TEST-50-DISSECT.dissect.sh
++++ b/test/units/TEST-50-DISSECT.dissect.sh
+@@ -365,6 +365,12 @@ systemd-run -P \
+             --property ExtensionImages=/etc/service-scoped-test.raw \
+             --property RootImage="$MINIMAL_IMAGE.raw" \
+             cat /etc/systemd/system/some_file | grep -q -F "MARKER_CONFEXT_123"
++systemd-run -P \
++            --property ExtensionImages="/tmp/app0.raw /tmp/conf0.raw" \
++            veritysetup status "$(cat /tmp/app0.roothash)-verity" | grep -q "$(cat /tmp/app0.roothash)"
++systemd-run -P \
++            --property ExtensionImages="/tmp/app0.raw /tmp/conf0.raw" \
++            veritysetup status "$(cat /tmp/conf0.roothash)-verity" | grep -q "$(cat /tmp/conf0.roothash)"
+ 
+ # Check that two identical verity images at different paths do not fail with -ELOOP from OverlayFS
+ mkdir -p /tmp/loop
+diff --git a/test/units/util.sh b/test/units/util.sh
+index 7a39d4267e..1f903b3293 100755
+--- a/test/units/util.sh
++++ b/test/units/util.sh
+@@ -284,6 +284,7 @@ EOF
+         chmod +x "$initdir/opt/script0.sh"
+         echo MARKER=1 >"$initdir/usr/lib/systemd/system/some_file"
+         mksquashfs "$initdir" /tmp/app0.raw -noappend
++        veritysetup format /tmp/app0.raw /tmp/app0.verity --root-hash-file /tmp/app0.roothash
+ 
+         initdir="/var/tmp/conf0"
+         mkdir -p "$initdir/etc/extension-release.d" "$initdir/etc/systemd/system" "$initdir/opt"
+@@ -295,6 +296,7 @@ EOF
+         ) >>"$initdir/etc/extension-release.d/extension-release.conf0"
+         echo MARKER_1 >"$initdir/etc/systemd/system/some_file"
+         mksquashfs "$initdir" /tmp/conf0.raw -noappend
++        veritysetup format /tmp/conf0.raw /tmp/conf0.verity --root-hash-file /tmp/conf0.roothash
+ 
+         initdir="/var/tmp/app1"
+         mkdir -p "$initdir/usr/lib/extension-release.d" "$initdir/usr/lib/systemd/system" "$initdir/opt"

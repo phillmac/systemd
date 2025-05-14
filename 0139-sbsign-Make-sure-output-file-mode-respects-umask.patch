@@ -1,0 +1,25 @@
+From c32efe0007762cc6c751c15c5175a40b1e2b5075 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Sun, 19 Jan 2025 22:48:21 +0100
+Subject: [PATCH] sbsign: Make sure output file mode respects umask
+
+(cherry picked from commit 6f594acd632f61fde4b1c33bfcab3954ec304e8a)
+---
+ src/sbsign/sbsign.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/sbsign/sbsign.c b/src/sbsign/sbsign.c
+index 0448c92429..73087a59f7 100644
+--- a/src/sbsign/sbsign.c
++++ b/src/sbsign/sbsign.c
+@@ -251,6 +251,10 @@ static int verb_sign(int argc, char *argv[], void *userdata) {
+         if (dstfd < 0)
+                 return log_error_errno(r, "Failed to open temporary file: %m");
+ 
++        r = fchmod_umask(dstfd, 0666);
++        if (r < 0)
++                log_debug_errno(r, "Failed to change temporary file mode: %m");
++
+         r = copy_bytes(srcfd, dstfd, UINT64_MAX, COPY_REFLINK);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to copy %s to %s: %m", argv[1], tmp);

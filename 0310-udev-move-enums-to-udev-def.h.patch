@@ -1,0 +1,318 @@
+From d7038446b87ee770bc01a288fac81d86723c9838 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 4 Dec 2024 06:05:38 +0900
+Subject: [PATCH] udev: move enums to udev-def.h
+
+No functional change, just refactoring and preparation for later
+commits.
+
+(cherry picked from commit 0bdcca5aee60422167065be156990f2a88e0ed95)
+
+Resolves: RHEL-75774
+---
+ src/udev/test-udev-rule-runner.c |  1 +
+ src/udev/udev-builtin.h          | 24 +-------------
+ src/udev/udev-def.h              | 57 ++++++++++++++++++++++++++++++++
+ src/udev/udev-event.c            |  2 ++
+ src/udev/udev-event.h            | 12 ++-----
+ src/udev/udev-format.c           |  1 +
+ src/udev/udev-manager.c          |  1 +
+ src/udev/udev-manager.h          |  3 +-
+ src/udev/udev-rules.c            |  1 +
+ src/udev/udev-rules.h            | 21 +-----------
+ src/udev/udev-spawn.c            |  1 +
+ src/udev/udev-worker.c           |  1 +
+ src/udev/udevadm-test.c          |  1 +
+ src/udev/udevd.c                 |  1 +
+ 14 files changed, 74 insertions(+), 53 deletions(-)
+ create mode 100644 src/udev/udev-def.h
+
+diff --git a/src/udev/test-udev-rule-runner.c b/src/udev/test-udev-rule-runner.c
+index db41813511..d123c8ad1b 100644
+--- a/src/udev/test-udev-rule-runner.c
++++ b/src/udev/test-udev-rule-runner.c
+@@ -25,6 +25,7 @@
+ #include "string-util.h"
+ #include "tests.h"
+ #include "udev-event.h"
++#include "udev-rules.h"
+ #include "udev-spawn.h"
+ #include "version.h"
+ 
+diff --git a/src/udev/udev-builtin.h b/src/udev/udev-builtin.h
+index b4ddba095a..2433dfa4d4 100644
+--- a/src/udev/udev-builtin.h
++++ b/src/udev/udev-builtin.h
+@@ -7,31 +7,9 @@
+ #include "sd-netlink.h"
+ 
+ #include "macro.h"
++#include "udev-def.h"
+ #include "udev-event.h"
+ 
+-typedef enum UdevBuiltinCommand {
+-#if HAVE_BLKID
+-        UDEV_BUILTIN_BLKID,
+-#endif
+-        UDEV_BUILTIN_BTRFS,
+-        UDEV_BUILTIN_HWDB,
+-        UDEV_BUILTIN_INPUT_ID,
+-        UDEV_BUILTIN_KEYBOARD,
+-#if HAVE_KMOD
+-        UDEV_BUILTIN_KMOD,
+-#endif
+-        UDEV_BUILTIN_NET_DRIVER,
+-        UDEV_BUILTIN_NET_ID,
+-        UDEV_BUILTIN_NET_LINK,
+-        UDEV_BUILTIN_PATH_ID,
+-        UDEV_BUILTIN_USB_ID,
+-#if HAVE_ACL
+-        UDEV_BUILTIN_UACCESS,
+-#endif
+-        _UDEV_BUILTIN_MAX,
+-        _UDEV_BUILTIN_INVALID = -EINVAL,
+-} UdevBuiltinCommand;
+-
+ typedef struct UdevBuiltin {
+         const char *name;
+         int (*cmd)(UdevEvent *event, int argc, char *argv[]);
+diff --git a/src/udev/udev-def.h b/src/udev/udev-def.h
+new file mode 100644
+index 0000000000..6ff3feacec
+--- /dev/null
++++ b/src/udev/udev-def.h
+@@ -0,0 +1,57 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++#pragma once
++
++#include <errno.h>
++
++#define UDEV_NAME_SIZE   512
++#define UDEV_PATH_SIZE  1024
++#define UDEV_LINE_SIZE 16384
++
++typedef enum EventMode {
++        EVENT_UDEV_WORKER,
++        EVENT_UDEVADM_TEST,
++        EVENT_UDEVADM_TEST_BUILTIN,
++        EVENT_TEST_RULE_RUNNER,
++        EVENT_TEST_SPAWN,
++        _EVENT_MODE_MAX,
++        _EVENT_MODE_INVALID = -EINVAL,
++} EventMode;
++
++typedef enum UdevRuleEscapeType {
++        ESCAPE_UNSET,
++        ESCAPE_NONE,    /* OPTIONS="string_escape=none" */
++        ESCAPE_REPLACE, /* OPTIONS="string_escape=replace" */
++        _ESCAPE_TYPE_MAX,
++        _ESCAPE_TYPE_INVALID = -EINVAL,
++} UdevRuleEscapeType;
++
++typedef enum ResolveNameTiming {
++        RESOLVE_NAME_NEVER,
++        RESOLVE_NAME_LATE,
++        RESOLVE_NAME_EARLY,
++        _RESOLVE_NAME_TIMING_MAX,
++        _RESOLVE_NAME_TIMING_INVALID = -EINVAL,
++} ResolveNameTiming;
++
++typedef enum UdevBuiltinCommand {
++#if HAVE_BLKID
++        UDEV_BUILTIN_BLKID,
++#endif
++        UDEV_BUILTIN_BTRFS,
++        UDEV_BUILTIN_HWDB,
++        UDEV_BUILTIN_INPUT_ID,
++        UDEV_BUILTIN_KEYBOARD,
++#if HAVE_KMOD
++        UDEV_BUILTIN_KMOD,
++#endif
++        UDEV_BUILTIN_NET_DRIVER,
++        UDEV_BUILTIN_NET_ID,
++        UDEV_BUILTIN_NET_LINK,
++        UDEV_BUILTIN_PATH_ID,
++        UDEV_BUILTIN_USB_ID,
++#if HAVE_ACL
++        UDEV_BUILTIN_UACCESS,
++#endif
++        _UDEV_BUILTIN_MAX,
++        _UDEV_BUILTIN_INVALID = -EINVAL,
++} UdevBuiltinCommand;
+diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
+index 607071a8cf..7fa86ddd84 100644
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -12,8 +12,10 @@
+ #include "strv.h"
+ #include "udev-event.h"
+ #include "udev-node.h"
++#include "udev-rules.h"
+ #include "udev-trace.h"
+ #include "udev-util.h"
++#include "udev-worker.h"
+ #include "user-util.h"
+ 
+ UdevEvent *udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
+diff --git a/src/udev/udev-event.h b/src/udev/udev-event.h
+index 22388fe904..88a7cfe497 100644
+--- a/src/udev/udev-event.h
++++ b/src/udev/udev-event.h
+@@ -14,17 +14,11 @@
+ #include "hashmap.h"
+ #include "macro.h"
+ #include "time-util.h"
+-#include "udev-rules.h"
+-#include "udev-worker.h"
++#include "udev-def.h"
+ #include "user-util.h"
+ 
+-typedef enum EventMode {
+-        EVENT_UDEV_WORKER,
+-        EVENT_UDEVADM_TEST,
+-        EVENT_UDEVADM_TEST_BUILTIN,
+-        EVENT_TEST_RULE_RUNNER,
+-        EVENT_TEST_SPAWN,
+-} EventMode;
++typedef struct UdevRules UdevRules;
++typedef struct UdevWorker UdevWorker;
+ 
+ typedef struct UdevEvent {
+         UdevWorker *worker;
+diff --git a/src/udev/udev-format.c b/src/udev/udev-format.c
+index 4bfa6d7a3e..8637d802fc 100644
+--- a/src/udev/udev-format.c
++++ b/src/udev/udev-format.c
+@@ -8,6 +8,7 @@
+ #include "udev-event.h"
+ #include "udev-format.h"
+ #include "udev-util.h"
++#include "udev-worker.h"
+ 
+ typedef enum {
+         FORMAT_SUBST_DEVNODE,
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index 32bc0db345..5b1135c9e8 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -29,6 +29,7 @@
+ #include "udev-event.h"
+ #include "udev-manager.h"
+ #include "udev-node.h"
++#include "udev-rules.h"
+ #include "udev-spawn.h"
+ #include "udev-trace.h"
+ #include "udev-util.h"
+diff --git a/src/udev/udev-manager.h b/src/udev/udev-manager.h
+index 5921d333d1..5519eb33bb 100644
+--- a/src/udev/udev-manager.h
++++ b/src/udev/udev-manager.h
+@@ -10,9 +10,10 @@
+ #include "macro.h"
+ #include "time-util.h"
+ #include "udev-ctrl.h"
+-#include "udev-rules.h"
++#include "udev-def.h"
+ 
+ typedef struct Event Event;
++typedef struct UdevRules UdevRules;
+ typedef struct Worker Worker;
+ 
+ typedef struct Manager {
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 4f2021b8c4..6345b80cba 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -39,6 +39,7 @@
+ #include "udev-spawn.h"
+ #include "udev-trace.h"
+ #include "udev-util.h"
++#include "udev-worker.h"
+ #include "user-util.h"
+ #include "virt.h"
+ 
+diff --git a/src/udev/udev-rules.h b/src/udev/udev-rules.h
+index 61d517d9da..3bd4b04ab3 100644
+--- a/src/udev/udev-rules.h
++++ b/src/udev/udev-rules.h
+@@ -4,31 +4,12 @@
+ #include "alloc-util.h"
+ #include "hashmap.h"
+ #include "time-util.h"
+-
+-#define UDEV_NAME_SIZE   512
+-#define UDEV_PATH_SIZE  1024
+-#define UDEV_LINE_SIZE 16384
++#include "udev-def.h"
+ 
+ typedef struct UdevRuleFile UdevRuleFile;
+ typedef struct UdevRules UdevRules;
+ typedef struct UdevEvent UdevEvent;
+ 
+-typedef enum {
+-        ESCAPE_UNSET,
+-        ESCAPE_NONE,    /* OPTIONS="string_escape=none" */
+-        ESCAPE_REPLACE, /* OPTIONS="string_escape=replace" */
+-        _ESCAPE_TYPE_MAX,
+-        _ESCAPE_TYPE_INVALID = -EINVAL,
+-} UdevRuleEscapeType;
+-
+-typedef enum ResolveNameTiming {
+-        RESOLVE_NAME_NEVER,
+-        RESOLVE_NAME_LATE,
+-        RESOLVE_NAME_EARLY,
+-        _RESOLVE_NAME_TIMING_MAX,
+-        _RESOLVE_NAME_TIMING_INVALID = -EINVAL,
+-} ResolveNameTiming;
+-
+ int udev_rule_parse_value(char *str, char **ret_value, char **ret_endpos, bool *ret_is_case_insensitive);
+ int udev_rules_parse_file(UdevRules *rules, const char *filename, bool extra_checks, UdevRuleFile **ret);
+ unsigned udev_rule_file_get_issues(UdevRuleFile *rule_file);
+diff --git a/src/udev/udev-spawn.c b/src/udev/udev-spawn.c
+index d2a422f7e8..b95141cf21 100644
+--- a/src/udev/udev-spawn.c
++++ b/src/udev/udev-spawn.c
+@@ -14,6 +14,7 @@
+ #include "udev-event.h"
+ #include "udev-spawn.h"
+ #include "udev-trace.h"
++#include "udev-worker.h"
+ 
+ typedef struct Spawn {
+         sd_device *device;
+diff --git a/src/udev/udev-worker.c b/src/udev/udev-worker.c
+index fc1bfd684c..0c57551a37 100644
+--- a/src/udev/udev-worker.c
++++ b/src/udev/udev-worker.c
+@@ -18,6 +18,7 @@
+ #include "signal-util.h"
+ #include "string-util.h"
+ #include "udev-event.h"
++#include "udev-rules.h"
+ #include "udev-spawn.h"
+ #include "udev-trace.h"
+ #include "udev-util.h"
+diff --git a/src/udev/udevadm-test.c b/src/udev/udevadm-test.c
+index 7f3e534d2b..863eab87a5 100644
+--- a/src/udev/udevadm-test.c
++++ b/src/udev/udevadm-test.c
+@@ -26,6 +26,7 @@
+ #include "udev-builtin.h"
+ #include "udev-event.h"
+ #include "udev-format.h"
++#include "udev-rules.h"
+ #include "udevadm-util.h"
+ #include "udevadm.h"
+ #include "user-util.h"
+diff --git a/src/udev/udevd.c b/src/udev/udevd.c
+index c46fcaa038..bd0cefe8b5 100644
+--- a/src/udev/udevd.c
++++ b/src/udev/udevd.c
+@@ -24,6 +24,7 @@
+ #include "signal-util.h"
+ #include "syslog-util.h"
+ #include "udev-manager.h"
++#include "udev-rules.h"
+ #include "udev-util.h"
+ #include "udevd.h"
+ #include "version.h"

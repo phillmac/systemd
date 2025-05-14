@@ -1,0 +1,70 @@
+From 3e782a6a5e9ab272280e1dbd15a433d15ecf8961 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Mon, 13 Jan 2025 16:35:58 +0100
+Subject: [PATCH] shared/serialize: introduce serialize_id128()
+
+(cherry picked from commit 38a2c2bf6a89def24007c0dac529c07da713abfb)
+
+Resolves: RHEL-73780
+---
+ src/core/unit-serialize.c |  3 +--
+ src/shared/serialize.c    | 10 ++++++++++
+ src/shared/serialize.h    |  3 +++
+ 3 files changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/unit-serialize.c b/src/core/unit-serialize.c
+index 82102c0c32..2b5b472c47 100644
+--- a/src/core/unit-serialize.c
++++ b/src/core/unit-serialize.c
+@@ -117,8 +117,7 @@ int unit_serialize_state(Unit *u, FILE *f, FDSet *fds, bool switching_root) {
+         if (gid_is_valid(u->ref_gid))
+                 (void) serialize_item_format(f, "ref-gid", GID_FMT, u->ref_gid);
+ 
+-        if (!sd_id128_is_null(u->invocation_id))
+-                (void) serialize_item_format(f, "invocation-id", SD_ID128_FORMAT_STR, SD_ID128_FORMAT_VAL(u->invocation_id));
++        (void) serialize_id128(f, "invocation-id", u->invocation_id);
+ 
+         (void) serialize_item(f, "freezer-state", freezer_state_to_string(u->freezer_state));
+ 
+diff --git a/src/shared/serialize.c b/src/shared/serialize.c
+index 58773e5ddd..44148bea2c 100644
+--- a/src/shared/serialize.c
++++ b/src/shared/serialize.c
+@@ -182,6 +182,16 @@ int serialize_strv(FILE *f, const char *key, char * const *l) {
+         return ret;
+ }
+ 
++int serialize_id128(FILE *f, const char *key, sd_id128_t id) {
++        assert(f);
++        assert(key);
++
++        if (sd_id128_is_null(id))
++                return 0;
++
++        return serialize_item_format(f, key, SD_ID128_FORMAT_STR, SD_ID128_FORMAT_VAL(id));
++}
++
+ int serialize_pidref(FILE *f, FDSet *fds, const char *key, PidRef *pidref) {
+         int r;
+ 
+diff --git a/src/shared/serialize.h b/src/shared/serialize.h
+index a1350533cf..f2be84807a 100644
+--- a/src/shared/serialize.h
++++ b/src/shared/serialize.h
+@@ -3,6 +3,8 @@
+ 
+ #include <stdio.h>
+ 
++#include "sd-id128.h"
++
+ #include "fdset.h"
+ #include "image-policy.h"
+ #include "macro.h"
+@@ -22,6 +24,7 @@ int serialize_fd_many(FILE *f, FDSet *fds, const char *key, const int fd_array[]
+ int serialize_usec(FILE *f, const char *key, usec_t usec);
+ int serialize_dual_timestamp(FILE *f, const char *key, const dual_timestamp *t);
+ int serialize_strv(FILE *f, const char *key, char * const *l);
++int serialize_id128(FILE *f, const char *key, sd_id128_t id);
+ int serialize_pidref(FILE *f, FDSet *fds, const char *key, PidRef *pidref);
+ int serialize_ratelimit(FILE *f, const char *key, const RateLimit *rl);
+ int serialize_string_set(FILE *f, const char *key, const Set *s);

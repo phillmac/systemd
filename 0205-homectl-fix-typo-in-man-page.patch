@@ -1,0 +1,23 @@
+From e24bc34ed8dc5a663344c2a6468d820431bbd4ea Mon Sep 17 00:00:00 2001
+From: Matthieu LAURENT <matthieu.laurent69@proton.me>
+Date: Wed, 5 Feb 2025 17:31:15 +0100
+Subject: [PATCH] homectl: fix typo in man page
+
+(cherry picked from commit df9c5c1c9c230605734aeace4cd3861ff3d6ee6d)
+---
+ man/homectl.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/homectl.xml b/man/homectl.xml
+index 7762cf1423..927fe939ee 100644
+--- a/man/homectl.xml
++++ b/man/homectl.xml
+@@ -602,7 +602,7 @@
+         <listitem><para>Takes a boolean argument. Configures whether to enforce the system's password policy
+         for this user, regarding quality and strength of selected passwords. Defaults to
+         on. <option>-P</option> is short for
+-        <option>---enforce-password-policy=no</option>.</para>
++        <option>--enforce-password-policy=no</option>.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v245"/></listitem>
+       </varlistentry>

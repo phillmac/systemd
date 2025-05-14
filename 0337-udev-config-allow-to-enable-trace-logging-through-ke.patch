@@ -1,0 +1,158 @@
+From 72d1239a7505c29375bd78e1ff6126305505b533 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 12 Jan 2025 01:35:48 +0900
+Subject: [PATCH] udev-config: allow to enable trace logging through kernel
+ command line
+
+This adds udev.trace[=BOOL] kernel command line option to control trace
+logging.
+
+(cherry picked from commit 695c592a034d98be9c10840c9c89b44013b330a2)
+
+Resolves: RHEL-75774
+---
+ man/kernel-command-line.xml   |  2 ++
+ man/systemd-udevd.service.xml | 10 +++++++++
+ src/udev/udev-config.c        | 41 ++++++++++++++++++++++++++++++-----
+ src/udev/udev-config.h        |  1 +
+ src/udev/udev-worker.c        |  1 +
+ 5 files changed, 49 insertions(+), 6 deletions(-)
+
+diff --git a/man/kernel-command-line.xml b/man/kernel-command-line.xml
+index baa7122204..0a4c8cf11b 100644
+--- a/man/kernel-command-line.xml
++++ b/man/kernel-command-line.xml
+@@ -306,6 +306,8 @@
+       <varlistentry>
+         <term><varname>udev.log_level=</varname></term>
+         <term><varname>rd.udev.log_level=</varname></term>
++        <term><varname>udev.trace=</varname></term>
++        <term><varname>rd.udev.trace=</varname></term>
+         <term><varname>udev.children_max=</varname></term>
+         <term><varname>rd.udev.children_max=</varname></term>
+         <term><varname>udev.exec_delay=</varname></term>
+diff --git a/man/systemd-udevd.service.xml b/man/systemd-udevd.service.xml
+index c781765e1c..2a825a52a2 100644
+--- a/man/systemd-udevd.service.xml
++++ b/man/systemd-udevd.service.xml
+@@ -165,6 +165,16 @@
+         <xi:include href="version-info.xml" xpointer="v247"/>
+         </listitem>
+       </varlistentry>
++      <varlistentry>
++        <term><varname>udev.trace[=<replaceable>BOOL</replaceable>]</varname></term>
++        <term><varname>rd.udev.trace[=<replaceable>BOOL</replaceable>]</varname></term>
++        <listitem>
++          <para>Enable/disable trace logging. When enabled, <varname>udev.log_level=</varname> will be
++          ignored, and <literal>debug</literal> level is assumed.</para>
++
++          <xi:include href="version-info.xml" xpointer="v258"/>
++        </listitem>
++      </varlistentry>
+       <varlistentry>
+         <term><varname>udev.children_max=</varname></term>
+         <term><varname>rd.udev.children_max=</varname></term>
+diff --git a/src/udev/udev-config.c b/src/udev/udev-config.c
+index 86a99a5381..9c806baec2 100644
+--- a/src/udev/udev-config.c
++++ b/src/udev/udev-config.c
+@@ -112,6 +112,20 @@ static int parse_proc_cmdline_item(const char *key, const char *value, void *dat
+ 
+                 return 0;
+ 
++        } else if (proc_cmdline_key_streq(key, "udev.trace")) {
++
++                if (!value)
++                        config->trace = true;
++                else {
++                        r = parse_boolean(value);
++                        if (r < 0)
++                                log_warning_errno(r, "Failed to parse udev.trace argument, ignoring: %s", value);
++                        else
++                                config->trace = r;
++                }
++
++                return 0;
++
+         } else {
+                 if (startswith(key, "udev."))
+                         log_warning("Unknown udev kernel command line option \"%s\", ignoring.", key);
+@@ -257,13 +271,24 @@ static int parse_argv(int argc, char *argv[], UdevConfig *config) {
+                 manager->config_by_command.name ||                      \
+                 manager->config_by_udev_conf.name;
+ 
++static void manager_merge_config_log_level(Manager *manager) {
++        assert(manager);
++
++        MERGE_BOOL(trace);
++
++        if (manager->config.trace)
++                manager->config.log_level = LOG_DEBUG;
++        else
++                MERGE_NON_NEGATIVE(log_level, log_get_max_level());
++}
++
+ static void manager_merge_config(Manager *manager) {
+         assert(manager);
+ 
+         /* udev.conf has the lowest priority, then followed by command line arguments, kernel command line
+            options, and values set by udev control. */
+ 
+-        MERGE_NON_NEGATIVE(log_level, log_get_max_level());
++        manager_merge_config_log_level(manager);
+         MERGE_NON_NEGATIVE(resolve_name_timing, RESOLVE_NAME_EARLY);
+         MERGE_NON_ZERO(exec_delay_usec, 0);
+         MERGE_NON_ZERO(timeout_usec, DEFAULT_WORKER_TIMEOUT_USEC);
+@@ -310,11 +335,14 @@ void manager_set_log_level(Manager *manager, int log_level) {
+ 
+         int old = log_get_max_level();
+ 
+-        log_set_max_level(log_level);
+-        manager->config.log_level = manager->config_by_control.log_level = log_level;
++        manager->config_by_control.log_level = log_level;
++        manager_merge_config_log_level(manager);
+ 
+-        if (log_level != old)
+-                manager_kill_workers(manager, /* force = */ false);
++        if (manager->config.log_level == old)
++                return;
++
++        log_set_max_level(manager->config.log_level);
++        manager_kill_workers(manager, /* force = */ false);
+ }
+ 
+ static void manager_adjust_config(UdevConfig *config) {
+@@ -434,7 +462,8 @@ UdevReloadFlags manager_reload_config(Manager *manager) {
+             manager->config.exec_delay_usec != old.exec_delay_usec ||
+             manager->config.timeout_usec != old.timeout_usec ||
+             manager->config.timeout_signal != old.timeout_signal ||
+-            manager->config.blockdev_read_only != old.blockdev_read_only)
++            manager->config.blockdev_read_only != old.blockdev_read_only ||
++            manager->config.trace != old.trace)
+                 return UDEV_RELOAD_KILL_WORKERS;
+ 
+         return 0;
+diff --git a/src/udev/udev-config.h b/src/udev/udev-config.h
+index 68bb1ea98c..9e8a48dae2 100644
+--- a/src/udev/udev-config.h
++++ b/src/udev/udev-config.h
+@@ -18,6 +18,7 @@ typedef struct UdevConfig {
+         usec_t timeout_usec;
+         int timeout_signal;
+         bool blockdev_read_only;
++        bool trace;
+ } UdevConfig;
+ 
+ #define UDEV_CONFIG_INIT                                             \
+diff --git a/src/udev/udev-worker.c b/src/udev/udev-worker.c
+index fc9072e5fd..b26bf3b980 100644
+--- a/src/udev/udev-worker.c
++++ b/src/udev/udev-worker.c
+@@ -183,6 +183,7 @@ static int worker_process_device(UdevWorker *worker, sd_device *dev) {
+         udev_event = udev_event_new(dev, worker, EVENT_UDEV_WORKER);
+         if (!udev_event)
+                 return -ENOMEM;
++        udev_event->trace = worker->config.trace;
+ 
+         /* If this is a block device and the device is locked currently via the BSD advisory locks,
+          * someone else is using it exclusively. We don't run our udev rules now to not interfere.

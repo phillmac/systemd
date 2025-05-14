@@ -1,0 +1,24 @@
+From 0257f4ba228582112e1c38dc79d8ac3887f023c1 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 14:43:48 +0100
+Subject: [PATCH] mkosi: Add libz1 to opensuse tools tree
+
+Without meson fails to configure properly.
+
+(cherry picked from commit d4dda34854c3bcb44ab5929ad32d0793e4debb9f)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+index c065a52cf3..468f56856f 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+@@ -5,6 +5,7 @@ ToolsTreeDistribution=opensuse
+ 
+ [Build]
+ ToolsTreePackages=
++        libz1
+         gh
+         mypy
+         pkgconfig(blkid)

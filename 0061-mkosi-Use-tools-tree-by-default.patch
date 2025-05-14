@@ -1,0 +1,52 @@
+From e0bc5a219af218b8d201d93bc5369a9b361d6312 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 11:41:40 +0100
+Subject: [PATCH] mkosi: Use tools tree by default
+
+Let's enable usage of a tools tree by default to simplify the setup
+for new contributors and save them from having to install or upgrade
+a bunch of extra tools to get mkosi working as expected.
+
+(cherry picked from commit 1995084a9e01b53cf012a54fe69e35016c235151)
+---
+ .github/workflows/coverage.yml | 1 -
+ .github/workflows/mkosi.yml    | 1 -
+ mkosi.conf                     | 1 +
+ 3 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 7850c2c514..a1587e62e9 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -49,7 +49,6 @@ jobs:
+           Distribution=arch
+ 
+           [Build]
+-          ToolsTree=default
+           ToolsTreeDistribution=arch
+           UseSubvolumes=yes
+           WithTests=no
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index c9d4b012a2..4d128822fb 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -152,7 +152,6 @@ jobs:
+ 
+           [Build]
+           UseSubvolumes=yes
+-          ToolsTree=default
+           ToolsTreeDistribution=fedora
+           ToolsTreeRelease=rawhide
+ 
+diff --git a/mkosi.conf b/mkosi.conf
+index 3da4e07a87..ab8a6a1372 100644
+--- a/mkosi.conf
++++ b/mkosi.conf
+@@ -29,6 +29,7 @@ RepartDirectories=mkosi.repart
+ OutputDirectory=build/mkosi.output
+ 
+ [Build]
++ToolsTree=default
+ BuildDirectory=build/mkosi.builddir
+ CacheDirectory=build/mkosi.cache
+ BuildSourcesEphemeral=yes

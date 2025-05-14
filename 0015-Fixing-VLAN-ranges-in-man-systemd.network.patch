@@ -1,0 +1,25 @@
+From 9fad72cc52bdec7f44337b1e48c23ee15fc08d77 Mon Sep 17 00:00:00 2001
+From: andrejpodzimek <andrej@podzimek.org>
+Date: Wed, 11 Dec 2024 12:46:43 +0000
+Subject: [PATCH] Fixing VLAN ranges in man systemd.network.
+
+Otherwise it doesn't hold that VLANs 100-400 are allowed (because 201-299 are disallowed).
+
+(cherry picked from commit ae2f3af63962ba6e2f67cfce07c9fee61722e30e)
+---
+ man/systemd.network.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/systemd.network.xml b/man/systemd.network.xml
+index 9d8dcba509..32cfb207e0 100644
+--- a/man/systemd.network.xml
++++ b/man/systemd.network.xml
+@@ -6431,7 +6431,7 @@ PVID=42
+ EgressUntagged=42
+ 
+ [BridgeVLAN]
+-VLAN=100-200
++VLAN=100-299
+ 
+ [BridgeVLAN]
+ EgressUntagged=300-400</programlisting>

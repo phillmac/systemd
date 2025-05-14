@@ -1,0 +1,137 @@
+From 7adac4caecf8a6cfbfcf2e169a803ce170359518 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 16 Dec 2024 11:50:53 +0900
+Subject: [PATCH] meson: allow to customize the access mode for tty/pts devices
+
+Then, switch the default value to "0600", due to general security
+concerns about terminals being written to by other users.
+
+Closing #35599.
+
+Backport note: the default is changed back to 0620 to keep backward
+compatbility intact for the purpose of backporting. This lets
+security-conscious users fix  the issue if they want to, without
+affecting users that do not want changes in the stable branches.
+
+(cherry picked from commit a4d18914751e687c9e44f22fe4e5f95b843a45c8)
+---
+ meson.build                      | 10 ++++++++++
+ meson_options.txt                |  2 ++
+ rules.d/50-udev-default.rules.in |  2 +-
+ src/basic/terminal-util.h        |  5 +++--
+ src/nspawn/nspawn.c              |  4 ++--
+ src/shared/mount-setup.c         |  2 +-
+ tools/meson-render-jinja2.py     |  4 +++-
+ 7 files changed, 22 insertions(+), 7 deletions(-)
+
+diff --git a/meson.build b/meson.build
+index caf2af0753..cfb202eb30 100644
+--- a/meson.build
++++ b/meson.build
+@@ -987,6 +987,16 @@ conf.set10('DEV_KVM_UACCESS', dev_kvm_mode != '0666')
+ group_render_mode = get_option('group-render-mode')
+ conf.set_quoted('GROUP_RENDER_MODE', group_render_mode)
+ conf.set10('GROUP_RENDER_UACCESS', group_render_mode != '0666')
++tty_mode = get_option('tty-mode')
++# The setting is used as both octal integer and string through STRINGIFY().
++# Here, only check if the value starts with '06', and further check will be done in terminal-util.h.
++if not tty_mode.startswith('06')
++        error('Unexpected access mode "@0@" is specified for TTY/PTS device nodes, it must be "06xx".'.format(tty_mode))
++elif tty_mode != '0600' and tty_mode != '0620'
++        warning('Unexpected access mode "@0@" is specified for TTY/PTS device nodes, typically it should be "0600" or "0620", proceeding anyway.'.format(tty_mode))
++endif
++# Do not use set_quoted() here, so that the value is available as an integer.
++conf.set('TTY_MODE', tty_mode)
+ 
+ kill_user_processes = get_option('default-kill-user-processes')
+ conf.set10('KILL_USER_PROCESSES', kill_user_processes)
+diff --git a/meson_options.txt b/meson_options.txt
+index 78ec25bfa3..f30b3f5238 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -330,6 +330,8 @@ option('dev-kvm-mode', type : 'string', value : '0666',
+        description : '/dev/kvm access mode')
+ option('group-render-mode', type : 'string', value : '0666',
+        description : 'Access mode for devices owned by render group (e.g. /dev/dri/renderD*, /dev/kfd).')
++option('tty-mode', type : 'string', value : '0620',
++       description : 'Access mode for tty/pts device nodes.')
+ option('default-kill-user-processes', type : 'boolean',
+        description : 'the default value for KillUserProcesses= setting')
+ option('gshadow', type : 'boolean',
+diff --git a/rules.d/50-udev-default.rules.in b/rules.d/50-udev-default.rules.in
+index 6f80feeecf..8fa518cd8f 100644
+--- a/rules.d/50-udev-default.rules.in
++++ b/rules.d/50-udev-default.rules.in
+@@ -37,7 +37,7 @@ ACTION!="add", GOTO="default_end"
+ 
+ SUBSYSTEM=="tty", KERNEL=="ptmx", GROUP="tty", MODE="0666"
+ SUBSYSTEM=="tty", KERNEL=="tty", GROUP="tty", MODE="0666"
+-SUBSYSTEM=="tty", KERNEL=="tty[0-9]*|hvc[0-9]*|sclp_line[0-9]*|ttysclp[0-9]*|3270/tty[0-9]*", GROUP="tty", MODE="0620"
++SUBSYSTEM=="tty", KERNEL=="tty[0-9]*|hvc[0-9]*|sclp_line[0-9]*|ttysclp[0-9]*|3270/tty[0-9]*", GROUP="tty", MODE="{{TTY_MODE}}"
+ SUBSYSTEM=="vc", KERNEL=="vcs*|vcsa*", GROUP="tty"
+ KERNEL=="tty[A-Z]*[0-9]|ttymxc[0-9]*|pppox[0-9]*|ircomm[0-9]*|noz[0-9]*|rfcomm[0-9]*", GROUP="dialout"
+ 
+diff --git a/src/basic/terminal-util.h b/src/basic/terminal-util.h
+index 90662e2e66..2fb5281a53 100644
+--- a/src/basic/terminal-util.h
++++ b/src/basic/terminal-util.h
+@@ -144,8 +144,9 @@ int vt_release(int fd, bool restore_vt);
+ 
+ void get_log_colors(int priority, const char **on, const char **off, const char **highlight);
+ 
+-/* This assumes there is a 'tty' group */
+-#define TTY_MODE 0620
++/* Assume TTY_MODE is defined in config.h. Also, this assumes there is a 'tty' group. */
++assert_cc((TTY_MODE & ~0666) == 0);
++assert_cc((TTY_MODE & 0711) == 0600);
+ 
+ void termios_disable_echo(struct termios *termios);
+ 
+diff --git a/src/nspawn/nspawn.c b/src/nspawn/nspawn.c
+index 500725d35f..6f90f2f418 100644
+--- a/src/nspawn/nspawn.c
++++ b/src/nspawn/nspawn.c
+@@ -2399,13 +2399,13 @@ static int setup_pts(const char *dest) {
+ #if HAVE_SELINUX
+         if (arg_selinux_apifs_context)
+                 (void) asprintf(&options,
+-                                "newinstance,ptmxmode=0666,mode=620,gid=" GID_FMT ",context=\"%s\"",
++                                "newinstance,ptmxmode=0666,mode=" STRINGIFY(TTY_MODE) ",gid=" GID_FMT ",context=\"%s\"",
+                                 arg_uid_shift + TTY_GID,
+                                 arg_selinux_apifs_context);
+         else
+ #endif
+                 (void) asprintf(&options,
+-                                "newinstance,ptmxmode=0666,mode=620,gid=" GID_FMT,
++                                "newinstance,ptmxmode=0666,mode=" STRINGIFY(TTY_MODE) ",gid=" GID_FMT,
+                                 arg_uid_shift + TTY_GID);
+ 
+         if (!options)
+diff --git a/src/shared/mount-setup.c b/src/shared/mount-setup.c
+index d5009fb59e..73be3b5dce 100644
+--- a/src/shared/mount-setup.c
++++ b/src/shared/mount-setup.c
+@@ -93,7 +93,7 @@ static const MountPoint mount_table[] = {
+ #endif
+         { "tmpfs",       "/dev/shm",                  "tmpfs",      "mode=01777",                               MS_NOSUID|MS_NODEV|MS_STRICTATIME,
+           NULL,          MNT_FATAL|MNT_IN_CONTAINER },
+-        { "devpts",      "/dev/pts",                  "devpts",     "mode=0620,gid=" STRINGIFY(TTY_GID),        MS_NOSUID|MS_NOEXEC,
++        { "devpts",      "/dev/pts",                  "devpts",     "mode=" STRINGIFY(TTY_MODE) ",gid=" STRINGIFY(TTY_GID), MS_NOSUID|MS_NOEXEC,
+           NULL,          MNT_IN_CONTAINER           },
+ #if ENABLE_SMACK
+         { "tmpfs",       "/run",                      "tmpfs",      "mode=0755,smackfsroot=*" TMPFS_LIMITS_RUN, MS_NOSUID|MS_NODEV|MS_STRICTATIME,
+diff --git a/tools/meson-render-jinja2.py b/tools/meson-render-jinja2.py
+index 977de79378..1f893ed9a4 100755
+--- a/tools/meson-render-jinja2.py
++++ b/tools/meson-render-jinja2.py
+@@ -17,7 +17,9 @@ def parse_config_h(filename):
+         if not m:
+             continue
+         a, b = m.groups()
+-        if b and b[0] in '0123456789"':
++        # The function ast.literal_eval() cannot evaluate octal integers, e.g. 0600.
++        # So, it is intentional that the string below does not contain '0'.
++        if b and (b[0] in '123456789"' or b == '0'):
+             b = ast.literal_eval(b)
+         ans[a] = b
+     return ans

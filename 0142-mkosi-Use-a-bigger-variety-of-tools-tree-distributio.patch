@@ -1,0 +1,53 @@
+From 89c95c3a2c1d7868d8f3424aaaeebd1db86df56b Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 17 Jan 2025 13:28:47 +0100
+Subject: [PATCH] mkosi: Use a bigger variety of tools tree distributions
+
+Let's add more coverage for building with tools trees by building
+each image with a tools tree of the same distribution and release.
+
+Because not every tools tree distribution has a newer meson yet, we
+only use --max-lines= when meson actually knows the option.
+
+(cherry picked from commit 7645139bd7c7ccd10849c43644286e4877719a45)
+---
+ .github/workflows/mkosi.yml | 12 +++++++++---
+ 1 file changed, 9 insertions(+), 3 deletions(-)
+
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index e91f41db53..3a90bd6680 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -159,8 +159,8 @@ jobs:
+ 
+           [Build]
+           UseSubvolumes=yes
+-          ToolsTreeDistribution=fedora
+-          ToolsTreeRelease=rawhide
++          ToolsTreeDistribution=${{ matrix.distro }}
++          ToolsTreeRelease=${{ matrix.release }}
+ 
+           WorkspaceDirectory=$TMPDIR
+           PackageCacheDirectory=$TMPDIR/cache
+@@ -198,6 +198,12 @@ jobs:
+ 
+       - name: Run integration tests
+         run: |
++          if [[ "$(mkosi sandbox meson test --help)" == *"--max-lines"* ]]; then
++              MAX_LINES=(--max-lines 300)
++          else
++              MAX_LINES=()
++          fi
++
+           sudo --preserve-env \
+             mkosi sandbox \
+             env \
+@@ -210,7 +216,7 @@ jobs:
+             --print-errorlogs \
+             --no-stdsplit \
+             --num-processes "$(($(nproc) - 1))" \
+-            --max-lines 300
++            "${MAX_LINES[@]}"
+ 
+       - name: Archive failed test journals
+         uses: actions/upload-artifact@v4

@@ -1,0 +1,23 @@
+From e5bf5f0d6101acb818e76083c9b48ecf6e9e015e Mon Sep 17 00:00:00 2001
+From: AndreFerreiraMsc <mestreandreferreira@proton.me>
+Date: Tue, 28 Jan 2025 14:11:58 +0100
+Subject: [PATCH] man: Update nss-myhostname.xml to reflect files
+
+(cherry picked from commit 3e1d7b6aae5f5b24610620db810a5730dcc9a6a6)
+---
+ man/nss-myhostname.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/nss-myhostname.xml b/man/nss-myhostname.xml
+index 200c9220b9..653d8e49d4 100644
+--- a/man/nss-myhostname.xml
++++ b/man/nss-myhostname.xml
+@@ -74,7 +74,7 @@
+     <para>To activate the NSS modules, add <literal>myhostname</literal> to the line starting with
+     <literal>hosts:</literal> in <filename>/etc/nsswitch.conf</filename>.</para>
+ 
+-    <para>It is recommended to place <literal>myhostname</literal> after <literal>file</literal> and before <literal>dns</literal>.
++    <para>It is recommended to place <literal>myhostname</literal> after <literal>files</literal> and before <literal>dns</literal>.
+     This resolves well-known hostnames like <literal>localhost</literal>
+     and the machine hostnames locally. It is consistent with the behaviour
+     of <command>nss-resolve</command>, and still allows overriding via

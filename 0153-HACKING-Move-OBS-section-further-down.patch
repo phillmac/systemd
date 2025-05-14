@@ -1,0 +1,41 @@
+From a9cbe3f23da52088fd60432d78cce1034b5a739b Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 24 Jan 2025 17:28:15 +0100
+Subject: [PATCH] HACKING: Move OBS section further down
+
+HACKING.md should first and foremost tell someone how to hack on
+systemd, installing packages from OBS isn't the most likely section
+a new contributor will be interested in, so let's move it further
+down.
+
+(cherry picked from commit 798b9fb7eb71ad127af49f5308f9e95de4e77fa8)
+---
+ docs/HACKING.md | 15 +++++++++++++++
+ 1 file changed, 15 insertions(+)
+
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index b13280f28d..afc4e49965 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -146,6 +146,21 @@ dnf downgrade "systemd*" # Fedora/CentOS
+ # TODO: Other distributions
+ ```
+ 
++## Installing packages built from the main branch
++
++Packages for main distributions are built on the SUSE Open Build Service and
++repositories are published, so that they can be installed and upgraded easily.
++
++Instructions on how to add the repository for each supported distribution can
++[be found on OBS.](https://software.opensuse.org//download.html?project=system%3Asystemd&package=systemd)
++The `systemd-boot` file is signed for Secure Boot, the self-signed certificate
++can be downloaded for enrollment. For example, when using MOK Manager:
++
++```sh
++$ wget https://build.opensuse.org/projects/system:systemd/signing_keys/download?kind=ssl -O- | openssl x509 -inform pem -outform der -out obs.der
++$ run0 mokutil --import obs.der
++```
++
+ ## Templating engines in .in files
+ 
+ Some source files are generated during build. We use two templating engines:

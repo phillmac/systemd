@@ -1,0 +1,53 @@
+From f01ba41caefd8e574a6eda2af9f577d2d24d03e6 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 29 Jan 2025 14:44:27 +0100
+Subject: [PATCH] ukify: Calculate section size more correctly
+
+We should only use Misc_VirtualSize if it's smaller than SizeOfRawData,
+since in that case it'll be the non-aligned section size. Otherwise we
+have to use SizeOfRawData to get the size on disk.
+
+(cherry picked from commit 33b25fa11c408ae40f2aa4300220504329a23a52)
+---
+ src/ukify/ukify.py | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index 9570898011..b246fe13ca 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -710,6 +710,10 @@ def pe_strip_section_name(name: bytes) -> str:
+     return name.rstrip(b'\x00').decode()
+ 
+ 
++def pe_section_size(section: pefile.SectionStructure) -> int:
++    return cast(int, min(section.Misc_VirtualSize, section.SizeOfRawData))
++
++
+ def call_systemd_measure(uki: UKI, opts: UkifyConfig, profile_start: int = 0) -> None:
+     measure_tool = find_tool(
+         'systemd-measure',
+@@ -1250,11 +1254,11 @@ def make_uki(opts: UkifyConfig) -> None:
+                 continue
+ 
+             print(
+-                f"Copying section '{n}' from '{profile}': {pesection.Misc_VirtualSize} bytes",
++                f"Copying section '{n}' from '{profile}': {pe_section_size(pesection)} bytes",
+                 file=sys.stderr,
+             )
+             uki.add_section(
+-                Section.create(n, pesection.get_data(length=pesection.Misc_VirtualSize), measure=True)
++                Section.create(n, pesection.get_data(length=pe_section_size(pesection)), measure=True)
+             )
+ 
+         call_systemd_measure(uki, opts=opts, profile_start=prev_len)
+@@ -1434,8 +1438,7 @@ def inspect_section(
+ 
+     ttype = config.output_mode if config else DEFAULT_SECTIONS_TO_SHOW.get(name, 'binary')
+ 
+-    size = section.Misc_VirtualSize
+-    # TODO: Use ignore_padding once we can depend on a newer version of pefile
++    size = pe_section_size(section)
+     data = section.get_data(length=size)
+     digest = sha256(data).hexdigest()
+ 

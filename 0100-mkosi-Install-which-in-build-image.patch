@@ -1,0 +1,22 @@
+From b23751d0d0abc53f62108e0b6e035955eed30af9 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 7 Jan 2025 12:23:09 +0100
+Subject: [PATCH] mkosi: Install which in build image
+
+Required by gdb-add-index to find gdb and not declared as a dependency
+of the package.
+
+(cherry picked from commit 414fe9629cebf1ca2dc4c38d82ad8872a5483e89)
+---
+ mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+index 727e9bccd7..b81649feba 100644
+--- a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+@@ -20,3 +20,4 @@ Packages=
+         libasan
+         libubsan
+         rpm-build
++        which

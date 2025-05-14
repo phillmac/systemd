@@ -1,0 +1,23 @@
+From fc15f5990beffe8b2b93393685e5cc8e0cd21e45 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 9 Jan 2025 15:24:51 +0100
+Subject: [PATCH] fmf: Log clock source
+
+(cherry picked from commit 6e761c5a93278fc719a66f7c984af9608b836991)
+---
+ test/fmf/integration-tests/test.sh | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 762016f2a5..d1e43b1d7d 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -11,6 +11,8 @@ echo "CPU and Memory information:"
+ lscpu
+ lsmem
+ 
++echo "Clock source: $(cat /sys/devices/system/clocksource/clocksource0/current_clocksource)"
++
+ # Allow running the integration tests downstream in dist-git with something like
+ # the following snippet which makes the dist-git sources available in $TMT_SOURCE_DIR:
+ #

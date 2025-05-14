@@ -1,0 +1,31 @@
+From 72ef5ac211b1d578dfd7630301d8c2bb73439819 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Mon, 16 Dec 2024 17:13:08 +0000
+Subject: [PATCH] mkosi: temporarily disable panic_on_warn
+
+Due to a BTRFS issue in kernel 6.12 (and backported in Ubuntu to 6.8)
+there's a warning triggered by some tests, and it then causes a panic.
+
+The BTRFS issue has a patch but it is not available in any distro yet,
+so disable panic_on_warn until it reaches Arch and Ubuntu Noble. Bugs
+have been filed.
+
+(cherry picked from commit 930d65ccca8193a8cb635099c55852b677f5d58a)
+---
+ mkosi.conf | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/mkosi.conf b/mkosi.conf
+index a5d4eab23b..5622667078 100644
+--- a/mkosi.conf
++++ b/mkosi.conf
+@@ -74,7 +74,8 @@ KernelCommandLine=
+         oops=panic
+         panic=-1
+         softlockup_panic=1
+-        panic_on_warn=1
++        # Disabled due to BTRFS issue, waiting for the fix to become available
++        panic_on_warn=0
+         psi=1
+ 
+ KernelModulesInitrdExclude=.*

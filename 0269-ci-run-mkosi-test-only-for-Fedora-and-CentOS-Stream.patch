@@ -1,0 +1,80 @@
+From 111fdc464b7e470597db4477cedbe54e3c2fb4e8 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Tue, 16 Jul 2024 10:08:06 +0200
+Subject: [PATCH]  ci: run mkosi test only for Fedora and CentOS Stream
+
+rhel-only: ci
+
+Related: RHEL-40924
+---
+ .github/workflows/mkosi.yml | 36 ++----------------------------------
+ 1 file changed, 2 insertions(+), 34 deletions(-)
+
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 2b00498243..7a764e82a7 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -8,7 +8,7 @@ on:
+   push:
+     branches:
+       - main
+-      - v[0-9]+-stable
++      - rhel-10.*
+     paths:
+       - "**"
+       - "!README*"
+@@ -26,7 +26,7 @@ on:
+   pull_request:
+     branches:
+       - main
+-      - v[0-9]+-stable
++      - rhel-10.*
+     paths:
+       - "**"
+       - "!README*"
+@@ -54,30 +54,6 @@ jobs:
+       fail-fast: false
+       matrix:
+         include:
+-          - distro: arch
+-            release: rolling
+-            sanitizers: ""
+-            llvm: 0
+-            cflags: "-O2 -D_FORTIFY_SOURCE=3"
+-            relabel: no
+-            vm: 1
+-            skip: TEST-21-DFUZZER
+-          - distro: debian
+-            release: testing
+-            sanitizers: ""
+-            llvm: 0
+-            cflags: "-Og"
+-            relabel: no
+-            vm: 0
+-            skip: TEST-21-DFUZZER
+-          - distro: ubuntu
+-            release: noble
+-            sanitizers: ""
+-            llvm: 0
+-            cflags: "-Og"
+-            relabel: no
+-            vm: 0
+-            skip: TEST-21-DFUZZER
+           - distro: fedora
+             release: "41"
+             sanitizers: ""
+@@ -93,14 +69,6 @@ jobs:
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
+-          - distro: opensuse
+-            release: tumbleweed
+-            sanitizers: ""
+-            llvm: 0
+-            cflags: "-Og"
+-            relabel: no
+-            vm: 0
+-            skip: TEST-21-DFUZZER
+           - distro: centos
+             release: "9"
+             sanitizers: ""

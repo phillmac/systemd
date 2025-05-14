@@ -1,0 +1,47 @@
+From 2cf13464ec92429e5ce22a2ce52f6fa228e28514 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 5 Feb 2025 12:42:39 +0100
+Subject: [PATCH] repart: Don't fail when we're unable to read file attributes
+
+We're getting EOVERFLOW when reading file attributes trying to get
+mkosi running in a docker container (don't ask). I have a suspicion
+this is coming from fuse-overlayfs. Anyway, since the file attributes
+stuff is supposed to be purely optional, let's not fail when we can't
+read file attributes for whatever reason.
+
+(cherry picked from commit bc1291aa859783673450fc0c66c48a7242a8365b)
+---
+ src/repart/repart.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/repart/repart.c b/src/repart/repart.c
+index 2ddff313fc..b2a2bda2a2 100644
+--- a/src/repart/repart.c
++++ b/src/repart/repart.c
+@@ -4322,7 +4322,7 @@ static int prepare_temporary_file(Context *context, PartitionTarget *t, uint64_t
+ 
+         r = read_attr_fd(fdisk_get_devfd(context->fdisk_context), &attrs);
+         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
+-                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
++                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
+ 
+         if (FLAGS_SET(attrs, FS_NOCOW_FL)) {
+                 r = chattr_fd(fd, FS_NOCOW_FL, FS_NOCOW_FL, NULL);
+@@ -6587,7 +6587,7 @@ static int context_split(Context *context) {
+ 
+                         r = read_attr_fd(fd, &attrs);
+                         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
+-                                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
++                                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
+                 }
+ 
+                 fdt = xopenat_full(
+@@ -7457,7 +7457,7 @@ static int context_minimize(Context *context) {
+ 
+         r = read_attr_fd(context->backing_fd, &attrs);
+         if (r < 0 && !ERRNO_IS_NEG_NOT_SUPPORTED(r))
+-                return log_error_errno(r, "Failed to read file attributes of %s: %m", arg_node);
++                log_warning_errno(r, "Failed to read file attributes of %s, ignoring: %m", arg_node);
+ 
+         LIST_FOREACH(partitions, p, context->partitions) {
+                 _cleanup_(rm_rf_physical_and_freep) char *root = NULL;

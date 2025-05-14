@@ -1,0 +1,30 @@
+From e6886a6822fbb7909e36369e56b7d56f8d2e83b9 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 21 Jan 2025 13:48:13 +0100
+Subject: [PATCH] TEST-74-AUX-UTILS: Move run0 pcrlock test to TEST-70-TPM
+
+On CentOS Stream 9/10 booting mkosi qemu with --firmware=linux doesn't
+add the virtual TPM to the virtual machine which means TEST-74-AUX-UTILS.run.sh
+fails because it requires a TPM.
+
+Let's move the systemd-pcrlock logic that requires a TPM to
+TEST-70-TPM.pcrlock to avoid the problem.
+
+(cherry picked from commit c0165676e9b95996a402b26c45023d9358ba159d)
+---
+ test/units/TEST-70-TPM2.pcrlock.sh | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/test/units/TEST-70-TPM2.pcrlock.sh b/test/units/TEST-70-TPM2.pcrlock.sh
+index 19af3a774d..38274991db 100755
+--- a/test/units/TEST-70-TPM2.pcrlock.sh
++++ b/test/units/TEST-70-TPM2.pcrlock.sh
+@@ -205,3 +205,8 @@ varlinkctl call /run/systemd/io.systemd.PCRLock io.systemd.PCRLock.MakePolicy '{
+ varlinkctl call --collect --json=pretty /run/systemd/io.systemd.PCRLock io.systemd.PCRLock.ReadEventLog '{}'
+ 
+ rm "$img" /tmp/pcrlockpwd
++
++# For issue #35746
++for _ in {0..10}; do
++    run0 /usr/lib/systemd/systemd-pcrlock
++done

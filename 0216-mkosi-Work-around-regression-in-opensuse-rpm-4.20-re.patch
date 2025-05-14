@@ -1,0 +1,62 @@
+From 2de7875982dadfaceeb8ad242710c2f952d9a61e Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 7 Feb 2025 11:37:34 +0100
+Subject: [PATCH] mkosi: Work around regression in opensuse rpm 4.20 release
+
+The rpm 4.20 release introduces the following downstream
+change in /usr/lib/rpm/macros:
+
+```
+%buildroot              %{_builddir}/%{NAME}-%{VERSION}-build/BUILDROOT
+```
+
+This definition is broken as rpm internally does the following
+since 4.20 to calculate the buildroot:
+
+```
+char *bn = rpmExpand("%{NAME}-%{VERSION}-build", NULL);
+/* Tilde and caret in paths are evil, convert to underscores */
+for (char *t = bn; *t; t++) {
+    if (*t == '^' || *t == '~')
+        *t = '_';
+    }
+```
+
+This has broken our upstream opensuse CI builds in systemd as
+we do the following to fetch the list of unpackaged files by the rpm build:
+
+```
+rpmbuild
+...
+--define "__check_files sh -c '$(rpm --define "_topdir /var/tmp" --eval %__check_files) | tee /tmp/unpackaged-files'"
+...
+```
+
+which stopped working because the check files script tries
+to look for unpackaged files in the "/var/tmp/BUILD/systemd-258~devel-build/BUILDROOT"
+directory (%buildroot) whereas it should be looking in "/var/tmp/BUILD/systemd-258_devel-build/BUILDROOT".
+
+Let's remove the %buildroot compat definition until the bug is
+addressed in opensuse tumbleweed.
+
+(cherry picked from commit facc03dc973cc9051c2bde16d7084296e862c0e0)
+---
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+index d672c31647..e2a0561bb0 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+@@ -60,6 +60,11 @@ fi
+ # TODO: Drop when the spec is fixed (either the patch is adapted or not applied when building for upstream).
+ sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
++# TODO: Drop when https://bugzilla.opensuse.org/show_bug.cgi?id=1236901 is resolved.
++sed '/%buildroot/d' /usr/lib/rpm/macros >macros
++mount --bind "$PWD/macros" /usr/lib/rpm/macros
++rm macros
++
+ build() {
+     IFS=
+     # shellcheck disable=SC2046

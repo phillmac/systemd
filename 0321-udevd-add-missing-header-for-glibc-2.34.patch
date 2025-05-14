@@ -1,0 +1,45 @@
+From 858ec72ef75569f4febb7ea95d433a9414faff0b Mon Sep 17 00:00:00 2001
+From: Antonio Alvarez Feijoo <antonio.feijoo@suse.com>
+Date: Thu, 26 Dec 2024 11:02:55 +0100
+Subject: [PATCH] udevd: add missing header for glibc < 2.34
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+```
+[77/1697] Compiling C object udevadm.p/src_udev_udevd.c.o
+FAILED: udevadm.p/src_udev_udevd.c.o
+cc -Iudevadm.p -I. -I.. -Isrc/basic -I../src/basic -Isrc/fundamental -I../src/fundamental -Isrc/systemd -I../src/systemd -I../src/libsystemd/sd-bus -I../src/libsystemd/sd-device -I../src/libsystemd/sd-event -I../src/libsystemd/sd-hwdb -I../src/libsystemd/sd-id128 -I../src/libsystemd/sd-journal -I../src/libsystemd/sd-json -I../src/libsystemd/sd-netlink -I../src/libsystemd/sd-network -I../src/libsystemd/sd-path -I../src/libsystemd/sd-resolve -I../src/libsystemd/sd-varlink -Isrc/shared -I../src/shared -I/usr/include/blkid -I/usr/include/kmod -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=gnu11 -O0 -g -Wno-missing-field-initializers -Wno-unused-parameter -Wno-nonnull-compare -Warray-bounds -Warray-bounds=2 -Wdate-time -Wendif-labels -Werror=format=2 -Werror=format-signedness -Werror=implicit-function-declaration -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=missing-declarations -Werror=missing-prototypes -Werror=overflow -Werror=override-init -Werror=return-type -Werror=shift-count-overflow -Werror=shift-overflow=2 -Werror=undef -Wfloat-equal -Wimplicit-fallthrough=5 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wmissing-noreturn -Wnested-externs -Wold-style-definition -Wpointer-arith -Wredundant-decls -Wshadow -Wstrict-aliasing=2 -Wstrict-prototypes -Wsuggest-attribute=noreturn -Wunused-function -Wwrite-strings -Wzero-length-bounds -fdiagnostics-show-option -fno-common -fstack-protector -fstack-protector-strong --param=ssp-buffer-size=4 -Wno-unused-result -Werror=shadow -fno-strict-aliasing -fvisibility=hidden -fno-omit-frame-pointer -include config.h -pthread -MD -MQ udevadm.p/src_udev_udevd.c.o -MF udevadm.p/src_udev_udevd.c.o.d -o udevadm.p/src_udev_udevd.c.o -c ../src/udev/udevd.c
+../src/udev/udevd.c: In function ‘run_udevd’:
+../src/udev/udevd.c:67:23: error: implicit declaration of function ‘fork’ [-Werror=implicit-function-declaration]
+   67 |                 pid = fork();
+      |                       ^~~~
+../src/udev/udevd.c:75:24: error: implicit declaration of function ‘setsid’; did you mean ‘setbit’? [-Werror=implicit-function-declaration]
+   75 |                 (void) setsid();
+      |                        ^~~~~~
+      |                        setbit
+../src/udev/udevd.c:75:24: warning: nested extern declaration of ‘setsid’ [-Wnested-externs]
+```
+
+Follow-up for 394a678aec3b8bba0f0b1a8d7b9427c62468fe68
+
+(cherry picked from commit 7cb72bdaeba6069eca99a4292b26dc5eb81bb67a)
+
+Resolves: RHEL-75774
+---
+ src/udev/udevd.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/udev/udevd.c b/src/udev/udevd.c
+index 018a3cd6e7..8f0e5cc0d6 100644
+--- a/src/udev/udevd.c
++++ b/src/udev/udevd.c
+@@ -5,6 +5,8 @@
+  * Copyright © 2009 Scott James Remnant <scott@netsplit.com>
+  */
+ 
++#include <unistd.h>
++
+ #include "errno-util.h"
+ #include "fd-util.h"
+ #include "mkdir.h"

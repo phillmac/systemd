@@ -1,0 +1,491 @@
+From 54b98a2405e68ee9cf3d8af27b8b315659a2c656 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 5 Dec 2024 00:44:14 +0900
+Subject: [PATCH] udev: several coding style fixes
+
+- use 'type* func()' rather than 'type *func()',
+- merge variable declarations,
+- etc.
+
+(cherry picked from commit 7ab25935f3ce677483cb9044126ac7b4b3680d8d)
+
+Resolves: RHEL-75774
+---
+ src/udev/dmi_memory_id/dmi_memory_id.c |  2 +-
+ src/udev/net/link-config.c             |  2 +-
+ src/udev/net/link-config.h             |  2 +-
+ src/udev/udev-builtin-hwdb.c           |  7 +--
+ src/udev/udev-builtin-input_id.c       | 79 +++++++++++++-------------
+ src/udev/udev-builtin-keyboard.c       |  6 +-
+ src/udev/udev-builtin-path_id.c        | 36 ++++++------
+ src/udev/udev-builtin-usb_id.c         | 30 +++-------
+ src/udev/udev-event.c                  |  4 +-
+ src/udev/udev-event.h                  |  4 +-
+ src/udev/udev-format.c                 |  2 +-
+ src/udev/udev-rules.c                  |  2 +-
+ src/udev/udev-rules.h                  |  2 +-
+ 13 files changed, 75 insertions(+), 103 deletions(-)
+
+diff --git a/src/udev/dmi_memory_id/dmi_memory_id.c b/src/udev/dmi_memory_id/dmi_memory_id.c
+index 71cec5fc47..e62222a307 100644
+--- a/src/udev/dmi_memory_id/dmi_memory_id.c
++++ b/src/udev/dmi_memory_id/dmi_memory_id.c
+@@ -89,7 +89,7 @@ static bool verify_checksum(const uint8_t *buf, size_t len) {
+  * Type-independent Stuff
+  */
+ 
+-static const char *dmi_string(const struct dmi_header *dm, uint8_t s) {
++static const char* dmi_string(const struct dmi_header *dm, uint8_t s) {
+         const char *bp = (const char *) dm->data;
+ 
+         if (s == 0)
+diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
+index 7787f66981..c2bec61347 100644
+--- a/src/udev/net/link-config.c
++++ b/src/udev/net/link-config.c
+@@ -372,7 +372,7 @@ bool link_config_should_reload(LinkConfigContext *ctx) {
+         return !stats_by_path_equal(ctx->stats_by_path, stats_by_path);
+ }
+ 
+-Link *link_free(Link *link) {
++Link* link_free(Link *link) {
+         if (!link)
+                 return NULL;
+ 
+diff --git a/src/udev/net/link-config.h b/src/udev/net/link-config.h
+index 3152bec72a..5aaa7c51a0 100644
+--- a/src/udev/net/link-config.h
++++ b/src/udev/net/link-config.h
+@@ -103,7 +103,7 @@ int link_config_load(LinkConfigContext *ctx);
+ bool link_config_should_reload(LinkConfigContext *ctx);
+ 
+ int link_new(LinkConfigContext *ctx, sd_netlink **rtnl, sd_device *device, sd_device *device_db_clone, Link **ret);
+-Link *link_free(Link *link);
++Link* link_free(Link *link);
+ DEFINE_TRIVIAL_CLEANUP_FUNC(Link*, link_free);
+ 
+ int link_get_config(LinkConfigContext *ctx, Link *link);
+diff --git a/src/udev/udev-builtin-hwdb.c b/src/udev/udev-builtin-hwdb.c
+index e33a7febd6..fbee04b4a8 100644
+--- a/src/udev/udev-builtin-hwdb.c
++++ b/src/udev/udev-builtin-hwdb.c
+@@ -50,7 +50,7 @@ int udev_builtin_hwdb_lookup(
+         return n;
+ }
+ 
+-static const char *modalias_usb(sd_device *dev, char *s, size_t size) {
++static const char* modalias_usb(sd_device *dev, char *s, size_t size) {
+         const char *v, *p, *n = NULL;
+         uint16_t vn, pn;
+ 
+@@ -130,10 +130,7 @@ static int builtin_hwdb(UdevEvent *event, int argc, char *argv[]) {
+                 { "lookup-prefix", required_argument, NULL, 'p' },
+                 {}
+         };
+-        const char *filter = NULL;
+-        const char *device = NULL;
+-        const char *subsystem = NULL;
+-        const char *prefix = NULL;
++        const char *filter = NULL, *device = NULL, *subsystem = NULL, *prefix = NULL;
+         _cleanup_(sd_device_unrefp) sd_device *srcdev = NULL;
+         sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         int r;
+diff --git a/src/udev/udev-builtin-input_id.c b/src/udev/udev-builtin-input_id.c
+index 876af195e2..c204d656f0 100644
+--- a/src/udev/udev-builtin-input_id.c
++++ b/src/udev/udev-builtin-input_id.c
+@@ -75,15 +75,14 @@ static void extract_info(sd_device *dev, EventMode mode) {
+  */
+ static void get_cap_mask(
+                 sd_device *pdev,
+-                const char* attr,
++                const char *attr,
+                 unsigned long *bitmask,
+                 size_t bitmask_size,
+                 EventMode mode) {
+ 
+         const char *v;
+-        char text[4096];
++        char text[4096], *word;
+         unsigned i;
+-        char* word;
+         unsigned long val;
+         int r;
+ 
+@@ -151,37 +150,36 @@ static struct input_id get_input_id(sd_device *dev) {
+ static bool test_pointers(
+                 sd_device *dev,
+                 const struct input_id *id,
+-                const unsigned long* bitmask_ev,
+-                const unsigned long* bitmask_abs,
+-                const unsigned long* bitmask_key,
+-                const unsigned long* bitmask_rel,
+-                const unsigned long* bitmask_props,
++                const unsigned long *bitmask_ev,
++                const unsigned long *bitmask_abs,
++                const unsigned long *bitmask_key,
++                const unsigned long *bitmask_rel,
++                const unsigned long *bitmask_props,
+                 EventMode mode) {
+ 
+-        bool has_abs_coordinates = false;
+-        bool has_rel_coordinates = false;
+-        bool has_mt_coordinates = false;
+-        size_t num_joystick_axes = 0;
+-        size_t num_joystick_buttons = 0;
+-        bool has_pad_buttons = false;
+-        bool is_direct = false;
+-        bool has_touch = false;
+-        bool has_3d_coordinates = false;
+-        bool has_keys = false;
+-        bool has_stylus = false;
+-        bool has_pen = false;
+-        bool finger_but_no_pen = false;
+-        bool has_mouse_button = false;
+-        bool is_mouse = false;
+-        bool is_abs_mouse = false;
+-        bool is_touchpad = false;
+-        bool is_touchscreen = false;
+-        bool is_tablet = false;
+-        bool is_tablet_pad = false;
+-        bool is_joystick = false;
+-        bool is_accelerometer = false;
+-        bool is_pointing_stick = false;
+-        bool has_wheel = false;
++        size_t num_joystick_axes = 0, num_joystick_buttons = 0;
++        bool has_abs_coordinates = false,
++                has_rel_coordinates = false,
++                has_mt_coordinates = false,
++                has_pad_buttons = false,
++                is_direct = false,
++                has_touch = false,
++                has_3d_coordinates = false,
++                has_keys = false,
++                has_stylus = false,
++                has_pen = false,
++                finger_but_no_pen = false,
++                has_mouse_button = false,
++                is_mouse = false,
++                is_abs_mouse = false,
++                is_touchpad = false,
++                is_touchscreen = false,
++                is_tablet = false,
++                is_tablet_pad = false,
++                is_joystick = false,
++                is_accelerometer = false,
++                is_pointing_stick = false,
++                has_wheel = false;
+ 
+         has_keys = test_bit(EV_KEY, bitmask_ev);
+         has_abs_coordinates = test_bit(ABS_X, bitmask_abs) && test_bit(ABS_Y, bitmask_abs);
+@@ -335,8 +333,8 @@ static bool test_pointers(
+ /* key like devices */
+ static bool test_key(
+                 sd_device *dev,
+-                const unsigned long* bitmask_ev,
+-                const unsigned long* bitmask_key,
++                const unsigned long *bitmask_ev,
++                const unsigned long *bitmask_key,
+                 EventMode mode) {
+ 
+         bool found = false;
+@@ -378,14 +376,13 @@ static bool test_key(
+ 
+ static int builtin_input_id(UdevEvent *event, int argc, char *argv[]) {
+         sd_device *pdev, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+-        unsigned long bitmask_ev[NBITS(EV_MAX)];
+-        unsigned long bitmask_abs[NBITS(ABS_MAX)];
+-        unsigned long bitmask_key[NBITS(KEY_MAX)];
+-        unsigned long bitmask_rel[NBITS(REL_MAX)];
+-        unsigned long bitmask_props[NBITS(INPUT_PROP_MAX)];
++        unsigned long bitmask_ev[NBITS(EV_MAX)],
++                bitmask_abs[NBITS(ABS_MAX)],
++                bitmask_key[NBITS(KEY_MAX)],
++                bitmask_rel[NBITS(REL_MAX)],
++                bitmask_props[NBITS(INPUT_PROP_MAX)];
+         const char *sysname;
+-        bool is_pointer;
+-        bool is_key;
++        bool is_pointer, is_key;
+ 
+         /* walk up the parental chain until we find the real input device; the
+          * argument is very likely a subdevice of this, like eventN */
+diff --git a/src/udev/udev-builtin-keyboard.c b/src/udev/udev-builtin-keyboard.c
+index e1e6de0426..1595a8f031 100644
+--- a/src/udev/udev-builtin-keyboard.c
++++ b/src/udev/udev-builtin-keyboard.c
+@@ -20,8 +20,7 @@ static const struct key_name *keyboard_lookup_key(const char *str, GPERF_LEN_TYP
+ static int install_force_release(sd_device *dev, const unsigned *release, unsigned release_count) {
+         sd_device *atkbd;
+         const char *cur;
+-        char codes[4096];
+-        char *s;
++        char *s, codes[4096];
+         size_t l;
+         unsigned i;
+         int r;
+@@ -161,8 +160,7 @@ static int set_trackpoint_sensitivity(sd_device *dev, const char *value) {
+ 
+ static int builtin_keyboard(UdevEvent *event, int argc, char *argv[]) {
+         sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+-        unsigned release[1024];
+-        unsigned release_count = 0;
++        unsigned release[1024], release_count = 0;
+         _cleanup_close_ int fd = -EBADF;
+         const char *node;
+         int has_abs = -1, r;
+diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
+index 77abff004e..8ba5f2e358 100644
+--- a/src/udev/udev-builtin-path_id.c
++++ b/src/udev/udev-builtin-path_id.c
+@@ -82,7 +82,7 @@ static int format_lun_number(sd_device *dev, char **path) {
+         return 0;
+ }
+ 
+-static sd_device *skip_subsystem(sd_device *dev, const char *subsys) {
++static sd_device* skip_subsystem(sd_device *dev, const char *subsys) {
+         sd_device *parent;
+ 
+         assert(dev);
+@@ -107,7 +107,7 @@ static sd_device *skip_subsystem(sd_device *dev, const char *subsys) {
+         return dev;
+ }
+ 
+-static sd_device *handle_scsi_fibre_channel(sd_device *parent, char **path) {
++static sd_device* handle_scsi_fibre_channel(sd_device *parent, char **path) {
+         sd_device *targetdev;
+         _cleanup_(sd_device_unrefp) sd_device *fcdev = NULL;
+         const char *port, *sysname;
+@@ -130,7 +130,7 @@ static sd_device *handle_scsi_fibre_channel(sd_device *parent, char **path) {
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi_sas_wide_port(sd_device *parent, char **path) {
++static sd_device* handle_scsi_sas_wide_port(sd_device *parent, char **path) {
+         sd_device *targetdev, *target_parent;
+         _cleanup_(sd_device_unrefp) sd_device *sasdev = NULL;
+         const char *sas_address, *sysname;
+@@ -155,12 +155,10 @@ static sd_device *handle_scsi_sas_wide_port(sd_device *parent, char **path) {
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi_sas(sd_device *parent, char **path) {
++static sd_device* handle_scsi_sas(sd_device *parent, char **path) {
+         sd_device *targetdev, *target_parent, *port, *expander;
+         _cleanup_(sd_device_unrefp) sd_device *target_sasdev = NULL, *expander_sasdev = NULL, *port_sasdev = NULL;
+-        const char *sas_address = NULL;
+-        const char *phy_id;
+-        const char *sysname;
++        const char *sas_address = NULL, *phy_id, *sysname;
+         unsigned num_phys;
+         _cleanup_free_ char *lun = NULL;
+ 
+@@ -216,12 +214,11 @@ static sd_device *handle_scsi_sas(sd_device *parent, char **path) {
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi_iscsi(sd_device *parent, char **path) {
++static sd_device* handle_scsi_iscsi(sd_device *parent, char **path) {
+         sd_device *transportdev;
+         _cleanup_(sd_device_unrefp) sd_device *sessiondev = NULL, *conndev = NULL;
+-        const char *target, *connname, *addr, *port;
++        const char *target, *connname, *addr, *port, *sysname, *sysnum;
+         _cleanup_free_ char *lun = NULL;
+-        const char *sysname, *sysnum;
+ 
+         assert(parent);
+         assert(path);
+@@ -260,7 +257,7 @@ static sd_device *handle_scsi_iscsi(sd_device *parent, char **path) {
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi_ata(sd_device *parent, char **path, char **compat_path) {
++static sd_device* handle_scsi_ata(sd_device *parent, char **path, char **compat_path) {
+         sd_device *targetdev, *target_parent;
+         _cleanup_(sd_device_unrefp) sd_device *atadev = NULL;
+         const char *port_no, *sysname, *name;
+@@ -302,7 +299,7 @@ static sd_device *handle_scsi_ata(sd_device *parent, char **path, char **compat_
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi_default(sd_device *parent, char **path) {
++static sd_device* handle_scsi_default(sd_device *parent, char **path) {
+         sd_device *hostdev;
+         int host, bus, target, lun;
+         const char *name, *base, *pos;
+@@ -376,9 +373,8 @@ static sd_device *handle_scsi_default(sd_device *parent, char **path) {
+         return hostdev;
+ }
+ 
+-static sd_device *handle_scsi_hyperv(sd_device *parent, char **path, size_t guid_str_len) {
+-        sd_device *hostdev;
+-        sd_device *vmbusdev;
++static sd_device* handle_scsi_hyperv(sd_device *parent, char **path, size_t guid_str_len) {
++        sd_device *hostdev, *vmbusdev;
+         const char *guid_str;
+         _cleanup_free_ char *lun = NULL;
+         char guid[39];
+@@ -412,7 +408,7 @@ static sd_device *handle_scsi_hyperv(sd_device *parent, char **path, size_t guid
+         return parent;
+ }
+ 
+-static sd_device *handle_scsi(sd_device *parent, char **path, char **compat_path, bool *supported_parent) {
++static sd_device* handle_scsi(sd_device *parent, char **path, char **compat_path, bool *supported_parent) {
+         const char *id, *name;
+ 
+         if (!device_is_devtype(parent, "scsi_device"))
+@@ -455,7 +451,7 @@ static sd_device *handle_scsi(sd_device *parent, char **path, char **compat_path
+         return handle_scsi_default(parent, path);
+ }
+ 
+-static sd_device *handle_cciss(sd_device *parent, char **path) {
++static sd_device* handle_cciss(sd_device *parent, char **path) {
+         const char *str;
+         unsigned controller, disk;
+ 
+@@ -526,7 +522,7 @@ static int get_usb_revision(sd_device *dev) {
+         }
+ }
+ 
+-static sd_device *handle_usb(sd_device *parent, char **path) {
++static sd_device* handle_usb(sd_device *parent, char **path) {
+         const char *str, *port;
+         int r;
+ 
+@@ -564,7 +560,7 @@ static sd_device *handle_usb(sd_device *parent, char **path) {
+         return parent;
+ }
+ 
+-static sd_device *handle_bcma(sd_device *parent, char **path) {
++static sd_device* handle_bcma(sd_device *parent, char **path) {
+         const char *sysname;
+         unsigned core;
+ 
+@@ -578,7 +574,7 @@ static sd_device *handle_bcma(sd_device *parent, char **path) {
+ }
+ 
+ /* Handle devices of AP bus in System z platform. */
+-static sd_device *handle_ap(sd_device *parent, char **path) {
++static sd_device* handle_ap(sd_device *parent, char **path) {
+         const char *type, *func;
+ 
+         assert(parent);
+diff --git a/src/udev/udev-builtin-usb_id.c b/src/udev/udev-builtin-usb_id.c
+index 2413f9ce9e..9abdec3591 100644
+--- a/src/udev/udev-builtin-usb_id.c
++++ b/src/udev/udev-builtin-usb_id.c
+@@ -225,31 +225,15 @@ static int dev_if_packed_info(sd_device *dev, char *ifs_str, size_t len) {
+  *     is concatenated with the identification with an underscore '_'.
+  */
+ static int builtin_usb_id(UdevEvent *event, int argc, char *argv[]) {
+-        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+-        char vendor_str[64] = "";
+-        char vendor_str_enc[256];
+-        const char *vendor_id;
+-        char model_str[64] = "";
+-        char model_str_enc[256];
+-        const char *product_id;
+-        char serial_str[UDEV_NAME_SIZE] = "";
+-        char packed_if_str[UDEV_NAME_SIZE] = "";
+-        char revision_str[64] = "";
+-        char type_str[64] = "";
+-        char instance_str[64] = "";
+-        const char *ifnum = NULL;
+-        const char *driver = NULL;
+-        char serial[256];
+-
+-        sd_device *dev_interface, *dev_usb;
+-        const char *if_class, *if_subclass;
++        sd_device *dev_interface, *dev_usb, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
++        const char *syspath, *sysname, *interface_syspath, *vendor_id, *product_id,
++                *ifnum = NULL, *driver = NULL, *if_class, *if_subclass;
++        char *s, model_str[64] = "", model_str_enc[256], serial_str[UDEV_NAME_SIZE] = "",
++                packed_if_str[UDEV_NAME_SIZE] = "", revision_str[64] = "", type_str[64] = "",
++                instance_str[64] = "", serial[256], vendor_str[64] = "", vendor_str_enc[256];
+         unsigned if_class_num;
+-        int protocol = 0;
++        int r, protocol = 0;
+         size_t l;
+-        char *s;
+-
+-        const char *syspath, *sysname, *interface_syspath;
+-        int r;
+ 
+         r = sd_device_get_syspath(dev, &syspath);
+         if (r < 0)
+diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
+index 7fa86ddd84..9141a9d2a7 100644
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -18,7 +18,7 @@
+ #include "udev-worker.h"
+ #include "user-util.h"
+ 
+-UdevEvent *udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
++UdevEvent* udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
+         int log_level = worker ? worker->log_level : log_get_max_level();
+         UdevEvent *event;
+ 
+@@ -44,7 +44,7 @@ UdevEvent *udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode) {
+         return event;
+ }
+ 
+-UdevEvent *udev_event_free(UdevEvent *event) {
++UdevEvent* udev_event_free(UdevEvent *event) {
+         if (!event)
+                 return NULL;
+ 
+diff --git a/src/udev/udev-event.h b/src/udev/udev-event.h
+index 88a7cfe497..186cfa541f 100644
+--- a/src/udev/udev-event.h
++++ b/src/udev/udev-event.h
+@@ -53,8 +53,8 @@ typedef struct UdevEvent {
+         EventMode event_mode;
+ } UdevEvent;
+ 
+-UdevEvent *udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode);
+-UdevEvent *udev_event_free(UdevEvent *event);
++UdevEvent* udev_event_new(sd_device *dev, UdevWorker *worker, EventMode mode);
++UdevEvent* udev_event_free(UdevEvent *event);
+ DEFINE_TRIVIAL_CLEANUP_FUNC(UdevEvent*, udev_event_free);
+ 
+ int udev_event_execute_rules(UdevEvent *event, UdevRules *rules);
+diff --git a/src/udev/udev-format.c b/src/udev/udev-format.c
+index 8637d802fc..c09ea44d91 100644
+--- a/src/udev/udev-format.c
++++ b/src/udev/udev-format.c
+@@ -58,7 +58,7 @@ static const struct subst_map_entry map[] = {
+            { .name = "sys",      .fmt = 'S', .type = FORMAT_SUBST_SYS           },
+ };
+ 
+-static const char *format_type_to_string(FormatSubstitutionType t) {
++static const char* format_type_to_string(FormatSubstitutionType t) {
+         FOREACH_ELEMENT(entry, map)
+                 if (entry->type == t)
+                         return entry->name;
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 6345b80cba..041c642aa9 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -457,7 +457,7 @@ static UdevRuleFile* udev_rule_file_free(UdevRuleFile *rule_file) {
+ 
+ DEFINE_TRIVIAL_CLEANUP_FUNC(UdevRuleFile*, udev_rule_file_free);
+ 
+-UdevRules *udev_rules_free(UdevRules *rules) {
++UdevRules* udev_rules_free(UdevRules *rules) {
+         if (!rules)
+                 return NULL;
+ 
+diff --git a/src/udev/udev-rules.h b/src/udev/udev-rules.h
+index 3bd4b04ab3..67d7e5b178 100644
+--- a/src/udev/udev-rules.h
++++ b/src/udev/udev-rules.h
+@@ -15,7 +15,7 @@ int udev_rules_parse_file(UdevRules *rules, const char *filename, bool extra_che
+ unsigned udev_rule_file_get_issues(UdevRuleFile *rule_file);
+ UdevRules* udev_rules_new(ResolveNameTiming resolve_name_timing);
+ int udev_rules_load(UdevRules **ret_rules, ResolveNameTiming resolve_name_timing);
+-UdevRules *udev_rules_free(UdevRules *rules);
++UdevRules* udev_rules_free(UdevRules *rules);
+ DEFINE_TRIVIAL_CLEANUP_FUNC(UdevRules*, udev_rules_free);
+ #define udev_rules_free_and_replace(a, b) free_and_replace_full(a, b, udev_rules_free)
+ 

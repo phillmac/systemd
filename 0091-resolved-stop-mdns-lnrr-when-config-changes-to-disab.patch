@@ -1,0 +1,73 @@
+From 331888d165b6c4171db4fac318e773248db2218a Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 2 Jan 2025 17:30:21 +0000
+Subject: [PATCH] resolved: stop mdns/lnrr when config changes to disabled on
+ reload
+
+Currently on reload mdns/lnrr are enabled if they were disabled,
+but not viceversa. Fix it.
+
+Follow-up for 14a52176798bc2d013297b503ac6fa49a64e2725
+
+(cherry picked from commit 2976730a4d34749bfb7a88da341464f1834ab1c6)
+---
+ mkosi.conf                     | 1 +
+ src/resolve/resolved-link.c    | 7 +++++--
+ test/units/TEST-75-RESOLVED.sh | 2 ++
+ 3 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.conf b/mkosi.conf
+index 2517aba518..559901dfff 100644
+--- a/mkosi.conf
++++ b/mkosi.conf
+@@ -103,6 +103,7 @@ Packages=
+         kmod
+         less
+         llvm
++        lsof
+         lvm2
+         man
+         mdadm
+diff --git a/src/resolve/resolved-link.c b/src/resolve/resolved-link.c
+index 928137b967..067a0813ec 100644
+--- a/src/resolve/resolved-link.c
++++ b/src/resolve/resolved-link.c
+@@ -651,13 +651,16 @@ int link_update(Link *l) {
+                 r = manager_llmnr_start(l->manager);
+                 if (r < 0)
+                         return r;
+-        }
++        } else
++                manager_llmnr_stop(l->manager);
++
+ 
+         if (link_get_mdns_support(l) != RESOLVE_SUPPORT_NO) {
+                 r = manager_mdns_start(l->manager);
+                 if (r < 0)
+                         return r;
+-        }
++        } else
++                manager_mdns_stop(l->manager);
+ 
+         link_allocate_scopes(l);
+         link_add_rrs(l, false);
+diff --git a/test/units/TEST-75-RESOLVED.sh b/test/units/TEST-75-RESOLVED.sh
+index 576c04f87a..fd07fd898a 100755
+--- a/test/units/TEST-75-RESOLVED.sh
++++ b/test/units/TEST-75-RESOLVED.sh
+@@ -339,6 +339,7 @@ manual_testcase_02_mdns_llmnr() {
+     # defaults to yes (both the global and per-link settings are yes)
+     assert_in 'yes' "$(resolvectl mdns hoge)"
+     assert_in 'yes' "$(resolvectl llmnr hoge)"
++    lsof -p "$(systemctl show --property MainPID --value systemd-resolved.service)" | grep -q ":mdns\|:5353"
+     # set per-link setting
+     resolvectl mdns hoge yes
+     resolvectl llmnr hoge yes
+@@ -379,6 +380,7 @@ manual_testcase_02_mdns_llmnr() {
+         echo "LLMNR=no"
+     } >/run/systemd/resolved.conf.d/mdns-llmnr.conf
+     systemctl reload systemd-resolved.service
++    (! lsof -p "$(systemctl show --property MainPID --value systemd-resolved.service)" | grep -q ":mdns\|:5353")
+     # set per-link setting
+     resolvectl mdns hoge yes
+     resolvectl llmnr hoge yes

@@ -1,0 +1,25 @@
+From ef5085ddc7cfd4ee25d98582453175cf1c7edfda Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Fri, 7 Feb 2025 11:07:37 +0900
+Subject: [PATCH] udevadm-test: fix gid check
+
+Fixes a bug introduced by 03b6879f4d45c49264708aef872fd05af30ddcf0.
+
+Based on the upstream commit e66d4ea31ad3812fdd7a0f1cdcc3b941cedf542a.
+---
+ src/udev/udevadm-test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/udev/udevadm-test.c b/src/udev/udevadm-test.c
+index 748bcaf364..574745c42c 100644
+--- a/src/udev/udevadm-test.c
++++ b/src/udev/udevadm-test.c
+@@ -166,7 +166,7 @@ int test_main(int argc, char *argv[], void *userdata) {
+                 }
+ 
+                 gid_t gid = event->gid;
+-                if (!gid_is_valid(uid))
++                if (!gid_is_valid(gid))
+                         (void) device_get_devnode_gid(dev, &gid);
+                 if (gid_is_valid(gid)) {
+                         _cleanup_free_ char *group = gid_to_name(gid);

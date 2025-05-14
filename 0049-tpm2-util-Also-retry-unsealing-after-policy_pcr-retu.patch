@@ -1,0 +1,42 @@
+From 9258e27f4a1ddf2834d0cadd66770ad65e55e066 Mon Sep 17 00:00:00 2001
+From: Fabian Vogt <fvogt@suse.de>
+Date: Mon, 16 Dec 2024 19:08:13 +0100
+Subject: [PATCH] tpm2-util: Also retry unsealing after policy_pcr returns
+ PCR_CHANGED
+
+It's not just Esys_Unseal that may fail due to PCR changes during the
+session, but also Esys_PolicyPCR. Perform a retry in that case as well.
+
+Fixes #35490
+
+(cherry picked from commit e61032bf47e6a7e572643a0060c6dd610635c854)
+---
+ src/shared/tpm2-util.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/src/shared/tpm2-util.c b/src/shared/tpm2-util.c
+index 36a0f906da..5b6b3ea93c 100644
+--- a/src/shared/tpm2-util.c
++++ b/src/shared/tpm2-util.c
+@@ -4015,6 +4015,9 @@ int tpm2_policy_pcr(
+                         ESYS_TR_NONE,
+                         NULL,
+                         pcr_selection);
++        if (rc == TPM2_RC_PCR_CHANGED)
++                return log_debug_errno(SYNTHETIC_ERRNO(EUCLEAN),
++                                       "Failed to add PCR policy to TPM: %s", sym_Tss2_RC_Decode(rc));
+         if (rc != TSS2_RC_SUCCESS)
+                 return log_debug_errno(SYNTHETIC_ERRNO(ENOTRECOVERABLE),
+                                        "Failed to add PCR policy to TPM: %s", sym_Tss2_RC_Decode(rc));
+@@ -5810,6 +5813,11 @@ int tpm2_unseal(Tpm2Context *c,
+                                         !!pin,
+                                         (shard == 1 || !iovec_is_set(pubkey)) ? pcrlock_policy : NULL,
+                                         &policy_digest);
++                        if (r == -EUCLEAN && i > 0) {
++                                log_debug("A PCR value changed during the TPM2 policy session, restarting HMAC key unsealing (%u tries left).", i);
++                                retry = true;
++                                break;
++                        }
+                         if (r < 0)
+                                 return r;
+ 

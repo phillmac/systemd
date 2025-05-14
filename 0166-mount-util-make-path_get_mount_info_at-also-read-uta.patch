@@ -1,0 +1,30 @@
+From 9f3fba48e44d7145f49da581faa8ca99d94d9b67 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 25 Jan 2025 02:35:21 +0900
+Subject: [PATCH] mount-util: make path_get_mount_info_at() also read utab
+
+As "_netdev" is only stored in utab.
+
+Fixes a bug introduced by 5261c521e3a98932241f36e91cf6f7823c578aca.
+Fixes #35949.
+
+(cherry picked from commit 22f980dd0b04e65dbdc2fca9c653119459a2c52f)
+---
+ src/shared/mount-util.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/shared/mount-util.c b/src/shared/mount-util.c
+index 576f7e83aa..35b1049531 100644
+--- a/src/shared/mount-util.c
++++ b/src/shared/mount-util.c
+@@ -1824,7 +1824,9 @@ static int path_get_mount_info_at(
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to get mount ID: %m");
+ 
+-        r = libmount_parse("/proc/self/mountinfo", NULL, &table, &iter);
++        /* When getting options is requested, do not pass filename, otherwise utab will not read, and
++         * userspace options like "_netdev" will be lost. */
++        r = libmount_parse(ret_options ? NULL : "/proc/self/mountinfo", /* source = */ NULL, &table, &iter);
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to parse /proc/self/mountinfo: %m");
+ 

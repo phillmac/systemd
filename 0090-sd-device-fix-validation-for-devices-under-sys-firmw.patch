@@ -1,0 +1,67 @@
+From 47f9a9879a075505c03b394ed532f225689ec570 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 5 Jan 2025 03:52:05 +0900
+Subject: [PATCH] sd-device: fix validation for devices under /sys/firmware/ in
+ sd_device_new_from_subsystem_sysname()
+
+Devices under /sys/firmware/ do not have subsystems. Hence, the
+validation in sd_device_new_from_subsystem_sysname() ->
+device_new_from_path_join() always failed.
+
+Fixes a bug introduced by cd7c71154cd62d3f50c07ce387edd9c20aebd7bc (v257).
+Fixes #35861.
+
+(cherry picked from commit 3328d1e1816f408e6516c35991a89a8d21fd60b4)
+---
+ src/libsystemd/sd-device/sd-device.c | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/src/libsystemd/sd-device/sd-device.c b/src/libsystemd/sd-device/sd-device.c
+index 94dfd2ef13..9e28159779 100644
+--- a/src/libsystemd/sd-device/sd-device.c
++++ b/src/libsystemd/sd-device/sd-device.c
+@@ -401,7 +401,6 @@ static int device_new_from_path_join(
+         int r;
+ 
+         assert(device);
+-        assert(subsystem);
+         assert(sysname);
+ 
+         p = path_join(a, b, c, d);
+@@ -486,13 +485,13 @@ _public_ int sd_device_new_from_subsystem_sysname(
+ 
+         if (streq(subsystem, "subsystem")) {
+                 FOREACH_STRING(s, "/sys/bus/", "/sys/class/") {
+-                        r = device_new_from_path_join(&device, subsystem, NULL, sysname, s, name, NULL, NULL);
++                        r = device_new_from_path_join(&device, subsystem, /* driver_subsystem = */ NULL, sysname, s, name, NULL, NULL);
+                         if (r < 0)
+                                 return r;
+                 }
+ 
+         } else if (streq(subsystem, "module")) {
+-                r = device_new_from_path_join(&device, subsystem, NULL, sysname, "/sys/module/", name, NULL, NULL);
++                r = device_new_from_path_join(&device, subsystem, /* driver_subsystem = */ NULL, sysname, "/sys/module/", name, NULL, NULL);
+                 if (r < 0)
+                         return r;
+ 
+@@ -514,15 +513,17 @@ _public_ int sd_device_new_from_subsystem_sysname(
+                 }
+         }
+ 
+-        r = device_new_from_path_join(&device, subsystem, NULL, sysname, "/sys/bus/", subsystem, "/devices/", name);
++        r = device_new_from_path_join(&device, subsystem, /* driver_subsystem = */ NULL, sysname, "/sys/bus/", subsystem, "/devices/", name);
+         if (r < 0)
+                 return r;
+ 
+-        r = device_new_from_path_join(&device, subsystem, NULL, sysname, "/sys/class/", subsystem, name, NULL);
++        r = device_new_from_path_join(&device, subsystem, /* driver_subsystem = */ NULL, sysname, "/sys/class/", subsystem, name, NULL);
+         if (r < 0)
+                 return r;
+ 
+-        r = device_new_from_path_join(&device, subsystem, NULL, sysname, "/sys/firmware/", subsystem, name, NULL);
++        /* Note that devices under /sys/firmware/ (e.g. /sys/firmware/devicetree/base/) do not have
++         * subsystem. Hence, pass NULL for subsystem. See issue #35861. */
++        r = device_new_from_path_join(&device, /* subsystem = */ NULL, /* driver_subsystem = */ NULL, sysname, "/sys/firmware/", subsystem, name, NULL);
+         if (r < 0)
+                 return r;
+ 

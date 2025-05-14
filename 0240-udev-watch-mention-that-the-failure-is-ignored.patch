@@ -1,0 +1,23 @@
+From cc77e140a8b194f710f33c9f552750ce350e6122 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 12 Feb 2025 09:22:49 +0900
+Subject: [PATCH] udev-watch: mention that the failure is ignored
+
+(cherry picked from commit a52aad3b4bb735a22ce67110142d135819589a87)
+---
+ src/udev/udev-watch.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/udev/udev-watch.c b/src/udev/udev-watch.c
+index 1b8e2b8dbd..9bd34af858 100644
+--- a/src/udev/udev-watch.c
++++ b/src/udev/udev-watch.c
+@@ -167,7 +167,7 @@ finalize:
+         /* 5. remove symlink ID -> wd.
+          * The file is always owned by the device. Hence, it is safe to remove it unconditionally. */
+         if (unlinkat(dirfd, id, 0) < 0 && errno != ENOENT)
+-                log_device_debug_errno(dev, errno, "Failed to remove '/run/udev/watch/%s': %m", id);
++                log_device_debug_errno(dev, errno, "Failed to remove '/run/udev/watch/%s', ignoring: %m", id);
+ 
+         return r;
+ }

@@ -1,0 +1,26 @@
+From 96b9fe831f888a0e9772a33acc752ebb822357b9 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 13 Dec 2024 22:08:27 +0000
+Subject: [PATCH] semaphore: bump timeout
+
+When semaphore is overloaded tests can take more than 1hr, bump
+timeout
+
+(cherry picked from commit 1855064d4eb95abe6909a93f72bee46658dad36b)
+---
+ .semaphore/semaphore.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.semaphore/semaphore.yml b/.semaphore/semaphore.yml
+index 07742337e8..42df0f648f 100644
+--- a/.semaphore/semaphore.yml
++++ b/.semaphore/semaphore.yml
+@@ -15,7 +15,7 @@ auto_cancel:
+     when: "true"
+ 
+ execution_time_limit:
+-  hours: 1
++  hours: 2
+ 
+ blocks:
+   - name: "Setup & test"

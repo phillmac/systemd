@@ -1,0 +1,131 @@
+From b342fb52b09f9e6b2e027460831f9bc139c8b27e Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 27 Dec 2024 15:06:39 +0000
+Subject: [PATCH] creds: fix use-after-free in varlink interface
+
+All other usages of sd_varlink_call* do not free the json return parameter,
+and it is owned by the varlink object instead. Do the same here.
+
+TEST-54-CREDS.sh[1074]: ==1074==ERROR: AddressSanitizer: heap-use-after-free on address 0x50c00000095a at pc 0x55cf8cd18a0f bp 0x7ffd7b9d4f10 sp 0x7ffd7b9d4f08
+TEST-54-CREDS.sh[1074]: READ of size 2 at 0x50c00000095a thread T0 ((sd-mkdcreds))
+TEST-54-CREDS.sh[1074]:     #0 0x55cf8cd18a0e in sd_json_variant_unref /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:887:16
+TEST-54-CREDS.sh[1074]:     #1 0x55cf8cd4cecb in varlink_clear_current /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:593:22
+TEST-54-CREDS.sh[1074]:     #2 0x55cf8cd4975e in varlink_clear /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:614:9
+TEST-54-CREDS.sh[1074]:     #3 0x55cf8cd3dc3c in varlink_destroy /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:651:9
+TEST-54-CREDS.sh[1074]:     #4 0x55cf8cd3dc3c in sd_varlink_unref /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:657:1
+TEST-54-CREDS.sh[1074]:     #5 0x55cf8cb47a82 in sd_varlink_unrefp /usr/src/debug/systemd/src/systemd/sd-varlink.h:279:1
+TEST-54-CREDS.sh[1074]:     #6 0x55cf8cb47a82 in ipc_decrypt_credential /usr/src/debug/systemd/src/shared/creds-util.c:1660:1
+TEST-54-CREDS.sh[1074]:     #7 0x55cf8caca99a in maybe_decrypt_and_write_credential /usr/src/debug/systemd/src/core/exec-credential.c:486:29
+TEST-54-CREDS.sh[1074]:     #8 0x55cf8cac790b in load_credential /usr/src/debug/systemd/src/core/exec-credential.c:713:16
+TEST-54-CREDS.sh[1074]:     #9 0x55cf8cac5403 in acquire_credentials /usr/src/debug/systemd/src/core/exec-credential.c:819:29
+TEST-54-CREDS.sh[1074]:     #10 0x55cf8cac5403 in setup_credentials_internal /usr/src/debug/systemd/src/core/exec-credential.c:1023:13
+TEST-54-CREDS.sh[1074]:     #11 0x55cf8cac42d4 in exec_setup_credentials /usr/src/debug/systemd/src/core/exec-credential.c:1168:21
+TEST-54-CREDS.sh[1074]:     #12 0x55cf8ca59569 in exec_invoke /usr/src/debug/systemd/src/core/exec-invoke.c:4866:13
+TEST-54-CREDS.sh[1074]:     #13 0x55cf8ca428d8 in run /usr/src/debug/systemd/src/core/executor.c:244:13
+TEST-54-CREDS.sh[1074]:     #14 0x55cf8ca428d8 in main /usr/src/debug/systemd/src/core/executor.c:275:13
+TEST-54-CREDS.sh[1074]:     #15 0x7f64b40110c7 in __libc_start_call_main (/lib64/libc.so.6+0x40c7) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #16 0x7f64b401118a in __libc_start_main@GLIBC_2.2.5 (/lib64/libc.so.6+0x418a) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #17 0x55cf8ca41cb4  (/usr/lib/systemd/systemd-executor+0x124cb4) (BuildId: 24f2b1608c3aaee3226cdd14fa2b6e6741156222)
+TEST-54-CREDS.sh[1074]: 0x50c00000095a is located 26 bytes inside of 120-byte region [0x50c000000940,0x50c0000009b8)
+TEST-54-CREDS.sh[1074]: freed by thread T0 ((sd-mkdcreds)) here:
+TEST-54-CREDS.sh[1074]:     #0 0x7f64b48d57ea in free (/usr/lib/clang/19/lib/x86_64-redhat-linux-gnu/libclang_rt.asan.so+0xd57ea) (BuildId: c59bbd28ceb74038a60373d4a8cd4c258bcf0b4e)
+TEST-54-CREDS.sh[1074]:     #1 0x55cf8cd188ab in sd_json_variant_unref /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:895:25
+TEST-54-CREDS.sh[1074]:     #2 0x55cf8cb47a4c in sd_json_variant_unrefp /usr/src/debug/systemd/src/systemd/sd-json.h:98:1
+TEST-54-CREDS.sh[1074]:     #3 0x55cf8cb47a4c in ipc_decrypt_credential /usr/src/debug/systemd/src/shared/creds-util.c:1660:1
+TEST-54-CREDS.sh[1074]:     #4 0x55cf8caca99a in maybe_decrypt_and_write_credential /usr/src/debug/systemd/src/core/exec-credential.c:486:29
+TEST-54-CREDS.sh[1074]:     #5 0x55cf8cac790b in load_credential /usr/src/debug/systemd/src/core/exec-credential.c:713:16
+TEST-54-CREDS.sh[1074]:     #6 0x55cf8cac5403 in acquire_credentials /usr/src/debug/systemd/src/core/exec-credential.c:819:29
+TEST-54-CREDS.sh[1074]:     #7 0x55cf8cac5403 in setup_credentials_internal /usr/src/debug/systemd/src/core/exec-credential.c:1023:13
+TEST-54-CREDS.sh[1074]:     #8 0x55cf8cac42d4 in exec_setup_credentials /usr/src/debug/systemd/src/core/exec-credential.c:1168:21
+TEST-54-CREDS.sh[1074]:     #9 0x55cf8ca59569 in exec_invoke /usr/src/debug/systemd/src/core/exec-invoke.c:4866:13
+TEST-54-CREDS.sh[1074]:     #10 0x55cf8ca428d8 in run /usr/src/debug/systemd/src/core/executor.c:244:13
+TEST-54-CREDS.sh[1074]:     #11 0x55cf8ca428d8 in main /usr/src/debug/systemd/src/core/executor.c:275:13
+TEST-54-CREDS.sh[1074]:     #12 0x7f64b40110c7 in __libc_start_call_main (/lib64/libc.so.6+0x40c7) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #13 0x7f64b401118a in __libc_start_main@GLIBC_2.2.5 (/lib64/libc.so.6+0x418a) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #14 0x55cf8ca41cb4  (/usr/lib/systemd/systemd-executor+0x124cb4) (BuildId: 24f2b1608c3aaee3226cdd14fa2b6e6741156222)
+TEST-54-CREDS.sh[1074]: previously allocated by thread T0 ((sd-mkdcreds)) here:
+TEST-54-CREDS.sh[1074]:     #0 0x7f64b48d5a83 in malloc (/usr/lib/clang/19/lib/x86_64-redhat-linux-gnu/libclang_rt.asan.so+0xd5a83) (BuildId: c59bbd28ceb74038a60373d4a8cd4c258bcf0b4e)
+TEST-54-CREDS.sh[1074]:     #1 0x55cf8cd16bb7 in malloc_multiply /usr/src/debug/systemd/src/basic/alloc-util.h:119:16
+TEST-54-CREDS.sh[1074]:     #2 0x55cf8cd16bb7 in sd_json_variant_new_object /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:737:13
+TEST-54-CREDS.sh[1074]:     #3 0x55cf8cd32e58 in json_parse_internal /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:3161:29
+TEST-54-CREDS.sh[1074]:     #4 0x55cf8cd37326 in sd_json_parse_with_source /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:3408:16
+TEST-54-CREDS.sh[1074]:     #5 0x55cf8cd37326 in sd_json_parse /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:3437:16
+TEST-54-CREDS.sh[1074]:     #6 0x55cf8cd3f753 in varlink_parse_message /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:962:13
+TEST-54-CREDS.sh[1074]:     #7 0x55cf8cd3f753 in sd_varlink_process /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:1466:13
+TEST-54-CREDS.sh[1074]:     #8 0x55cf8cd4c0a9 in sd_varlink_call_full /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:2160:21
+TEST-54-CREDS.sh[1074]:     #9 0x55cf8cd4d617 in sd_varlink_callb_ap /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:2237:16
+TEST-54-CREDS.sh[1074]:     #10 0x55cf8cd4da3c in sd_varlink_callb /usr/src/debug/systemd/src/libsystemd/sd-varlink/sd-varlink.c:2251:13
+TEST-54-CREDS.sh[1074]:     #11 0x55cf8cb47686 in ipc_decrypt_credential /usr/src/debug/systemd/src/shared/creds-util.c:1623:13
+TEST-54-CREDS.sh[1074]:     #12 0x55cf8caca99a in maybe_decrypt_and_write_credential /usr/src/debug/systemd/src/core/exec-credential.c:486:29
+TEST-54-CREDS.sh[1074]:     #13 0x55cf8cac790b in load_credential /usr/src/debug/systemd/src/core/exec-credential.c:713:16
+TEST-54-CREDS.sh[1074]:     #14 0x55cf8cac5403 in acquire_credentials /usr/src/debug/systemd/src/core/exec-credential.c:819:29
+TEST-54-CREDS.sh[1074]:     #15 0x55cf8cac5403 in setup_credentials_internal /usr/src/debug/systemd/src/core/exec-credential.c:1023:13
+TEST-54-CREDS.sh[1074]:     #16 0x55cf8cac42d4 in exec_setup_credentials /usr/src/debug/systemd/src/core/exec-credential.c:1168:21
+TEST-54-CREDS.sh[1074]:     #17 0x55cf8ca59569 in exec_invoke /usr/src/debug/systemd/src/core/exec-invoke.c:4866:13
+TEST-54-CREDS.sh[1074]:     #18 0x55cf8ca428d8 in run /usr/src/debug/systemd/src/core/executor.c:244:13
+TEST-54-CREDS.sh[1074]:     #19 0x55cf8ca428d8 in main /usr/src/debug/systemd/src/core/executor.c:275:13
+TEST-54-CREDS.sh[1074]:     #20 0x7f64b40110c7 in __libc_start_call_main (/lib64/libc.so.6+0x40c7) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #21 0x7f64b401118a in __libc_start_main@GLIBC_2.2.5 (/lib64/libc.so.6+0x418a) (BuildId: 159846287d47eef88f2a478f59803f6e8fc81d05)
+TEST-54-CREDS.sh[1074]:     #22 0x55cf8ca41cb4  (/usr/lib/systemd/systemd-executor+0x124cb4) (BuildId: 24f2b1608c3aaee3226cdd14fa2b6e6741156222)
+TEST-54-CREDS.sh[1074]: SUMMARY: AddressSanitizer: heap-use-after-free /usr/src/debug/systemd/src/libsystemd/sd-json/sd-json.c:887:16 in sd_json_variant_unref
+TEST-54-CREDS.sh[1074]: Shadow bytes around the buggy address:
+TEST-54-CREDS.sh[1074]:   0x50c000000680: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000700: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd
+TEST-54-CREDS.sh[1074]:   0x50c000000780: fa fa fa fa fa fa fa fa 00 00 00 00 00 00 00 00
+TEST-54-CREDS.sh[1074]:   0x50c000000800: 00 00 00 00 00 00 00 00 fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000880: fd fd fd fd fd fd fd fd fd fd fd fd fd fd fd fa
+TEST-54-CREDS.sh[1074]: =>0x50c000000900: fa fa fa fa fa fa fa fa fd fd fd[fd]fd fd fd fd
+TEST-54-CREDS.sh[1074]:   0x50c000000980: fd fd fd fd fd fd fd fa fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000b00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]:   0x50c000000b80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+TEST-54-CREDS.sh[1074]: Shadow byte legend (one shadow byte represents 8 application bytes):
+TEST-54-CREDS.sh[1074]:   Addressable:           00
+TEST-54-CREDS.sh[1074]:   Partially addressable: 01 02 03 04 05 06 07
+TEST-54-CREDS.sh[1074]:   Heap left redzone:       fa
+TEST-54-CREDS.sh[1074]:   Freed heap region:       fd
+TEST-54-CREDS.sh[1074]:   Stack left redzone:      f1
+TEST-54-CREDS.sh[1074]:   Stack mid redzone:       f2
+TEST-54-CREDS.sh[1074]:   Stack right redzone:     f3
+TEST-54-CREDS.sh[1074]:   Stack after return:      f5
+TEST-54-CREDS.sh[1074]:   Stack use after scope:   f8
+TEST-54-CREDS.sh[1074]:   Global redzone:          f9
+TEST-54-CREDS.sh[1074]:   Global init order:       f6
+TEST-54-CREDS.sh[1074]:   Poisoned by user:        f7
+TEST-54-CREDS.sh[1074]:   Container overflow:      fc
+TEST-54-CREDS.sh[1074]:   Array cookie:            ac
+TEST-54-CREDS.sh[1074]:   Intra object redzone:    bb
+TEST-54-CREDS.sh[1074]:   ASan internal:           fe
+TEST-54-CREDS.sh[1074]:   Left alloca redzone:     ca
+TEST-54-CREDS.sh[1074]:   Right alloca redzone:    cb
+
+Follow-up for 2c3cbc5c018e05b3a3e5ec6c6a2da6f3c6c3fb09
+
+(cherry picked from commit 842a674d4f7fb69af28e67f447c1250383e50f41)
+---
+ src/shared/creds-util.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/shared/creds-util.c b/src/shared/creds-util.c
+index 6ee18838cc..5156c63fd3 100644
+--- a/src/shared/creds-util.c
++++ b/src/shared/creds-util.c
+@@ -1560,7 +1560,7 @@ int ipc_encrypt_credential(const char *name, usec_t timestamp, usec_t not_after,
+ 
+         sd_json_variant_sensitive(jinput);
+ 
+-        _cleanup_(sd_json_variant_unrefp) sd_json_variant *reply = NULL;
++        sd_json_variant *reply = NULL;
+         const char *error_id = NULL;
+         r = sd_varlink_callbo(
+                         vl,
+@@ -1618,7 +1618,7 @@ int ipc_decrypt_credential(const char *validate_name, usec_t validate_timestamp,
+ 
+         sd_json_variant_sensitive(jinput);
+ 
+-        _cleanup_(sd_json_variant_unrefp) sd_json_variant *reply = NULL;
++        sd_json_variant *reply = NULL;
+         const char *error_id = NULL;
+         r = sd_varlink_callbo(
+                         vl,

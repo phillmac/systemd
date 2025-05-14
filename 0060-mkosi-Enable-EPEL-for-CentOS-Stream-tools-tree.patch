@@ -1,0 +1,30 @@
+From a3cf3df23a71d8497287f4ef23ca19332d0b77bb Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 16:49:59 +0100
+Subject: [PATCH] mkosi: Enable EPEL for CentOS Stream tools tree
+
+We need packages from EPEL to be able to build CentOS Stream images
+with a CentOS Stream tools tree so enable it. This is broken on CentOS
+Stream 10 but given using a CentOS Stream tools tree is broken without
+EPEL as well, we might as well enable it and just wait until the packages
+are added to EPEL 10.
+
+(cherry picked from commit ac1a711d9a237eea36b053d43c0c35af7ac40b1f)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
+new file mode 100644
+index 0000000000..737fec3a3d
+--- /dev/null
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: LGPL-2.1-or-later
++
++[Match]
++ToolsTreeDistribution=centos
++
++[Build]
++ToolsTreeRepositories=epel,epel-next

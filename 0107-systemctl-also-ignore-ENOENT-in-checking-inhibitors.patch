@@ -1,0 +1,31 @@
+From ec38b373c6c05021858873d99c5e42701933e409 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 28 Dec 2024 13:36:32 +0900
+Subject: [PATCH] systemctl: also ignore ENOENT in checking inhibitors
+
+Fixes a bug caused by 804874d26ac73e0af07c4c5d7165c95372f03f6d.
+Follow-up for a1417e5563acb73a0accdc12b3af91e4ec1c7f46.
+Fixes #35757.
+
+(cherry picked from commit 084f361b509cbffe7ffd5ab6085469f76f799fe5)
+---
+ src/systemctl/systemctl-logind.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/systemctl/systemctl-logind.c b/src/systemctl/systemctl-logind.c
+index 1258852a01..d7b373ce0b 100644
+--- a/src/systemctl/systemctl-logind.c
++++ b/src/systemctl/systemctl-logind.c
+@@ -152,9 +152,9 @@ int logind_check_inhibitors(enum action a) {
+                 return 0;
+ 
+         r = acquire_bus(BUS_FULL, &bus);
+-        if (r == -ECONNREFUSED && geteuid() == 0)
+-                return 0; /* When D-Bus is not running, allow root to force a shutdown. E.g. when running at
+-                           * the emergency console. */
++        if (ERRNO_IS_NEG_DISCONNECT(r) && geteuid() == 0)
++                return 0; /* When D-Bus is not running (ECONNREFUSED) or D-Bus socket is not created (ENOENT),
++                           * allow root to force a shutdown. E.g. when running at the emergency console. */
+         if (r < 0)
+                 return r;
+ 

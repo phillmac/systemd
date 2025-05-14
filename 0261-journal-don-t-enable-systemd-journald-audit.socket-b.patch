@@ -1,0 +1,25 @@
+From b8cf88743e39a156b6e5d6e51805f25a774988cb Mon Sep 17 00:00:00 2001
+From: Jan Synacek <jsynacek@redhat.com>
+Date: Thu, 2 May 2019 14:11:54 +0200
+Subject: [PATCH] journal: don't enable systemd-journald-audit.socket by
+ default
+
+RHEL-only: feature
+
+Related: RHEL-40924
+---
+ presets/90-systemd.preset | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/presets/90-systemd.preset b/presets/90-systemd.preset
+index da6b9805fd..004ea6fe14 100644
+--- a/presets/90-systemd.preset
++++ b/presets/90-systemd.preset
+@@ -21,7 +21,6 @@ enable systemd-boot-update.service
+ enable systemd-confext.service
+ enable systemd-homed.service
+ enable systemd-homed-activate.service
+-enable systemd-journald-audit.socket
+ enable systemd-mountfsd.socket
+ enable systemd-network-generator.service
+ enable systemd-networkd.service

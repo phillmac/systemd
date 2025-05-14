@@ -1,0 +1,56 @@
+From d23133ef7914a63df4a79864d0b2170a790ddd60 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 15 Dec 2024 17:42:10 +0900
+Subject: [PATCH] TEST-35-LOGIN: check only tty session
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+For some reasons, another session logind-test-user may be started.
+===
+Dec 13 07:04:16 systemd-logind[2140]: Got message type=method_call ... member=CreateSessionWithPIDFD ...
+(snip)
+Dec 13 07:04:16 systemd-logind[2140]: New session 15 of user logind-test-user.
+Dec 13 07:04:16 systemd-logind[2140]: VT changed to 2
+Dec 13 07:04:16 systemd-logind[2140]: rfkill: Found udev node /dev/rfkill for seat seat0
+Dec 13 07:04:16 systemd-logind[2140]: udmabuf: Found udev node /dev/udmabuf for seat seat0
+Dec 13 07:04:16 systemd-logind[2140]: Found static node /dev/snd/timer for seat seat0
+Dec 13 07:04:16 systemd-logind[2140]: Found static node /dev/snd/seq for seat seat0
+Dec 13 07:04:16 systemd-logind[2140]: Changing ACLs at /dev/snd/timer for seat seat0 (uid 0→4712 add)
+Dec 13 07:04:16 systemd-logind[2140]: Changing ACLs at /dev/rfkill for seat seat0 (uid 0→4712 add)
+Dec 13 07:04:16 systemd-logind[2140]: Changing ACLs at /dev/udmabuf for seat seat0 (uid 0→4712 add)
+Dec 13 07:04:16 systemd-logind[2140]: Changing ACLs at /dev/snd/seq for seat seat0 (uid 0→4712 add)
+Dec 13 07:04:16 systemd[1]: user-4712.slice: Changed dead -> active
+Dec 13 07:04:16 systemd[1]: user-4712.slice: Job 5951 user-4712.slice/start finished, result=done
+Dec 13 07:04:16 systemd[1]: Created slice user-4712.slice.
+Dec 13 07:04:16 systemd-logind[2140]: Electing new display for user logind-test-user
+Dec 13 07:04:16 systemd-logind[2140]: Choosing session 15 in preference to -
+(snip)
+Dec 13 07:04:16 systemd-logind[2140]: Got message type=method_call ... member=CreateSessionWithPIDFD ...
+(snip)
+Dec 13 07:04:16 systemd-logind[2140]: New session 16 of user logind-test-user.
+Dec 13 07:04:16 systemd-logind[2140]: Electing new display for user logind-test-user
+Dec 13 07:04:16 systemd-logind[2140]: Ignoring session 16
+===
+Let's track only session for the user with tty, which we explicitly created.
+
+Fixes #35597.
+
+(cherry picked from commit 26f65dc0c76f59eb3896014346652885c493ae71)
+---
+ test/units/TEST-35-LOGIN.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/units/TEST-35-LOGIN.sh b/test/units/TEST-35-LOGIN.sh
+index ac3836b816..80320e32e1 100755
+--- a/test/units/TEST-35-LOGIN.sh
++++ b/test/units/TEST-35-LOGIN.sh
+@@ -639,7 +639,7 @@ EOF
+ 
+     journalctl --sync
+     assert_eq "$(journalctl -b -u systemd-logind.service --since="$ts" --grep "Session \"$id\" of user \"logind-test-user\" is idle, stopping." | wc -l)" 1
+-    assert_eq "$(loginctl --no-legend | grep -v manager | grep -c "logind-test-user")" 0
++    assert_eq "$(loginctl --no-legend | grep -v manager | grep tty | grep -c "logind-test-user")" 0
+ }
+ 
+ testcase_ambient_caps() {

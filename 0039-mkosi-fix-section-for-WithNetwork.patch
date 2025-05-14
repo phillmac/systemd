@@ -1,0 +1,23 @@
+From 6186c2735bdd922cb5287be8586bdae1a5736c89 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sat, 14 Dec 2024 10:57:34 +0000
+Subject: [PATCH] mkosi: fix section for WithNetwork=
+
+/tmp/autopkgtest.L6NPL0/build.doZ/src/mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf: Setting WithNetwork should be configured in [Build], not [Content]
+
+(cherry picked from commit 301c159ce526933d048b9fd02ad7e2adfb4a6c58)
+---
+ mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf
+index 4fb4f46075..a535736452 100644
+--- a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf
++++ b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf.d/network.conf
+@@ -3,5 +3,5 @@
+ [Match]
+ Environment=NO_BUILD=1
+ 
+-[Content]
++[Build]
+ WithNetwork=yes

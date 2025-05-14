@@ -1,0 +1,281 @@
+From 158c9ca6a9f28fce35422cf5e55d6fa55e402f41 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 12 Feb 2025 11:09:36 +0100
+Subject: [PATCH] mkosi: Update to latest
+
+In https://github.com/systemd/mkosi/pull/3497, mkosi has started parsing
+options passed after the verb as regular mkosi options instead of options
+for the invoked command. We adapt to this change by adding '--' as a delimiter
+everywhere where required.
+
+(cherry picked from commit b429f82eaf774d9b9f67c201770074a9ec72647e)
+---
+ .github/workflows/coverage.yml     | 16 ++++++------
+ .github/workflows/mkosi.yml        | 12 ++++-----
+ docs/HACKING.md                    | 40 +++++++++++++++---------------
+ test/README.testsuite              | 14 +++++------
+ test/fmf/integration-tests/test.sh |  8 +++---
+ 5 files changed, 45 insertions(+), 45 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 6503059ef4..1cce9a97f3 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@0de0aa905625317ff10cc4b44ec9379a7aa65aa6
++      - uses: systemd/mkosi@d501139032aa659fa8d34bdb850f4eb6b5f458ed
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+@@ -74,23 +74,23 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: sudo mkosi -f sandbox true
++        run: sudo mkosi -f sandbox -- true
+ 
+       - name: Configure meson
+         run: |
+-          sudo mkosi sandbox \
++          sudo mkosi sandbox -- \
+             meson setup \
+             --buildtype=debugoptimized \
+             -Dintegration-tests=true \
+             build
+ 
+       - name: Build image
+-        run: sudo mkosi sandbox meson compile -C build mkosi
++        run: sudo mkosi sandbox -- meson compile -C build mkosi
+ 
+       - name: Initial coverage report
+         run: |
+           sudo mkdir -p build/test/coverage
+-          sudo mkosi sandbox \
++          sudo mkosi sandbox -- \
+             lcov \
+             --directory build/mkosi.builddir/arch~rolling~x86-64 \
+             --capture \
+@@ -107,7 +107,7 @@ jobs:
+           # --preserve-env makes sure all the github actions environment variables are propagated which are
+           # used in integration-test-wrapper.py to construct the `gh` command line to download the journals
+           # of failed tests.
+-          sudo --preserve-env mkosi sandbox \
++          sudo --preserve-env mkosi sandbox -- \
+             meson test \
+             -C build \
+             --no-rebuild \
+@@ -136,10 +136,10 @@ jobs:
+               lcov_args+=(--add-tracefile "${file}")
+           done < <(find build/test/coverage -name "TEST-*.coverage-info")
+ 
+-          sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
++          sudo mkosi sandbox -- lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
+ 
+       - name: List coverage report
+-        run: sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
++        run: sudo mkosi sandbox -- lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
+ 
+       - name: Coveralls
+         uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index d662d65dad..2b00498243 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -120,7 +120,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@0de0aa905625317ff10cc4b44ec9379a7aa65aa6
++      - uses: systemd/mkosi@d501139032aa659fa8d34bdb850f4eb6b5f458ed
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+@@ -188,22 +188,22 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: sudo mkosi -f sandbox true
++        run: sudo mkosi -f sandbox -- true
+ 
+       - name: Configure meson
+         run: |
+-          sudo mkosi sandbox \
++          sudo mkosi sandbox -- \
+             meson setup \
+             --buildtype=debugoptimized \
+             -Dintegration-tests=true \
+             build
+ 
+       - name: Build image
+-        run: sudo mkosi sandbox meson compile -C build mkosi
++        run: sudo mkosi sandbox -- meson compile -C build mkosi
+ 
+       - name: Run integration tests
+         run: |
+-          if [[ "$(sudo mkosi sandbox meson test --help)" == *"--max-lines"* ]]; then
++          if [[ "$(sudo mkosi sandbox -- meson test --help)" == *"--max-lines"* ]]; then
+               MAX_LINES=(--max-lines 300)
+           else
+               MAX_LINES=()
+@@ -212,7 +212,7 @@ jobs:
+           # --preserve-env makes sure all the github actions environment variables are propagated which are
+           # used in integration-test-wrapper.py to construct the `gh` command line to download the journals
+           # of failed tests.
+-          sudo --preserve-env mkosi sandbox \
++          sudo --preserve-env mkosi sandbox -- \
+             env \
+             TEST_PREFER_QEMU=${{ matrix.vm }} \
+             TEST_SKIP=${{ matrix.skip }} \
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index e534a51335..697ec9b545 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -39,18 +39,18 @@ chance that your distribution's packaged version of mkosi will be too old.
+ Then, you can build and run systemd executables as follows:
+ 
+ ```sh
+-$ mkosi -f sandbox meson setup build
+-$ mkosi -f sandbox meson compile -C build
+-$ mkosi -f sandbox build/systemctl --version
++$ mkosi -f sandbox -- meson setup build
++$ mkosi -f sandbox -- meson compile -C build
++$ mkosi -f sandbox -- build/systemctl --version
+ ```
+ 
+ To build and boot an OS image with the latest systemd installed:
+ 
+ ```sh
+-$ mkosi -f genkey                               # Generate signing keys once.
+-$ mkosi -f sandbox meson compile -C build mkosi # (re-)build the OS image
+-$ mkosi boot                                    # Boot the image with systemd-nspawn.
+-$ mkosi vm                                      # Boot the image with qemu.
++$ mkosi -f genkey                                  # Generate signing keys once.
++$ mkosi -f sandbox -- meson compile -C build mkosi # (re-)build the OS image
++$ mkosi boot                                       # Boot the image with systemd-nspawn.
++$ mkosi vm                                         # Boot the image with qemu.
+ ```
+ 
+ Putting this all together, here's a series of commands for preparing a patch for
+@@ -61,15 +61,15 @@ $ git clone https://github.com/systemd/mkosi.git
+ $ ln -s $PWD/mkosi/bin/mkosi ~/.local/bin/mkosi # Make sure ~/.local/bin is in $PATH.
+ $ git clone https://github.com/systemd/systemd.git
+ $ cd systemd
+-$ git checkout -b <BRANCH>                      # where BRANCH is the name of the branch
+-$ $EDITOR src/core/main.c                       # or wherever you'd like to make your changes
+-$ mkosi -f sandbox meson setup build            # Set up meson
+-$ mkosi -f genkey                               # Generate signing keys once.
+-$ mkosi -f sandbox meson compile -C build mkosi # (re-)build the test image
+-$ mkosi vm                                      # Boot the image in qemu
+-$ git add -p                                    # interactively put together your patch
+-$ git commit                                    # commit it
+-$ git push -u <REMOTE>                          # where REMOTE is your "fork" on GitHub
++$ git checkout -b <BRANCH>                         # where BRANCH is the name of the branch
++$ $EDITOR src/core/main.c                          # or wherever you'd like to make your changes
++$ mkosi -f sandbox -- meson setup build            # Set up meson
++$ mkosi -f genkey                                  # Generate signing keys once.
++$ mkosi -f sandbox -- meson compile -C build mkosi # (re-)build the test image
++$ mkosi vm                                         # Boot the image in qemu
++$ git add -p                                       # interactively put together your patch
++$ git commit                                       # commit it
++$ git push -u <REMOTE>                             # where REMOTE is your "fork" on GitHub
+ ```
+ 
+ And after that, head over to your repo on GitHub and click "Compare & pull
+@@ -101,10 +101,10 @@ the following commands in another terminal on your host after booting the image
+ machine):
+ 
+ ```sh
+-mkosi -t none && mkosi ssh dnf upgrade --disablerepo="*" --assumeyes "/work/build/*.rpm"             # CentOS/Fedora
+-mkosi -t none && mkosi ssh apt-get install "/work/build/*.deb"                                       # Debian/Ubuntu
+-mkosi -t none && mkosi ssh pacman --upgrade --needed --noconfirm "/work/build/*.pkg.tar"             # Arch Linux
+-mkosi -t none && mkosi ssh zypper --non-interactive install --allow-unsigned-rpm "/work/build/*.rpm" # OpenSUSE
++mkosi -t none && mkosi ssh -- dnf upgrade --disablerepo="*" --assumeyes "/work/build/*.rpm"             # CentOS/Fedora
++mkosi -t none && mkosi ssh -- apt-get install "/work/build/*.deb"                                       # Debian/Ubuntu
++mkosi -t none && mkosi ssh -- pacman --upgrade --needed --noconfirm "/work/build/*.pkg.tar"             # Arch Linux
++mkosi -t none && mkosi ssh -- zypper --non-interactive install --allow-unsigned-rpm "/work/build/*.rpm" # OpenSUSE
+ ```
+ 
+ and optionally restart the daemon(s) you're working on using
+diff --git a/test/README.testsuite b/test/README.testsuite
+index 02f5404410..3a16255b96 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -11,7 +11,7 @@ reconfiguring meson to make sure it is picked up properly.
+ Next, we can build the integration test image with meson:
+ 
+ ```shell
+-$ mkosi -f sandbox meson compile -C build mkosi
++$ mkosi -f sandbox -- meson compile -C build mkosi
+ ```
+ 
+ By default, the `mkosi` meson target which builds the integration test image depends on
+@@ -32,24 +32,24 @@ directory (`OutputDirectory=`) to point to the other directory using `mkosi.loca
+ After the image has been built, the integration tests can be run with:
+ 
+ ```shell
+-$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox meson test -C build --no-rebuild --suite integration-tests --num-processes "$(($(nproc) / 4))"
++$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox -- meson test -C build --no-rebuild --suite integration-tests --num-processes "$(($(nproc) / 4))"
+ ```
+ 
+ As usual, specific tests can be run in meson by appending the name of the test
+ which is usually the name of the directory e.g.
+ 
+ ```shell
+-$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox meson test -C build --no-rebuild -v TEST-01-BASIC
++$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox -- meson test -C build --no-rebuild -v TEST-01-BASIC
+ ```
+ 
+-See `mkosi -f sandbox meson introspect build --tests` for a list of tests.
++See `mkosi -f sandbox -- meson introspect build --tests` for a list of tests.
+ 
+ To interactively debug a failing integration test, the `--interactive` option
+ (`-i`) for `meson test` can be used. Note that this requires meson v1.5.0 or
+ newer:
+ 
+ ```shell
+-$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox meson test -C build --no-rebuild -i TEST-01-BASIC
++$ env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox -- meson test -C build --no-rebuild -i TEST-01-BASIC
+ ```
+ 
+ Due to limitations in meson, the integration tests do not yet depend on the
+@@ -58,7 +58,7 @@ running the integration tests. To rebuild the image and rerun a test, the
+ following command can be used:
+ 
+ ```shell
+-$ mkosi -f sandbox meson compile -C build mkosi && env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox meson test -C build --no-rebuild -v TEST-01-BASIC
++$ mkosi -f sandbox -- meson compile -C build mkosi && env SYSTEMD_INTEGRATION_TESTS=1 mkosi -f sandbox -- meson test -C build --no-rebuild -v TEST-01-BASIC
+ ```
+ 
+ The integration tests use the same mkosi configuration that's used when you run
+@@ -72,7 +72,7 @@ To iterate on an integration test, let's first get a shell in the integration te
+ the following:
+ 
+ ```shell
+-$ mkosi -f sandbox meson compile -C build mkosi && env SYSTEMD_INTEGRATION_TESTS=1 TEST_SHELL=1 mkosi -f sandbox meson test -C build --no-rebuild -i TEST-01-BASIC
++$ mkosi -f sandbox -- meson compile -C build mkosi && env SYSTEMD_INTEGRATION_TESTS=1 TEST_SHELL=1 mkosi -f sandbox -- meson test -C build --no-rebuild -i TEST-01-BASIC
+ ```
+ 
+ This will get us a shell in the integration test environment after booting the machine without running the
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index aff79340f7..c5ba7507de 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -132,11 +132,11 @@ export TEST_SKIP="TEST-21-DFUZZER"
+ mkdir -p /etc/pacman.d/gnupg
+ 
+ mkosi summary
+-mkosi -f sandbox true
+-mkosi -f sandbox meson setup --buildtype=debugoptimized -Dintegration-tests=true build
++mkosi -f sandbox -- true
++mkosi -f sandbox -- meson setup --buildtype=debugoptimized -Dintegration-tests=true build
+ mkosi genkey
+-mkosi -f sandbox meson compile -C build mkosi
+-mkosi -f sandbox \
++mkosi -f sandbox -- meson compile -C build mkosi
++mkosi -f sandbox -- \
+     meson test \
+     -C build \
+     --no-rebuild \

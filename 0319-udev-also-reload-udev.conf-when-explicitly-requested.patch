@@ -1,0 +1,87 @@
+From 1ac71b3069f39c3b1e681eab90419ef500659cbe Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 4 Dec 2024 04:29:13 +0900
+Subject: [PATCH] udev: also reload udev.conf when explicitly requested
+
+When reloading is explicitly requested, e.g. by 'udevadm control --reload',
+then also reload udev.conf.
+
+(cherry picked from commit e95861d909e17d56eddc20331a62f67f0d37d950)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-config.c  | 24 ++++++++++++++++++++++++
+ src/udev/udev-config.h  |  1 +
+ src/udev/udev-manager.c | 16 ++++++++--------
+ 3 files changed, 33 insertions(+), 8 deletions(-)
+
+diff --git a/src/udev/udev-config.c b/src/udev/udev-config.c
+index eced080547..891cf92535 100644
+--- a/src/udev/udev-config.c
++++ b/src/udev/udev-config.c
+@@ -339,3 +339,27 @@ int manager_load(Manager *manager, int argc, char *argv[]) {
+         manager_adjust_config(&manager->config);
+         return 1;
+ }
++
++UdevReloadFlags manager_reload_config(Manager *manager) {
++        assert(manager);
++
++        UdevConfig old = manager->config;
++
++        manager->config_by_udev_conf = UDEV_CONFIG_INIT;
++        manager_parse_udev_config(&manager->config_by_udev_conf);
++        manager_merge_config(manager);
++        log_set_max_level(manager->config.log_level);
++        manager_adjust_config(&manager->config);
++
++        if (manager->config.resolve_name_timing != old.resolve_name_timing)
++                return UDEV_RELOAD_RULES | UDEV_RELOAD_KILL_WORKERS;
++
++        if (manager->config.log_level != old.log_level ||
++            manager->config.exec_delay_usec != old.exec_delay_usec ||
++            manager->config.timeout_usec != old.timeout_usec ||
++            manager->config.timeout_signal != old.timeout_signal ||
++            manager->config.blockdev_read_only != old.blockdev_read_only)
++                return UDEV_RELOAD_KILL_WORKERS;
++
++        return 0;
++}
+diff --git a/src/udev/udev-config.h b/src/udev/udev-config.h
+index 3b0997eeb0..1c7a74b106 100644
+--- a/src/udev/udev-config.h
++++ b/src/udev/udev-config.h
+@@ -27,4 +27,5 @@ typedef struct UdevConfig {
+         }
+ 
+ int manager_load(Manager *manager, int argc, char *argv[]);
++UdevReloadFlags manager_reload_config(Manager *manager);
+ void udev_config_set_default_children_max(UdevConfig *c);
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index c691b8ebed..4fc316e106 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -265,15 +265,15 @@ static void manager_reload(Manager *manager, bool force) {
+         UdevReloadFlags flags = udev_builtin_should_reload();
+         if (udev_rules_should_reload(manager->rules))
+                 flags |= UDEV_RELOAD_RULES | UDEV_RELOAD_KILL_WORKERS;
+-        if (flags == 0) {
+-                /* Nothing changed. It is not necessary to reload. */
+-                if (!force)
+-                        return;
++        if (flags == 0 && !force)
++                /* Neither .rules files nor config files for builtins e.g. .link files changed. It is not
++                 * necessary to reload configs. Note, udev.conf is not checked in the above, hence reloaded
++                 * when explicitly requested or at least one .rules file or friend is updated. */
++                return;
+ 
+-                /* If we eat this up, then tell our service manager to just continue */
+-                (void) notify_reloading_full("Skipping configuration reloading, nothing changed.");
+-        } else
+-                (void) notify_reloading();
++        (void) notify_reloading();
++
++        flags |= manager_reload_config(manager);
+ 
+         if (FLAGS_SET(flags, UDEV_RELOAD_KILL_WORKERS))
+                 manager_kill_workers(manager, false);

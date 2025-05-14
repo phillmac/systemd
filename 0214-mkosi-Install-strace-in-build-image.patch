@@ -1,0 +1,24 @@
+From f70def04be0da3130509fb23a7b4b82101cab1f0 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 7 Feb 2025 11:36:26 +0100
+Subject: [PATCH] mkosi: Install strace in build image
+
+Useful to debug regressions in rpm or other package managers.
+
+(cherry picked from commit e421fb46d8621ecf5a6b527772b3f56a72ddf9ff)
+---
+ mkosi.images/build/mkosi.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.images/build/mkosi.conf b/mkosi.images/build/mkosi.conf
+index 8a67c76ee5..b710f801ee 100644
+--- a/mkosi.images/build/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf
+@@ -5,6 +5,7 @@ Packages=
+         clang
+         lld
+         llvm
++        strace
+ 
+ [Output]
+ Format=none

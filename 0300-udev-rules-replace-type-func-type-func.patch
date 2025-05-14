@@ -1,0 +1,43 @@
+From 24e7457de660efd3e6906c7fa4708d55d7e45f93 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 11 Jan 2025 03:57:34 +0900
+Subject: [PATCH] udev-rules: replace 'type *func()' -> 'type* func()'
+
+(cherry picked from commit a75aeca78c3ad88dc9840f45963f86097d20cf6f)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-rules.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 85ae1c2163..8d00702595 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -345,7 +345,7 @@ static void log_event_truncated(
+ 
+ /*** Other functions ***/
+ 
+-static UdevRuleToken *udev_rule_token_free(UdevRuleToken *token) {
++static UdevRuleToken* udev_rule_token_free(UdevRuleToken *token) {
+         if (!token)
+                 return NULL;
+ 
+@@ -364,7 +364,7 @@ static void udev_rule_line_clear_tokens(UdevRuleLine *rule_line) {
+                 udev_rule_token_free(i);
+ }
+ 
+-static UdevRuleLine *udev_rule_line_free(UdevRuleLine *rule_line) {
++static UdevRuleLine* udev_rule_line_free(UdevRuleLine *rule_line) {
+         if (!rule_line)
+                 return NULL;
+ 
+@@ -379,7 +379,7 @@ static UdevRuleLine *udev_rule_line_free(UdevRuleLine *rule_line) {
+ 
+ DEFINE_TRIVIAL_CLEANUP_FUNC(UdevRuleLine*, udev_rule_line_free);
+ 
+-static UdevRuleFile *udev_rule_file_free(UdevRuleFile *rule_file) {
++static UdevRuleFile* udev_rule_file_free(UdevRuleFile *rule_file) {
+         if (!rule_file)
+                 return NULL;
+ 

@@ -1,0 +1,89 @@
+From 7727a7896acca073ef5cd43b3818510ca1c645a7 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 17 Jan 2025 15:35:37 +0100
+Subject: [PATCH] mkosi: lcov and shellcheck are not in EPEL 10
+
+Let's drop these from CentOS Stream tools trees as they are not in
+EPEL 10 yet.
+
+(cherry picked from commit 7a75a6f70f037d3403c5f2c13ecc2b814fc26867)
+---
+ mkosi.conf.d/05-tools/mkosi.conf                      | 1 -
+ mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf          | 1 +
+ mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf | 1 -
+ mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf | 1 +
+ mkosi.conf.d/05-tools/mkosi.conf.d/fedora.conf        | 2 ++
+ mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf      | 1 +
+ 6 files changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf b/mkosi.conf.d/05-tools/mkosi.conf
+index 322851b627..6656cee287 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf
+@@ -5,7 +5,6 @@ ToolsTreePackages=
+         gcc
+         gdb
+         gperf
+-        lcov
+         llvm
+         meson
+         pkgconf
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
+index c6ec83a6b0..fdb147a1c7 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
+@@ -7,6 +7,7 @@ ToolsTreeDistribution=arch
+ ToolsTreePackages=
+         cryptsetup
+         github-cli
++        lcov
+         libcap
+         libmicrohttpd
+         libxslt
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+index 80874391e5..5dc5662115 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+@@ -18,6 +18,5 @@ ToolsTreePackages=
+         python3-lxml
+         python3-mypy
+         python3-pytest
+-        shellcheck
+         libxslt
+         docbook-style-xsl
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
+index 106072f541..c060e57e82 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
+@@ -7,6 +7,7 @@ ToolsTreeDistribution=|ubuntu
+ [Build]
+ ToolsTreePackages=
+         gh
++        lcov
+         libblkid-dev
+         libcap-dev
+         libcryptsetup-dev
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/fedora.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/fedora.conf
+index 777c13f45c..66592b86ad 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/fedora.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/fedora.conf
+@@ -5,5 +5,7 @@ ToolsTreeDistribution=fedora
+ 
+ [Build]
+ ToolsTreePackages=
++        lcov
+         gh
+         ruff
++        shellcheck
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+index 8a659360fa..aeaa325d06 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+@@ -5,6 +5,7 @@ ToolsTreeDistribution=opensuse
+ 
+ [Build]
+ ToolsTreePackages=
++        lcov
+         libz1
+         gh
+         mypy

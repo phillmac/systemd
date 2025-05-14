@@ -1,0 +1,21 @@
+From 51a31ac6e5fbc00066f669aa410d8b5ebb893faf Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 15:05:51 +0100
+Subject: [PATCH] mkosi.clangd: Fail on command errors
+
+(cherry picked from commit ba3f148307e551d1be3e92383c8d37a9cc5b7a95)
+---
+ mkosi.clangd | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.clangd b/mkosi.clangd
+index 10c44a70d8..23251baf63 100755
+--- a/mkosi.clangd
++++ b/mkosi.clangd
+@@ -1,5 +1,6 @@
+ #!/bin/bash
+ # SPDX-License-Identifier: LGPL-2.1-or-later
++set -e
+ 
+ if command -v flatpak-spawn >/dev/null; then
+     SPAWN=(flatpak-spawn --host)

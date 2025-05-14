@@ -1,0 +1,36 @@
+From 962bdd1d02df80a6e846a6426709624009c7d9d8 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 28 Dec 2024 11:38:24 +0900
+Subject: [PATCH] machine: GC machine when no leader PID is set
+
+After d8854ff1aca4434db0d7d6dcaf9fcf2f38105fb4, if a serialized
+leader PID of a machine is already dead when deserialized, then the
+leader PID and PIDFD are unset for the machine, and subsequent
+machine_start() -> machine_watch_pidfd() will trigger an assertion.
+This makes a Machine object without leader PID GCed.
+
+Fixes a bug introduced by the combination of
+d8854ff1aca4434db0d7d6dcaf9fcf2f38105fb4 (v255) and
+1762c2c045d3a78d3cad54c6b1e5ee9624b32b00 (v257).
+
+Fixes #35602.
+
+(cherry picked from commit 51a0a3b0494d01c1622f6d0c3e2c31e01c18612f)
+---
+ src/machine/machine.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/machine/machine.c b/src/machine/machine.c
+index 587c2267b6..26ce1556a5 100644
+--- a/src/machine/machine.c
++++ b/src/machine/machine.c
+@@ -610,6 +610,9 @@ bool machine_may_gc(Machine *m, bool drop_not_started) {
+         if (m->class == MACHINE_HOST)
+                 return false;
+ 
++        if (!pidref_is_set(&m->leader))
++                return true;
++
+         if (drop_not_started && !m->started)
+                 return true;
+ 

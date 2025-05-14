@@ -1,0 +1,31 @@
+From 47792af441b412a024d3c69e6fc956787ba3cfbb Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Tue, 21 Jan 2025 15:31:14 +0100
+Subject: [PATCH] core/namespace: relabel bind mount source based on the target
+ path
+
+Some bind mounts, e.g. /tmp bind mount when PrivateTmp=disconnected,
+must be explicitly relabeled because now it would have incorrect SELinux
+label. /tmp is expected to have well-known SELinux label, tmp_t. Now it
+has label inherited from the source directory of the bind mount.
+
+(cherry picked from commit a128273f7b5e50ce5929ccabda5c2810b7eedd2d)
+---
+ src/core/namespace.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/core/namespace.c b/src/core/namespace.c
+index 10f4c50bcc..ad61853847 100644
+--- a/src/core/namespace.c
++++ b/src/core/namespace.c
+@@ -1809,6 +1809,10 @@ static int apply_one_mount(
+                         r = mkdir_p(mount_entry_source(m), m->source_dir_mode);
+                         if (r < 0)
+                                 return log_debug_errno(r, "Failed to create source directory %s: %m", mount_entry_source(m));
++
++                        r = label_fix_full(AT_FDCWD, mount_entry_source(m), mount_entry_unprefixed_path(m), /* flags= */ 0);
++                        if (r < 0)
++                                return log_error_errno(r, "Failed to set label of the source directory %s: %m", mount_entry_source(m));
+                 }
+ 
+                 r = chase(mount_entry_source(m), NULL, CHASE_TRAIL_SLASH, &chased, NULL);

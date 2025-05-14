@@ -1,0 +1,23 @@
+From d215c939f22834e54ece6ea6b27bf51a0f3932e1 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sat, 25 Jan 2025 01:20:47 +0000
+Subject: [PATCH] tools: add loongarch64 to debug-sd-boot script
+
+(cherry picked from commit 829f57003d50634f28349f1ec6460421532ef318)
+---
+ tools/debug-sd-boot.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/debug-sd-boot.sh b/tools/debug-sd-boot.sh
+index 0420dbdab7..357b8a6feb 100755
+--- a/tools/debug-sd-boot.sh
++++ b/tools/debug-sd-boot.sh
+@@ -45,7 +45,7 @@ case "${BASH_REMATCH[1]}" in
+     ia32) arch="i386";;
+     x64)  arch="i386:x86-64";;
+     aa64) arch="aarch64";;
+-    arm|riscv64) arch="${BASH_REMATCH[1]}";;
++    arm|riscv64|loongarch64) arch="${BASH_REMATCH[1]}";;
+     *)
+         echo "Unknown EFI arch '${BASH_REMATCH[1]}'."
+         exit 1

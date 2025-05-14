@@ -1,0 +1,76 @@
+From f6343a52f9a8945a32e3c9ced07572e1a7747f23 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 9 Jan 2025 16:24:22 +0100
+Subject: [PATCH] tree-wide: Fix python formatting
+
+The new release of ruff formats a few more things which causes linter
+failures in CI so let's fix those formatting nits.
+
+(cherry picked from commit 96403d5121d93dd47dbe9dab5b90ff973e664ac3)
+---
+ src/ukify/ukify.py               | 6 +++---
+ test/integration-test-wrapper.py | 6 +++---
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index 3f36aa7af6..be4e30eb8e 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -763,7 +763,7 @@ def call_systemd_measure(uki: UKI, opts: UkifyConfig, profile_start: int = 0) ->
+             cmd = [
+                 measure_tool,
+                 'calculate',
+-                *(f"--{s.name.removeprefix('.')}={s.content}" for s in to_measure.values()),
++                *(f'--{s.name.removeprefix(".")}={s.content}' for s in to_measure.values()),
+                 *(f'--bank={bank}' for bank in banks),
+                 # For measurement, the keys are not relevant, so we can lump all the phase paths
+                 # into one call to systemd-measure calculate.
+@@ -786,7 +786,7 @@ def call_systemd_measure(uki: UKI, opts: UkifyConfig, profile_start: int = 0) ->
+             cmd = [
+                 measure_tool,
+                 'sign',
+-                *(f"--{s.name.removeprefix('.')}={s.content}" for s in to_measure.values()),
++                *(f'--{s.name.removeprefix(".")}={s.content}' for s in to_measure.values()),
+                 *(f'--bank={bank}' for bank in banks),
+             ]
+ 
+@@ -1284,7 +1284,7 @@ def make_uki(opts: UkifyConfig) -> None:
+         os.umask(umask := os.umask(0))
+         os.chmod(opts.output, 0o777 & ~umask)
+ 
+-    print(f"Wrote {'signed' if sign_args_present else 'unsigned'} {opts.output}")
++    print(f'Wrote {"signed" if sign_args_present else "unsigned"} {opts.output}')
+ 
+ 
+ @contextlib.contextmanager
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index 5fa0325b88..d9d92fcba3 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -429,7 +429,7 @@ def main() -> None:
+         dropin += textwrap.dedent(
+             f"""
+             [Service]
+-            Environment=TEST_MATCH_SUBTEST={os.environ["TEST_MATCH_SUBTEST"]}
++            Environment=TEST_MATCH_SUBTEST={os.environ['TEST_MATCH_SUBTEST']}
+             """
+         )
+ 
+@@ -437,7 +437,7 @@ def main() -> None:
+         dropin += textwrap.dedent(
+             f"""
+             [Service]
+-            Environment=TEST_MATCH_TESTCASE={os.environ["TEST_MATCH_TESTCASE"]}
++            Environment=TEST_MATCH_TESTCASE={os.environ['TEST_MATCH_TESTCASE']}
+             """
+         )
+ 
+@@ -568,7 +568,7 @@ def main() -> None:
+ 
+     ops += [f'journalctl --file {journal_file} --no-hostname -o short-monotonic -u {args.unit} -p info']
+ 
+-    print("Test failed, relevant logs can be viewed with: \n\n" f"{(' && '.join(ops))}\n", file=sys.stderr)
++    print(f'Test failed, relevant logs can be viewed with: \n\n{(" && ".join(ops))}\n', file=sys.stderr)
+ 
+     # 0 also means we failed so translate that to a non-zero exit code to mark the test as failed.
+     exit(result.returncode or 1)

@@ -1,0 +1,25 @@
+From 869964c1eecad09dfe38cff5a6b7b25343cbc8f4 Mon Sep 17 00:00:00 2001
+From: Antonio Alvarez Feijoo <antonio.feijoo@suse.com>
+Date: Mon, 30 Dec 2024 11:00:07 +0100
+Subject: [PATCH] mkosi: update openSUSE commit reference
+
+Force-pushed as usual, now HEAD is v257.1.
+
+(cherry picked from commit 37c2be73e7238a99bc114f85c7af5c4702f15046)
+---
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+index 972b12c56f..4e83002c91 100644
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+@@ -7,7 +7,7 @@ Distribution=opensuse
+ Environment=
+         GIT_URL=https://src.opensuse.org/pool/systemd
+         GIT_BRANCH=devel
+-        GIT_COMMIT=34e937066081c33841b53ff69130ac843100b68f2dc5bca5e21b30699385998e
++        GIT_COMMIT=cfdec97b3a3d459b1a74a6be33372fed9558fe6d5bef4ece4d7fb94905057c75
+         PKG_SUBDIR=opensuse
+ 
+ [Content]

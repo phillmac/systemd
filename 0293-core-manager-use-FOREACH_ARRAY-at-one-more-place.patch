@@ -1,0 +1,36 @@
+From 66d8a57b8bc706ce0454689562a8f86850ffef5a Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Mon, 13 Jan 2025 17:06:21 +0100
+Subject: [PATCH] core/manager: use FOREACH_ARRAY at one more place
+
+(cherry picked from commit a7516260b32dd26fb61b1dd702b9bc718cd420f9)
+
+Resolves: RHEL-73780
+---
+ src/core/manager.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/core/manager.c b/src/core/manager.c
+index 4a7132274f..96fc8941eb 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -1816,15 +1816,16 @@ Manager* manager_free(Manager *m) {
+         hashmap_free(m->uid_refs);
+         hashmap_free(m->gid_refs);
+ 
+-        for (ExecDirectoryType dt = 0; dt < _EXEC_DIRECTORY_TYPE_MAX; dt++)
+-                m->prefix[dt] = mfree(m->prefix[dt]);
++        FOREACH_ARRAY(i, m->prefix, _EXEC_DIRECTORY_TYPE_MAX)
++                free(*i);
++
+         free(m->received_credentials_directory);
+         free(m->received_encrypted_credentials_directory);
+ 
+         free(m->watchdog_pretimeout_governor);
+         free(m->watchdog_pretimeout_governor_overridden);
+ 
+-        m->fw_ctx = fw_ctx_free(m->fw_ctx);
++        fw_ctx_free(m->fw_ctx);
+ 
+ #if BPF_FRAMEWORK
+         bpf_restrict_fs_destroy(m->restrict_fs);

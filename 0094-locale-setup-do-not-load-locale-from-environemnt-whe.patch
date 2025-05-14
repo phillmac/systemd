@@ -1,0 +1,30 @@
+From d00cc09bf0c23c9bb376e1280773f7996ab7820e Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 28 Dec 2024 15:07:31 +0900
+Subject: [PATCH] locale-setup: do not load locale from environemnt when
+ /etc/locale.conf is unchanged
+
+Previously, when /etc/locale.conf is unchanged, locales were loaded from
+possibly outdated environment variable.
+
+Fixes a bug introduced by 018befcff6b51f8a50ca232e1984d34526037241 (v253).
+Fixes #35717.
+
+(cherry picked from commit 80797bbb919b3ccde4e51b349f3ca70c1157053e)
+---
+ src/shared/locale-setup.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/shared/locale-setup.c b/src/shared/locale-setup.c
+index 4e7f486a23..5c4580cfff 100644
+--- a/src/shared/locale-setup.c
++++ b/src/shared/locale-setup.c
+@@ -75,7 +75,7 @@ static int locale_context_load_conf(LocaleContext *c, LocaleLoadFlag flag) {
+ 
+         /* If the file is not changed, then we do not need to re-read the file. */
+         if (stat_inode_unmodified(&c->st, &st))
+-                return 0;
++                return 1; /* (already) loaded */
+ 
+         c->st = st;
+         locale_context_clear(c);

@@ -1,0 +1,50 @@
+From b2c1e85214ee2d0d483ff54b0afade9738327c0d Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 22 Dec 2024 01:36:54 +0900
+Subject: [PATCH] meson: sort source files
+
+(cherry picked from commit 8567f1342bbaaacfc08e18513c943b3586ea4a6e)
+
+Resolves: RHEL-75774
+---
+ src/udev/meson.build | 20 ++++++++++----------
+ 1 file changed, 10 insertions(+), 10 deletions(-)
+
+diff --git a/src/udev/meson.build b/src/udev/meson.build
+index d7acbae6bb..54e12a45e4 100644
+--- a/src/udev/meson.build
++++ b/src/udev/meson.build
+@@ -19,16 +19,6 @@ udevadm_sources = files(
+ 
+ libudevd_core_sources = files(
+         'net/link-config.c',
+-        'udev-config.c',
+-        'udev-ctrl.c',
+-        'udev-event.c',
+-        'udev-format.c',
+-        'udev-manager.c',
+-        'udev-node.c',
+-        'udev-rules.c',
+-        'udev-spawn.c',
+-        'udev-watch.c',
+-        'udev-worker.c',
+         'udev-builtin-btrfs.c',
+         'udev-builtin-hwdb.c',
+         'udev-builtin-input_id.c',
+@@ -39,6 +29,16 @@ libudevd_core_sources = files(
+         'udev-builtin-path_id.c',
+         'udev-builtin-usb_id.c',
+         'udev-builtin.c',
++        'udev-config.c',
++        'udev-ctrl.c',
++        'udev-event.c',
++        'udev-format.c',
++        'udev-manager.c',
++        'udev-node.c',
++        'udev-rules.c',
++        'udev-spawn.c',
++        'udev-watch.c',
++        'udev-worker.c',
+ )
+ 
+ if conf.get('HAVE_KMOD') == 1

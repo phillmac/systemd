@@ -1,0 +1,23 @@
+From d3b3c83b27f372987b68ea3ec029eb37869cb07f Mon Sep 17 00:00:00 2001
+From: Nick Rosbrook <enr0n@ubuntu.com>
+Date: Tue, 17 Dec 2024 11:10:42 -0500
+Subject: [PATCH] test: skip TEST-69-SHUTDOWN on ubuntu too
+
+(cherry picked from commit 96c4d9d94d06c6c0a8b68be376505f8d8b5eba2b)
+---
+ test/units/TEST-69-SHUTDOWN.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/units/TEST-69-SHUTDOWN.py b/test/units/TEST-69-SHUTDOWN.py
+index d044164135..4e554702ab 100755
+--- a/test/units/TEST-69-SHUTDOWN.py
++++ b/test/units/TEST-69-SHUTDOWN.py
+@@ -13,7 +13,7 @@ def main():
+     with open("/usr/lib/os-release") as f:
+         for line in f:
+             if line.startswith("ID="):
+-                if "debian" in line:
++                if "debian" in line or "ubuntu" in line:
+                     sys.exit(77)
+ 
+     logger = logging.getLogger("test-shutdown")

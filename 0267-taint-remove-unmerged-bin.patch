@@ -1,0 +1,86 @@
+From ff7a67e1aa5c71c0f40d7f80922a98884394da63 Mon Sep 17 00:00:00 2001
+From: Lukas Nykryn <lnykryn@redhat.com>
+Date: Mon, 8 Jul 2024 14:44:45 +0200
+Subject: [PATCH] taint: remove unmerged-bin
+
+In rhel10 we will have separate bin and sbin
+
+RHEL-only: policy
+
+Resolves: RHEL-46277
+---
+ catalog/systemd.catalog.in       | 1 -
+ catalog/systemd.pl.catalog.in    | 1 -
+ man/org.freedesktop.systemd1.xml | 9 ---------
+ src/core/taint.c                 | 7 +------
+ 4 files changed, 1 insertion(+), 17 deletions(-)
+
+diff --git a/catalog/systemd.catalog.in b/catalog/systemd.catalog.in
+index f3ca748862..ef6fb49ae5 100644
+--- a/catalog/systemd.catalog.in
++++ b/catalog/systemd.catalog.in
+@@ -570,7 +570,6 @@ Support: %SUPPORT_URL%
+ The following "tags" are possible:
+ - "unmerged-usr" - /bin, /sbin, /lib* are not symlinks to their counterparts
+   under /usr/
+-- "unmerged-bin" - /usr/sbin is not a symlink to /usr/bin/
+ - "var-run-bad" — /var/run is not a symlink to /run/
+ - "cgroupsv1" - the system is using the deprecated cgroup v1 hierarchy
+ - "local-hwclock" - the local hardware clock (RTC) is configured to be in
+diff --git a/catalog/systemd.pl.catalog.in b/catalog/systemd.pl.catalog.in
+index f8a525f030..a7102439a2 100644
+--- a/catalog/systemd.pl.catalog.in
++++ b/catalog/systemd.pl.catalog.in
+@@ -578,7 +578,6 @@ Support: %SUPPORT_URL%
+ Możliwe są następujące „etykiety”:
+ • „unmerged-usr” — /bin, /sbin, /lib* nie są dowiązaniami symbolicznymi
+   do swoich odpowiedników pod /usr/,
+-• „unmerged-bin” — /usr/sbin nie jest dowiązaniem symbolicznym do /usr/bin/,
+ • „var-run-bad” — /var/run nie jest dowiązaniem symbolicznym do /run/,
+ • „cgroupsv1” — system używa przestarzałej hierarchii cgroup v1,
+ • „local-hwclock” — lokalny zegar sprzętowy (RTC) jest skonfigurowany
+diff --git a/man/org.freedesktop.systemd1.xml b/man/org.freedesktop.systemd1.xml
+index ec38613da0..0c7c52d563 100644
+--- a/man/org.freedesktop.systemd1.xml
++++ b/man/org.freedesktop.systemd1.xml
+@@ -1676,15 +1676,6 @@ node /org/freedesktop/systemd1 {
+           <xi:include href="version-info.xml" xpointer="v252"/></listitem>
+         </varlistentry>
+ 
+-        <varlistentry>
+-          <term><literal>unmerged-bin</literal></term>
+-
+-          <listitem><para><filename>/usr/sbin</filename> is not a symlink to <filename>/usr/bin/</filename>.
+-          </para>
+-
+-          <xi:include href="version-info.xml" xpointer="v256"/></listitem>
+-        </varlistentry>
+-
+         <varlistentry>
+           <term><literal>var-run-bad</literal></term>
+ 
+diff --git a/src/core/taint.c b/src/core/taint.c
+index b7a1c647a2..f9b3b3d69a 100644
+--- a/src/core/taint.c
++++ b/src/core/taint.c
+@@ -32,7 +32,7 @@ static int short_uid_gid_range(UIDRangeUsernsMode mode) {
+ }
+ 
+ char** taint_strv(void) {
+-        const char *stage[12] = {};
++        const char *stage[11] = {};
+         size_t n = 0;
+ 
+         /* Returns a "taint string", e.g. "local-hwclock:var-run-bad". Only things that are detected at
+@@ -44,11 +44,6 @@ char** taint_strv(void) {
+         if (readlink_malloc("/bin", &bin) < 0 || !PATH_IN_SET(bin, "usr/bin", "/usr/bin"))
+                 stage[n++] = "unmerged-usr";
+ 
+-        /* Note that the check is different from default_PATH(), as we want to taint on uncanonical symlinks
+-         * too. */
+-        if (readlink_malloc("/usr/sbin", &usr_sbin) < 0 || !PATH_IN_SET(usr_sbin, "bin", "/usr/bin"))
+-                stage[n++] = "unmerged-bin";
+-
+         if (readlink_malloc("/var/run", &var_run) < 0 || !PATH_IN_SET(var_run, "../run", "/run"))
+                 stage[n++] = "var-run-bad";
+ 

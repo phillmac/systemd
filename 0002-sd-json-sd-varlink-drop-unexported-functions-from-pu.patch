@@ -1,0 +1,56 @@
+From d7eeb60cdff19e3b2a69cc14118e65e7bfe96421 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 12 Dec 2024 19:42:48 +0900
+Subject: [PATCH] sd-json,sd-varlink: drop unexported functions from public
+ headers
+
+These functions are exported by e11f5aa7226253bf31b2ed61be8599bb213c1819
+and 5fcabde35b8d2592e4ba3f4915839a54d2f246ba in upstream after v257.
+
+Fixes #35554 in v257.
+---
+ src/libsystemd/sd-json/json-util.h | 3 +++
+ src/systemd/sd-json.h              | 3 ---
+ src/systemd/sd-varlink.h           | 1 -
+ 3 files changed, 3 insertions(+), 4 deletions(-)
+
+diff --git a/src/libsystemd/sd-json/json-util.h b/src/libsystemd/sd-json/json-util.h
+index 808df64d98..b3b4941dcc 100644
+--- a/src/libsystemd/sd-json/json-util.h
++++ b/src/libsystemd/sd-json/json-util.h
+@@ -8,6 +8,9 @@
+ #include "macro.h"
+ #include "pidref.h"
+ 
++const char* sd_json_variant_type_to_string(sd_json_variant_type_t t);
++sd_json_variant_type_t sd_json_variant_type_from_string(const char *s);
++
+ #define JSON_VARIANT_REPLACE(v, q)        \
+         do {                              \
+                 typeof(v)* _v = &(v);     \
+diff --git a/src/systemd/sd-json.h b/src/systemd/sd-json.h
+index 3930d82b0d..33817f2327 100644
+--- a/src/systemd/sd-json.h
++++ b/src/systemd/sd-json.h
+@@ -339,9 +339,6 @@ int sd_json_variant_strv(sd_json_variant *v, char ***ret);
+ int sd_json_variant_unbase64(sd_json_variant *v, void **ret, size_t *ret_size);
+ int sd_json_variant_unhex(sd_json_variant *v, void **ret, size_t *ret_size);
+ 
+-const char* sd_json_variant_type_to_string(sd_json_variant_type_t t);
+-sd_json_variant_type_t sd_json_variant_type_from_string(const char *s);
+-
+ _sd_const_ static __inline__ int sd_json_format_enabled(sd_json_format_flags_t flags) {
+         return !(flags & SD_JSON_FORMAT_OFF);
+ }
+diff --git a/src/systemd/sd-varlink.h b/src/systemd/sd-varlink.h
+index 816b9b0ebf..17cf8b7386 100644
+--- a/src/systemd/sd-varlink.h
++++ b/src/systemd/sd-varlink.h
+@@ -184,7 +184,6 @@ int sd_varlink_dispatch(sd_varlink *v, sd_json_variant *parameters, const sd_jso
+ /* Write outgoing fds into the socket (to be associated with the next enqueued message) */
+ int sd_varlink_push_fd(sd_varlink *v, int fd);
+ int sd_varlink_push_dup_fd(sd_varlink *v, int fd);
+-int sd_varlink_reset_fds(sd_varlink *v);
+ 
+ /* Read incoming fds from the socket (associated with the currently handled message) */
+ int sd_varlink_peek_fd(sd_varlink *v, size_t i);

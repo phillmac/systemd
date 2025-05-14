@@ -1,0 +1,262 @@
+From d03f5018a7015594b9af864779a3e06d0f407192 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 22 Dec 2024 01:48:37 +0900
+Subject: [PATCH] udev-config: split on_ctrl_msg() into small pieces
+
+No functional change, just refactroing and preparation for later
+commits.
+
+(cherry picked from commit b358833ee91551d5d70a4fd754187a0259e2c62f)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-config.c  | 78 ++++++++++++++++++++++++++++++++++++++++-
+ src/udev/udev-config.h  |  5 ++-
+ src/udev/udev-manager.c | 59 ++++---------------------------
+ src/udev/udev-manager.h |  4 +++
+ 4 files changed, 91 insertions(+), 55 deletions(-)
+
+diff --git a/src/udev/udev-config.c b/src/udev/udev-config.c
+index 891cf92535..d511691ab2 100644
+--- a/src/udev/udev-config.c
++++ b/src/udev/udev-config.c
+@@ -271,7 +271,7 @@ static void manager_merge_config(Manager *manager) {
+         MERGE_BOOL(blockdev_read_only);
+ }
+ 
+-void udev_config_set_default_children_max(UdevConfig *config) {
++static void udev_config_set_default_children_max(UdevConfig *config) {
+         uint64_t cpu_limit, mem_limit, cpu_count = 1;
+         int r;
+ 
+@@ -293,6 +293,30 @@ void udev_config_set_default_children_max(UdevConfig *config) {
+         log_debug("Set children_max to %u", config->children_max);
+ }
+ 
++void manager_set_children_max(Manager *manager, unsigned n) {
++        assert(manager);
++
++        manager->config_by_control.children_max = n;
++        /* When 0 is specified, determine the maximum based on the system resources. */
++        udev_config_set_default_children_max(&manager->config_by_control);
++        manager->config.children_max = manager->config_by_control.children_max;
++
++        notify_ready(manager);
++}
++
++void manager_set_log_level(Manager *manager, int log_level) {
++        assert(manager);
++        assert(LOG_PRI(log_level) == log_level);
++
++        int old = log_get_max_level();
++
++        log_set_max_level(log_level);
++        manager->config.log_level = manager->config_by_control.log_level = log_level;
++
++        if (log_level != old)
++                manager_kill_workers(manager, /* force = */ false);
++}
++
+ static void manager_adjust_config(UdevConfig *config) {
+         assert(config);
+ 
+@@ -315,6 +339,58 @@ static void manager_adjust_config(UdevConfig *config) {
+         udev_config_set_default_children_max(config);
+ }
+ 
++static int manager_set_environment_one(Manager *manager, const char *s) {
++        int r;
++
++        assert(manager);
++        assert(s);
++
++        _cleanup_free_ char *key = NULL, *value = NULL;
++        r = split_pair(s, "=", &key, &value);
++        if (r < 0)
++                return r;
++
++        if (isempty(value)) {
++                _cleanup_free_ char *old_key = NULL, *old_value = NULL;
++                old_value = hashmap_remove2(manager->properties, key, (void**) &old_key);
++                return !!old_value;
++        }
++
++        if (streq_ptr(value, hashmap_get(manager->properties, key)))
++                return 0;
++
++        _cleanup_free_ char *old_key = NULL, *old_value = NULL;
++        old_value = hashmap_get2(manager->properties, key, (void**) &old_key);
++
++        r = hashmap_ensure_replace(&manager->properties, &string_hash_ops, key, value);
++        if (r < 0) {
++                assert(!old_key);
++                assert(!old_value);
++                return r;
++        }
++
++        TAKE_PTR(key);
++        TAKE_PTR(value);
++        return 1;
++}
++
++void manager_set_environment(Manager *manager, char * const *v) {
++        bool changed = false;
++        int r;
++
++        assert(manager);
++
++        STRV_FOREACH(s, v) {
++                r = manager_set_environment_one(manager, *s);
++                if (r < 0)
++                        log_debug_errno(r, "Failed to update environment '%s', ignoring: %m", *s);
++                changed = changed || r > 0;
++        }
++
++        if (changed)
++                manager_kill_workers(manager, /* force = */ false);
++}
++
+ int manager_load(Manager *manager, int argc, char *argv[]) {
+         int r;
+ 
+diff --git a/src/udev/udev-config.h b/src/udev/udev-config.h
+index 1c7a74b106..68bb1ea98c 100644
+--- a/src/udev/udev-config.h
++++ b/src/udev/udev-config.h
+@@ -26,6 +26,9 @@ typedef struct UdevConfig {
+                 .resolve_name_timing = _RESOLVE_NAME_TIMING_INVALID, \
+         }
+ 
++void manager_set_children_max(Manager *manager, unsigned n);
++void manager_set_log_level(Manager *manager, int log_level);
++void manager_set_environment(Manager *manager, char * const *v);
++
+ int manager_load(Manager *manager, int argc, char *argv[]);
+ UdevReloadFlags manager_reload_config(Manager *manager);
+-void udev_config_set_default_children_max(UdevConfig *c);
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index d9bd9d6d7b..2c87e8bb9e 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -194,7 +194,7 @@ static int worker_new(Worker **ret, Manager *manager, sd_device_monitor *worker_
+         return 0;
+ }
+ 
+-static void manager_kill_workers(Manager *manager, bool force) {
++void manager_kill_workers(Manager *manager, bool force) {
+         Worker *worker;
+ 
+         assert(manager);
+@@ -233,7 +233,7 @@ static void manager_exit(Manager *manager) {
+         manager_kill_workers(manager, true);
+ }
+ 
+-static void notify_ready(Manager *manager) {
++void notify_ready(Manager *manager) {
+         int r;
+ 
+         assert(manager);
+@@ -844,7 +844,6 @@ static int on_worker(sd_event_source *s, int fd, uint32_t revents, void *userdat
+ /* receive the udevd message from userspace */
+ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrlMessageValue *value, void *userdata) {
+         Manager *manager = ASSERT_PTR(userdata);
+-        int r;
+ 
+         assert(value);
+ 
+@@ -857,13 +856,7 @@ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrl
+ 
+                 log_debug("Received udev control message (SET_LOG_LEVEL), setting log_level=%i", value->intval);
+ 
+-                r = log_get_max_level();
+-                if (r == value->intval)
+-                        break;
+-
+-                log_set_max_level(value->intval);
+-                manager->config.log_level = manager->config_by_control.log_level = value->intval;
+-                manager_kill_workers(manager, false);
++                manager_set_log_level(manager, value->intval);
+                 break;
+         case UDEV_CTRL_STOP_EXEC_QUEUE:
+                 log_debug("Received udev control message (STOP_EXEC_QUEUE)");
+@@ -879,8 +872,6 @@ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrl
+                 manager_reload(manager, /* force = */ true);
+                 break;
+         case UDEV_CTRL_SET_ENV: {
+-                _unused_ _cleanup_free_ char *old_val = NULL, *old_key = NULL;
+-                _cleanup_free_ char *key = NULL, *val = NULL;
+                 const char *eq;
+ 
+                 eq = strchr(value->buf, '=');
+@@ -889,41 +880,8 @@ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrl
+                         return 1;
+                 }
+ 
+-                key = strndup(value->buf, eq - value->buf);
+-                if (!key) {
+-                        log_oom();
+-                        return 1;
+-                }
+-
+-                old_val = hashmap_remove2(manager->properties, key, (void **) &old_key);
+-
+-                r = hashmap_ensure_allocated(&manager->properties, &string_hash_ops);
+-                if (r < 0) {
+-                        log_oom();
+-                        return 1;
+-                }
+-
+-                eq++;
+-                if (isempty(eq))
+-                        log_debug("Received udev control message (ENV), unsetting '%s'", key);
+-                else {
+-                        val = strdup(eq);
+-                        if (!val) {
+-                                log_oom();
+-                                return 1;
+-                        }
+-
+-                        log_debug("Received udev control message (ENV), setting '%s=%s'", key, val);
+-
+-                        r = hashmap_put(manager->properties, key, val);
+-                        if (r < 0) {
+-                                log_oom();
+-                                return 1;
+-                        }
+-                }
+-
+-                key = val = NULL;
+-                manager_kill_workers(manager, false);
++                log_debug("Received udev control message(SET_ENV, %s)", value->buf);
++                manager_set_environment(manager, STRV_MAKE(value->buf));
+                 break;
+         }
+         case UDEV_CTRL_SET_CHILDREN_MAX:
+@@ -933,13 +891,8 @@ static int on_ctrl_msg(UdevCtrl *uctrl, UdevCtrlMessageType type, const UdevCtrl
+                 }
+ 
+                 log_debug("Received udev control message (SET_MAX_CHILDREN), setting children_max=%i", value->intval);
+-                manager->config_by_control.children_max = value->intval;
+-
+-                /* When 0 is specified, determine the maximum based on the system resources. */
+-                udev_config_set_default_children_max(&manager->config_by_control);
+-                manager->config.children_max = manager->config_by_control.children_max;
+ 
+-                notify_ready(manager);
++                manager_set_children_max(manager, value->intval);
+                 break;
+         case UDEV_CTRL_PING:
+                 log_debug("Received udev control message (PING)");
+diff --git a/src/udev/udev-manager.h b/src/udev/udev-manager.h
+index 13c7242ea8..05f9a8b709 100644
+--- a/src/udev/udev-manager.h
++++ b/src/udev/udev-manager.h
+@@ -55,4 +55,8 @@ DEFINE_TRIVIAL_CLEANUP_FUNC(Manager*, manager_free);
+ int manager_init(Manager *manager);
+ int manager_main(Manager *manager);
+ 
++void notify_ready(Manager *manager);
++
++void manager_kill_workers(Manager *manager, bool force);
++
+ bool devpath_conflict(const char *a, const char *b);

@@ -1,0 +1,75 @@
+From 8f2383951bb48cdfd7d97c2281dcfd0ba4bdcaeb Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 21 Jan 2025 12:29:56 +0100
+Subject: [PATCH] test: Look for qemu in /usr/libexec/qemu-kvm as well
+
+On CentOS Stream, the qemu binary is /usr/libexec/qemu-kvm so use
+that if it's available.
+
+(cherry picked from commit 34da8dd345935d461a62db5787cfbc35e8be2b4b)
+---
+ test/TEST-64-UDEV-STORAGE/nvme_basic.configure                 | 3 ++-
+ test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure             | 3 ++-
+ .../virtio_scsi_identically_named_partitions.configure         | 3 ++-
+ 3 files changed, 6 insertions(+), 3 deletions(-)
+
+diff --git a/test/TEST-64-UDEV-STORAGE/nvme_basic.configure b/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
+index 948003e4de..ed8304d804 100755
+--- a/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
+@@ -3,13 +3,14 @@
+ 
+ import json
+ import os
++import shutil
+ import subprocess
+ import sys
+ 
+ 
+ config = json.load(sys.stdin)
+ 
+-qemu = f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
++qemu = shutil.which("/usr/libexec/qemu-kvm") or f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
+ result = subprocess.run([qemu, "-device", "help"], check=True, text=True, stdout=subprocess.PIPE)
+ if 'name "nvme"' not in result.stdout:
+     print("nvme device driver is not available, skipping test...", file=sys.stderr)
+diff --git a/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure b/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
+index 029d4360ba..ed8b39ac5f 100755
+--- a/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
++++ b/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
+@@ -3,13 +3,14 @@
+ 
+ import json
+ import os
++import shutil
+ import subprocess
+ import sys
+ 
+ 
+ config = json.load(sys.stdin)
+ 
+-qemu = f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
++qemu = shutil.which("/usr/libexec/qemu-kvm") or f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
+ result = subprocess.run([qemu, "-device", "help"], check=True, text=True, stdout=subprocess.PIPE)
+ if 'name "nvme"' not in result.stdout:
+     print("nvme device driver is not available, skipping test...", file=sys.stderr)
+diff --git a/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure b/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
+index dce6b1503f..5ffade5800 100755
+--- a/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
++++ b/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
+@@ -3,13 +3,14 @@
+ 
+ import json
+ import os
++import shutil
+ import subprocess
+ import sys
+ 
+ 
+ config = json.load(sys.stdin)
+ 
+-qemu = f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
++qemu = shutil.which("/usr/libexec/qemu-kvm") or f"qemu-system-{os.environ['QEMU_ARCHITECTURE']}"
+ result = subprocess.run([qemu, "-device", "help"], check=True, text=True, stdout=subprocess.PIPE)
+ if 'name "virtio-scsi-pci"' not in result.stdout:
+     print("virtio-scsi-pci device driver is not available, skipping test...", file=sys.stderr)

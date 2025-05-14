@@ -1,0 +1,25 @@
+From 963bfbbf696a811899545202f39d1fb3ae666d37 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 16:41:46 +0100
+Subject: [PATCH] fmf: Dump CPU and memory information
+
+(cherry picked from commit 44368f84d7ddbec7a50648a65c27cb6a31090a29)
+---
+ test/fmf/integration-tests/test.sh | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 347cd219a4..4545090c3c 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -7,6 +7,10 @@ set -o pipefail
+ # Switch SELinux to permissive if possible, since the tests don't set proper contexts
+ setenforce 0 || true
+ 
++echo "CPU and Memory information:"
++lscpu
++lsmem
++
+ # Allow running the integration tests downstream in dist-git with something like
+ # the following snippet which makes the dist-git sources available in $TMT_SOURCE_DIR:
+ #

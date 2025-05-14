@@ -1,0 +1,27 @@
+From 373313b00dcb75e9e8400a53d84d4ad32d88c5d6 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 14 Jan 2025 11:41:17 +0100
+Subject: [PATCH] fmf: Only move logs if corresponding directory exists
+
+Otherwise find fails with an error.
+
+(cherry picked from commit 3c2fa8e0501f9f39b3b7ca0506a7d548a39af928)
+---
+ test/fmf/integration-tests/test.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index f82961f959..aff79340f7 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -145,8 +145,8 @@ mkosi -f sandbox \
+     --no-stdsplit \
+     --num-processes "$NPROC" && EC=0 || EC=$?
+ 
+-find build/meson-logs -type f -exec mv {} "$TMT_TEST_DATA" \;
+-find build/test/journal -type f -exec mv {} "$TMT_TEST_DATA" \;
++[[ -d build/meson-logs ]] && find build/meson-logs -type f -exec mv {} "$TMT_TEST_DATA" \;
++[[ -d build/test/journal ]] && find build/test/journal -type f -exec mv {} "$TMT_TEST_DATA" \;
+ 
+ popd
+ 

@@ -1,0 +1,61 @@
+From 37735cbe018e1596c74ccca47acb4c1a96e82fc6 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 4 Dec 2024 06:34:43 +0900
+Subject: [PATCH] TEST-17: use 'udevadm control --reload' or 'systemctl reload
+ systemd-udevd.service' for reloading udev.conf
+
+These should be equivalent. For coverage, one subtest uses systemctl and
+another uses udevadm.
+
+(cherry picked from commit ced0ef3b35faadc5c8c07f6dd24f69bd836d8399)
+
+Resolves: RHEL-75774
+---
+ test/units/TEST-17-UDEV.03.sh                   | 4 ++--
+ test/units/TEST-17-UDEV.device_is_processing.sh | 4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/test/units/TEST-17-UDEV.03.sh b/test/units/TEST-17-UDEV.03.sh
+index d6b3162258..56ecf49e3b 100755
+--- a/test/units/TEST-17-UDEV.03.sh
++++ b/test/units/TEST-17-UDEV.03.sh
+@@ -27,7 +27,7 @@ event_timeout=10
+ timeout_signal=SIGABRT
+ EOF
+ 
+-    systemctl restart systemd-udevd.service
++    systemctl reload systemd-udevd.service
+ }
+ 
+ # shellcheck disable=SC2317
+@@ -40,7 +40,7 @@ teardown() {
+ 
+     rm -rf "$TMPDIR"
+     rm -f "$TEST_RULE" "$TEST_CONF"
+-    systemctl restart systemd-udevd.service
++    systemctl reload systemd-udevd.service
+ }
+ 
+ run_test_timeout() {
+diff --git a/test/units/TEST-17-UDEV.device_is_processing.sh b/test/units/TEST-17-UDEV.device_is_processing.sh
+index 88e4b5a6bd..d3b48e780e 100755
+--- a/test/units/TEST-17-UDEV.device_is_processing.sh
++++ b/test/units/TEST-17-UDEV.device_is_processing.sh
+@@ -18,7 +18,7 @@ at_exit() {
+     # Forcibly kills sleep command invoked by the udev rule before restarting,
+     # otherwise systemctl restart below will takes longer.
+     killall -KILL sleep
+-    systemctl restart systemd-udevd.service
++    udevadm control --reload
+     ip link del "$IFNAME"
+ }
+ 
+@@ -36,7 +36,7 @@ cat >/run/udev/rules.d/99-testsuite.rules <<EOF
+ SUBSYSTEM=="net", ACTION=="change", KERNEL=="${IFNAME}", OPTIONS="log_level=debug", RUN+="/usr/bin/sleep 1000"
+ EOF
+ 
+-systemctl restart systemd-udevd.service
++udevadm control --reload
+ 
+ ip link add "$IFNAME" type dummy
+ IFINDEX=$(ip -json link show "$IFNAME" | jq '.[].ifindex')

@@ -1,0 +1,359 @@
+From 29959da4228413ad35faf9656c8304ebfd0c482d Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 7 Jan 2025 16:58:37 +0900
+Subject: [PATCH] udevadm: introduce cat command
+
+This introduces 'udevadm cat' command, that shows udev rules files or
+udev.conf, which may be useful for debugging.
+
+Closes #35818.
+
+(cherry picked from commit 7f2175eabbea882d02e9df0e9fcb8e2f03a121da)
+
+Resolves: RHEL-75774
+---
+ man/udevadm.xml               |  64 ++++++++++++++++++++
+ shell-completion/bash/udevadm |  28 ++++++++-
+ shell-completion/zsh/_udevadm |  11 ++++
+ src/udev/meson.build          |   1 +
+ src/udev/udevadm-cat.c        | 110 ++++++++++++++++++++++++++++++++++
+ src/udev/udevadm.c            |   2 +
+ src/udev/udevadm.h            |   1 +
+ test/units/TEST-17-UDEV.10.sh |   9 +++
+ 8 files changed, 225 insertions(+), 1 deletion(-)
+ create mode 100644 src/udev/udevadm-cat.c
+
+diff --git a/man/udevadm.xml b/man/udevadm.xml
+index eed84d27cc..9cbbdc254d 100644
+--- a/man/udevadm.xml
++++ b/man/udevadm.xml
+@@ -53,6 +53,11 @@
+       <arg choice="opt" rep="repeat">options</arg>
+       <arg choice="opt" rep="repeat"><replaceable>file</replaceable></arg>
+     </cmdsynopsis>
++    <cmdsynopsis>
++      <command>udevadm cat</command>
++      <arg choice="opt" rep="repeat">options</arg>
++      <arg choice="opt" rep="repeat"><replaceable>file</replaceable></arg>
++    </cmdsynopsis>
+     <cmdsynopsis>
+       <command>udevadm wait <optional>options</optional> <replaceable>device|syspath</replaceable></command>
+     </cmdsynopsis>
+@@ -1000,6 +1005,65 @@
+       </variablelist>
+     </refsect2>
+ 
++    <refsect2>
++      <title>udevadm cat
++      <optional><replaceable>options</replaceable></optional>
++      <optional><replaceable>file</replaceable></optional>
++      …
++      </title>
++
++      <para>Show udev rules files or udev.conf.</para>
++
++      <para>Positional arguments can be used to specify one or more files to show. Each argument must be an
++      absolute path to a udev rules file or a directory that contains rules files, or a file name of udev
++      rules file (e.g. <filename>99-systemd.rules</filename>). If a file name is specified, the file will be
++      searched in the <filename>udev/rules.d</filename> directories that are processed by
++      <command>systemd-udevd</command>, and searched in the current working directory if not found. If no
++      files are specified, the udev rules are read from the files located in the same
++      <filename>udev/rules.d</filename> directories that are processed by <command>systemd-udevd</command>.
++      See <citerefentry><refentrytitle>udev</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more
++      details about the search paths.</para>
++
++      <variablelist>
++        <varlistentry>
++          <term><option>--root=<replaceable>PATH</replaceable></option></term>
++          <listitem>
++            <para>When looking for udev rules files located in the <filename>udev/rules.d</filename>
++            directories, operate on files underneath the specified root path <replaceable>PATH</replaceable>.
++            When a file name is specified, and it is not found in the <filename>udev/rules.d</filename>
++            directories, the file will be searched in the specified root path
++            <replaceable>PATH</replaceable>, rather than the current working directory.</para>
++
++            <xi:include href="version-info.xml" xpointer="v258"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><option>--tldr</option></term>
++          <listitem>
++            <para>Only print the "interesting" parts of the configuration files, skipping comments and empty
++            lines and section headers followed only by comments and empty lines.</para>
++
++            <xi:include href="version-info.xml" xpointer="v258"/>
++          </listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><option>--config</option></term>
++          <listitem>
++            <para>Shows
++            <citerefentry><refentrytitle>udev.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry>
++            files, rather than udev rules files. When specified, no udev rules file cannot be specified.
++            </para>
++
++            <xi:include href="version-info.xml" xpointer="v258"/>
++          </listitem>
++        </varlistentry>
++
++        <xi:include href="standard-options.xml" xpointer="help" />
++      </variablelist>
++    </refsect2>
++
+     <refsect2>
+       <title>udevadm wait
+       <optional><replaceable>options</replaceable></optional>
+diff --git a/shell-completion/bash/udevadm b/shell-completion/bash/udevadm
+index 54d024c1b8..010d4cff8a 100644
+--- a/shell-completion/bash/udevadm
++++ b/shell-completion/bash/udevadm
+@@ -103,11 +103,13 @@ _udevadm() {
+         [TEST_BUILTIN]='-a --action'
+         [VERIFY_STANDALONE]='--no-summary --no-style'
+         [VERIFY_ARG]='-N --resolve-names --root'
++        [CAT_STANDALONE]='--tldr --config'
++        [CAT_ARG]='--root'
+         [WAIT]='-t --timeout --initialized=no --removed --settle'
+         [LOCK]='-t --timeout -d --device -b --backing -p --print'
+     )
+ 
+-    local verbs=(info trigger settle control monitor test-builtin test verify wait lock)
++    local verbs=(info trigger settle control monitor test-builtin test verify cat wait lock)
+     local builtins=(blkid btrfs hwdb input_id keyboard kmod net_driver net_id net_setup_link path_id uaccess usb_id)
+ 
+     for ((i=0; i < COMP_CWORD; i++)); do
+@@ -320,6 +322,30 @@ _udevadm() {
+             fi
+             ;;
+ 
++        'cat')
++            if __contains_word "$prev" ${OPTS[CAT_ARG]}; then
++                case $prev in
++                    --root)
++                        comps=''
++                        compopt -o dirnames
++                        ;;
++                    *)
++                        comps=''
++                        ;;
++                esac
++            elif [[ $cur = -* ]]; then
++                comps="${OPTS[COMMON]} ${OPTS[CAT_ARG]} ${OPTS[CAT_STANDALONE]}"
++            elif __contains_word "--config" ${COMP_WORDS[*]}; then
++                comps="${OPTS[COMMON]} ${OPTS[CAT_ARG]} ${OPTS[CAT_STANDALONE]}"
++            elif [[ $cur = */* ]]; then
++                comps=$( __get_udev_rules_files )
++                compopt -o dirnames
++            else
++                comps=$( __get_udev_rules_names )
++                compopt -o default
++            fi
++            ;;
++
+         'wait')
+             if __contains_word "$prev" ${OPTS[WAIT]}; then
+                 case $prev in
+diff --git a/shell-completion/zsh/_udevadm b/shell-completion/zsh/_udevadm
+index 63db11cea9..c9b43e231d 100644
+--- a/shell-completion/zsh/_udevadm
++++ b/shell-completion/zsh/_udevadm
+@@ -124,6 +124,17 @@ _udevadm_verify(){
+         '*::files:_files'
+ }
+ 
++(( $+functions[_udevadm_cat] )) ||
++_udevadm_cat(){
++    _arguments \
++        '(- *)'{-h,--help}'[Show help]' \
++        '(- *)'{-V,--version}'[Show package version]' \
++        '--root=[Operate on catalog hierarchy under specified directory]:directories:_directories' \
++        --tldr'[Skip comments and empty lines.]' \
++        --config'[Show udev.conf.]' \
++        '*::files:_files'
++}
++
+ (( $+functions[_udevadm_wait] )) ||
+ _udevadm_wait(){
+     _arguments \
+diff --git a/src/udev/meson.build b/src/udev/meson.build
+index 171bbd2b70..62cd8014d2 100644
+--- a/src/udev/meson.build
++++ b/src/udev/meson.build
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
+ udevadm_sources = files(
++        'udevadm-cat.c',
+         'udevadm-control.c',
+         'udevadm-hwdb.c',
+         'udevadm-info.c',
+diff --git a/src/udev/udevadm-cat.c b/src/udev/udevadm-cat.c
+new file mode 100644
+index 0000000000..2d7e86994d
+--- /dev/null
++++ b/src/udev/udevadm-cat.c
+@@ -0,0 +1,110 @@
++/* SPDX-License-Identifier: GPL-2.0-or-later */
++
++#include <getopt.h>
++
++#include "log.h"
++#include "parse-argument.h"
++#include "pretty-print.h"
++#include "static-destruct.h"
++#include "strv.h"
++#include "udevadm.h"
++#include "udevadm-util.h"
++
++static char *arg_root = NULL;
++static CatFlags arg_cat_flags = 0;
++static bool arg_config = false;
++
++STATIC_DESTRUCTOR_REGISTER(arg_root, freep);
++
++static int help(void) {
++        _cleanup_free_ char *link = NULL;
++        int r;
++
++        r = terminal_urlify_man("udevadm", "8", &link);
++        if (r < 0)
++                return log_oom();
++
++        printf("%s cat [OPTIONS] [FILE...]\n"
++               "\n%sShow udev rules files.%s\n\n"
++               "  -h --help            Show this help\n"
++               "  -V --version         Show package version\n"
++               "     --root=PATH       Operate on an alternate filesystem root\n"
++               "     --tldr            Skip comments and empty lines\n"
++               "     --config          Show udev.conf rather than udev rules files\n"
++               "\nSee the %s for details.\n",
++               program_invocation_short_name,
++               ansi_highlight(),
++               ansi_normal(),
++               link);
++
++        return 0;
++}
++
++static int parse_argv(int argc, char *argv[]) {
++        enum {
++                ARG_ROOT = 0x100,
++                ARG_TLDR,
++                ARG_CONFIG,
++        };
++        static const struct option options[] = {
++                { "help",          no_argument,       NULL, 'h'             },
++                { "version",       no_argument,       NULL, 'V'             },
++                { "root",          required_argument, NULL, ARG_ROOT        },
++                { "tldr",          no_argument,       NULL, ARG_TLDR        },
++                { "config",        no_argument,       NULL, ARG_CONFIG      },
++                {}
++        };
++
++        int r, c;
++
++        assert(argc >= 0);
++        assert(argv);
++
++        while ((c = getopt_long(argc, argv, "hVN:", options, NULL)) >= 0)
++                switch (c) {
++                case 'h':
++                        return help();
++                case 'V':
++                        return print_version();
++                case ARG_ROOT:
++                        r = parse_path_argument(optarg, /* suppress_root= */ true, &arg_root);
++                        if (r < 0)
++                                return r;
++                        break;
++                case ARG_TLDR:
++                        arg_cat_flags = CAT_TLDR;
++                        break;
++                case ARG_CONFIG:
++                        arg_config = true;
++                        break;
++                case '?':
++                        return -EINVAL;
++                default:
++                        assert_not_reached();
++                }
++
++        if (arg_config && optind < argc)
++                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
++                                       "Combination of --config and FILEs is not supported.");
++
++        return 1;
++}
++
++int cat_main(int argc, char *argv[], void *userdata) {
++        int r;
++
++        r = parse_argv(argc, argv);
++        if (r <= 0)
++                return r;
++
++        if (arg_config)
++                return conf_files_cat(arg_root, "udev/udev.conf", arg_cat_flags);
++
++        _cleanup_strv_free_ char **files = NULL;
++        r = search_rules_files(strv_skip(argv, optind), arg_root, &files);
++        if (r < 0)
++                return r;
++
++        /* udev rules file does not support dropin configs. So, we can safely pass multiple files as dropins. */
++        return cat_files(/* file = */ NULL, /* dropins = */ files, arg_cat_flags);
++}
+diff --git a/src/udev/udevadm.c b/src/udev/udevadm.c
+index 30b6ddb728..ebf1e5190c 100644
+--- a/src/udev/udevadm.c
++++ b/src/udev/udevadm.c
+@@ -26,6 +26,7 @@ static int help(void) {
+                 { "test",         "Test an event run"                 },
+                 { "test-builtin", "Test a built-in command"           },
+                 { "verify",       "Verify udev rules files"           },
++                { "cat",          "Show udev rules files"             },
+                 { "wait",         "Wait for device or device symlink" },
+                 { "lock",         "Lock a block device"               },
+         };
+@@ -97,6 +98,7 @@ static int help_main(int argc, char *argv[], void *userdata) {
+ 
+ static int udevadm_main(int argc, char *argv[]) {
+         static const Verb verbs[] = {
++                { "cat",          VERB_ANY, VERB_ANY, 0, cat_main     },
+                 { "info",         VERB_ANY, VERB_ANY, 0, info_main    },
+                 { "trigger",      VERB_ANY, VERB_ANY, 0, trigger_main },
+                 { "settle",       VERB_ANY, VERB_ANY, 0, settle_main  },
+diff --git a/src/udev/udevadm.h b/src/udev/udevadm.h
+index 7920a70d5b..e39dbf655d 100644
+--- a/src/udev/udevadm.h
++++ b/src/udev/udevadm.h
+@@ -5,6 +5,7 @@
+ 
+ #include "macro.h"
+ 
++int cat_main(int argc, char *argv[], void *userdata);
+ int info_main(int argc, char *argv[], void *userdata);
+ int trigger_main(int argc, char *argv[], void *userdata);
+ int settle_main(int argc, char *argv[], void *userdata);
+diff --git a/test/units/TEST-17-UDEV.10.sh b/test/units/TEST-17-UDEV.10.sh
+index be342b3468..68d310a8e5 100755
+--- a/test/units/TEST-17-UDEV.10.sh
++++ b/test/units/TEST-17-UDEV.10.sh
+@@ -33,6 +33,15 @@ udevadm settle --timeout 30
+ 
+ udevadm -h
+ 
++udevadm cat
++udevadm cat 99-systemd
++udevadm cat 99-systemd.rules
++udevadm cat /usr/lib/udev/rules.d/99-systemd.rules
++udevadm cat /usr/lib/udev/rules.d
++(! udevadm cat /dev/null)
++udevadm cat --config
++udevadm cat -h
++
+ INVOCATION_ID=$(systemctl show --property InvocationID --value systemd-udevd.service)
+ udevadm control -e
+ # Wait for systemd-udevd.service being restarted.

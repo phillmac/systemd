@@ -1,0 +1,35 @@
+From 1ccfd9a55775e5d4f717d5b59040ee1679c16996 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sun, 26 Jan 2025 19:50:22 +0000
+Subject: [PATCH] test: use local stub if available in test-ukify
+
+It might not be available on a CI system in the system
+path, so use the local one if it was built
+
+(cherry picked from commit bcca98c6326b2766d6b769661b15e292c12cf8ac)
+---
+ src/ukify/test/test_ukify.py | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/ukify/test/test_ukify.py b/src/ukify/test/test_ukify.py
+index 3ed21fc0ac..6c427623ea 100755
+--- a/src/ukify/test/test_ukify.py
++++ b/src/ukify/test/test_ukify.py
+@@ -59,6 +59,8 @@ except ValueError:
+     slow_tests = True
+ 
+ arg_tools = ['--tools', build_root] if build_root else []
++if build_root and pathlib.Path(f"{build_root}/linux{ukify.guess_efi_arch()}.efi.stub").exists():
++    arg_tools += ['--stub', f"{build_root}/linux{ukify.guess_efi_arch()}.efi.stub"]
+ 
+ def systemd_measure():
+     opts = ukify.create_parser().parse_args(arg_tools)
+@@ -654,7 +656,7 @@ def test_inspect(kernel_initrd, tmp_path, capsys):
+         f'--os-release={osrel_arg}',
+         f'--uname={uname_arg}',
+         f'--output={output}',
+-    ]
++    ] + arg_tools
+     if slow_tests:
+         args += [
+             f'--secureboot-certificate={cert.name}',

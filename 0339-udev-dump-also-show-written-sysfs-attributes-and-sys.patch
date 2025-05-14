@@ -1,0 +1,159 @@
+From c95b80ea2e851cc0eecba15c452f83683beae56d Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 11 Jan 2025 16:38:02 +0900
+Subject: [PATCH] udev-dump: also show written sysfs attributes and sysctl
+ entries
+
+This should be useful to know what is changed by processing an event.
+
+(cherry picked from commit 9ddcccfad7c09e7f69527e0b25781925149ad046)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-dump.c  | 34 ++++++++++++++++++++++++++++++++++
+ src/udev/udev-dump.h  |  2 ++
+ src/udev/udev-event.c |  2 ++
+ src/udev/udev-event.h |  2 ++
+ src/udev/udev-rules.c | 28 ++++++++++++++++++++++++----
+ 5 files changed, 64 insertions(+), 4 deletions(-)
+
+diff --git a/src/udev/udev-dump.c b/src/udev/udev-dump.c
+index 26e65979eb..918c966c4e 100644
+--- a/src/udev/udev-dump.c
++++ b/src/udev/udev-dump.c
+@@ -10,12 +10,46 @@
+ #include "udev-event.h"
+ #include "user-util.h"
+ 
++static void event_cache_written_value(Hashmap **values, const char *attr, const char *value) {
++        assert(values);
++
++        _unused_ _cleanup_free_ void *key = NULL;
++        free(hashmap_remove2(*values, attr, &key));
++
++        if (hashmap_put_strdup_full(values, &path_hash_ops_free_free, attr, value) < 0)
++                log_oom_debug();
++}
++
++void event_cache_written_sysattr(UdevEvent *event, const char *attr, const char *value) {
++        event_cache_written_value(&event->written_sysattrs, attr, value);
++}
++
++void event_cache_written_sysctl(UdevEvent *event, const char *attr, const char *value) {
++        event_cache_written_value(&event->written_sysctls, attr, value);
++}
++
+ void dump_event(UdevEvent *event, FILE *f) {
+         sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+ 
+         if (!f)
+                 f = stdout;
+ 
++        if (!hashmap_isempty(event->written_sysattrs)) {
++                const char *key, *value;
++
++                fprintf(f, "%sWritten sysfs attributes:%s\n", ansi_highlight(), ansi_normal());
++                HASHMAP_FOREACH_KEY(value, key, event->written_sysattrs)
++                        fprintf(f, "  %s : %s\n", key, value);
++        }
++
++        if (!hashmap_isempty(event->written_sysctls)) {
++                const char *key, *value;
++
++                fprintf(f, "%sWritten sysctl entries:%s\n", ansi_highlight(), ansi_normal());
++                HASHMAP_FOREACH_KEY(value, key, event->written_sysctls)
++                        fprintf(f, "  %s : %s\n", key, value);
++        }
++
+         fprintf(f, "%sProperties:%s\n", ansi_highlight(), ansi_normal());
+         FOREACH_DEVICE_PROPERTY(dev, key, value)
+                 fprintf(f, "  %s=%s\n", key, value);
+diff --git a/src/udev/udev-dump.h b/src/udev/udev-dump.h
+index 6e3f1368ce..514f8267a7 100644
+--- a/src/udev/udev-dump.h
++++ b/src/udev/udev-dump.h
+@@ -5,4 +5,6 @@
+ 
+ typedef struct UdevEvent UdevEvent;
+ 
++void event_cache_written_sysattr(UdevEvent *event, const char *attr, const char *value);
++void event_cache_written_sysctl(UdevEvent *event, const char *attr, const char *value);
+ void dump_event(UdevEvent *event, FILE *f);
+diff --git a/src/udev/udev-event.c b/src/udev/udev-event.c
+index e3661f5bf8..fc4c9f9fd1 100644
+--- a/src/udev/udev-event.c
++++ b/src/udev/udev-event.c
+@@ -54,6 +54,8 @@ static UdevEvent* udev_event_free(UdevEvent *event) {
+         sd_netlink_unref(event->rtnl);
+         ordered_hashmap_free_free_key(event->run_list);
+         ordered_hashmap_free_free_free(event->seclabel_list);
++        hashmap_free(event->written_sysattrs);
++        hashmap_free(event->written_sysctls);
+         free(event->program_result);
+         free(event->name);
+         strv_free(event->altnames);
+diff --git a/src/udev/udev-event.h b/src/udev/udev-event.h
+index 11e2c700e6..d18fb0978b 100644
+--- a/src/udev/udev-event.h
++++ b/src/udev/udev-event.h
+@@ -36,6 +36,8 @@ typedef struct UdevEvent {
+         gid_t gid;
+         OrderedHashmap *seclabel_list;
+         OrderedHashmap *run_list;
++        Hashmap *written_sysattrs;
++        Hashmap *written_sysctls;
+         usec_t birth_usec;
+         unsigned builtin_run;
+         unsigned builtin_ret;
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index d94fc6fdbd..dfe521378f 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -2949,11 +2949,19 @@ static int udev_rule_apply_token_to_event(
+                                               WRITE_STRING_FILE_VERIFY_IGNORE_NEWLINE);
+                         if (r < 0)
+                                 log_event_error_errno(event, token, r, "Failed to write \"%s\" to sysfs attribute \"%s\", ignoring: %m", value, buf);
+-                        else
++                        else {
++                                event_cache_written_sysattr(event, buf, value);
+                                 log_event_done(event, token);
+-                } else
++                        }
++                } else {
+                         log_event_debug(event, token, "Running in test mode, skipping writing \"%s\" to sysfs attribute \"%s\".", value, buf);
+ 
++                        r = verify_regular_at(AT_FDCWD, buf, /* follow = */ false);
++                        if (r < 0 && !ERRNO_IS_NEG_PRIVILEGE(r))
++                                log_event_error_errno(event, token, r, "Failed to verify sysfs attribute \"%s\" is a regular file: %m", buf);
++                        else
++                                event_cache_written_sysattr(event, buf, value);
++                }
+                 return true;
+         }
+         case TK_A_SYSCTL: {
+@@ -2972,11 +2980,23 @@ static int udev_rule_apply_token_to_event(
+                         r = sysctl_write(buf, value);
+                         if (r < 0)
+                                 log_event_error_errno(event, token, r, "Failed to write \"%s\" to sysctl entry \"%s\", ignoring: %m", value, buf);
+-                        else
++                        else {
++                                event_cache_written_sysctl(event, buf, value);
+                                 log_event_done(event, token);
+-                } else
++                        }
++                } else {
+                         log_event_debug(event, token, "Running in test mode, skipping writing \"%s\" to sysctl entry \"%s\".", value, buf);
+ 
++                        _cleanup_free_ char *path = path_join("/proc/sys/", buf);
++                        if (!path)
++                                return log_oom();
++
++                        r = verify_regular_at(AT_FDCWD, path, /* follow = */ true);
++                        if (r < 0 && !ERRNO_IS_NEG_PRIVILEGE(r))
++                                log_event_error_errno(event, token, r, "Failed to verify sysctl entry \"%s\" is a regular file: %m", buf);
++                        else
++                                event_cache_written_sysctl(event, buf, value);
++                }
+                 return true;
+         }
+         case TK_A_RUN_BUILTIN:

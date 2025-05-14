@@ -1,0 +1,41 @@
+From 950d964ee5ba32f022ccd2e8ca09c91fb0cd3e76 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 3 Feb 2025 16:17:00 +0100
+Subject: [PATCH] homectl: Fix empty checks
+
+(cherry picked from commit 4ba3530d67d88c708c36840fbaed9935ae81faa9)
+---
+ src/home/homectl.c | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/src/home/homectl.c b/src/home/homectl.c
+index b3aacbcbcf..2163469a50 100644
+--- a/src/home/homectl.c
++++ b/src/home/homectl.c
+@@ -2553,7 +2553,7 @@ static int create_interactively(void) {
+                         continue;
+                 };
+ 
+-                if (available) {
++                if (!strv_isempty(available)) {
+                         r = safe_atou(s, &u);
+                         if (r >= 0) {
+                                 if (u <= 0 || u > strv_length(available)) {
+@@ -2591,7 +2591,7 @@ static int create_interactively(void) {
+                         return log_oom();
+         }
+ 
+-        if (groups) {
++        if (!strv_isempty(groups)) {
+                 strv_sort_uniq(groups);
+ 
+                 r = sd_json_variant_set_field_strv(&arg_identity_extra, "memberOf", groups);
+@@ -2630,7 +2630,7 @@ static int create_interactively(void) {
+                 log_notice("Specified shell '%s' is not installed, try another one.", shell);
+         }
+ 
+-        if (shell) {
++        if (!isempty(shell)) {
+                 log_info("Selected %s as the shell for user %s", shell, username);
+ 
+                 r = sd_json_variant_set_field_string(&arg_identity_extra, "shell", shell);

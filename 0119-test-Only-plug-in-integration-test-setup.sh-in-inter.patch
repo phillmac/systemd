@@ -1,0 +1,50 @@
+From a4ae723295fce23012996e6e2be2fca25a59383f Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 9 Jan 2025 11:28:15 +0100
+Subject: [PATCH] test: Only plug in integration-test-setup.sh in interactive
+ mode
+
+If we're not running interactively, there's no point in the features
+from integration-test-setup.sh which are intended for interactive
+development and debugging so lets skip adding it in that case.
+
+(cherry picked from commit 794d456cf402a35290d6562c21f0ff846511026c)
+---
+ test/integration-test-wrapper.py | 9 +++++++++
+ test/test.service.in             | 2 --
+ 2 files changed, 9 insertions(+), 2 deletions(-)
+
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index ef6df8840f..5fa0325b88 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -459,6 +459,15 @@ def main() -> None:
+             """
+         )
+ 
++    if sys.stderr.isatty():
++        dropin += textwrap.dedent(
++            """
++            [Service]
++            ExecStartPre=/usr/lib/systemd/tests/testdata/integration-test-setup.sh setup
++            ExecStopPost=/usr/lib/systemd/tests/testdata/integration-test-setup.sh finalize
++            """
++        )
++
+     cmd = [
+         args.mkosi,
+         '--directory', os.fspath(args.meson_source_dir),
+diff --git a/test/test.service.in b/test/test.service.in
+index 6400be0700..75f703698f 100644
+--- a/test/test.service.in
++++ b/test/test.service.in
+@@ -7,9 +7,7 @@ Before=getty-pre.target
+ 
+ [Service]
+ ExecStartPre=rm -f /failed /testok
+-ExecStartPre=/usr/lib/systemd/tests/testdata/integration-test-setup.sh setup
+ ExecStart=@command@
+-ExecStopPost=/usr/lib/systemd/tests/testdata/integration-test-setup.sh finalize
+ Type=oneshot
+ MemoryAccounting=@memory-accounting@
+ StateDirectory=%N

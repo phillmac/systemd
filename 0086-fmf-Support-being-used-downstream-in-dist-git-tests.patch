@@ -1,0 +1,75 @@
+From 54b90f783d45303c91a91300c2ef46c5dbd93220 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 6 Jan 2025 16:30:23 +0100
+Subject: [PATCH] fmf: Support being used downstream in dist-git tests
+
+We can use our upstream fmf definitions to run downstream tests in
+the Fedora systemd dist-git repository
+(https://src.fedoraproject.org/rpms/systemd). To have access to the
+dist-git sources when running the tests, we enable dist-git-source: true
+downstream which makes the sources available in $TMT_SOURCE_DIR so
+let's make sure we use those sources if they're available.
+
+(cherry picked from commit 0eb7e29dfb388f746797675cef1ebd7bc3568b6e)
+---
+ test/fmf/integration-tests/test.sh | 46 ++++++++++++++++++++++++------
+ 1 file changed, 37 insertions(+), 9 deletions(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index f16bd84cba..690e07aa56 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -7,16 +7,44 @@ set -o pipefail
+ # Switch SELinux to permissive, since the tests don't set proper contexts
+ setenforce 0
+ 
+-# Prepare systemd source tree
+-git clone "$PACKIT_TARGET_URL" systemd
+-pushd systemd
+-# If we're running in a pull request job, merge the remote branch into the current main
+-if [[ -n "${PACKIT_SOURCE_URL:-}" ]]; then
+-    git remote add pr "${PACKIT_SOURCE_URL:?}"
+-    git fetch pr "${PACKIT_SOURCE_BRANCH:?}"
+-    git merge "pr/$PACKIT_SOURCE_BRANCH"
++# Allow running the integration tests downstream in dist-git with something like
++# the following snippet which makes the dist-git sources available in $TMT_SOURCE_DIR:
++#
++# summary: systemd Fedora test suite
++# discover:
++#   how: fmf
++#   url: https://github.com/systemd/systemd
++#   ref: main
++#   path: test/fmf
++#   dist-git-source: true
++#   dist-git-install-builddeps: false
++# prepare:
++#   - name: systemd
++#     how: install
++#     exclude:
++#       - systemd-standalone-.*
++# execute:
++#   how: tmt
++
++if [[ -n "${TMT_SOURCE_DIR:-}" ]]; then
++    pushd "$TMT_SOURCE_DIR/*/"
++elif [[ -n "${PACKIT_TARGET_URL:-}" ]]; then
++    # Prepare systemd source tree
++    git clone "$PACKIT_TARGET_URL" systemd
++    pushd systemd
++
++    # If we're running in a pull request job, merge the remote branch into the current main
++    if [[ -n "${PACKIT_SOURCE_URL:-}" ]]; then
++        git remote add pr "${PACKIT_SOURCE_URL:?}"
++        git fetch pr "${PACKIT_SOURCE_BRANCH:?}"
++        git merge "pr/$PACKIT_SOURCE_BRANCH"
++    fi
++
++    git log --oneline -5
++else
++    echo "Not running within packit or Fedora CI"
++    exit 1
+ fi
+-git log --oneline -5
+ 
+ # Now prepare mkosi, possibly at the same version required by the systemd repo
+ git clone https://github.com/systemd/mkosi

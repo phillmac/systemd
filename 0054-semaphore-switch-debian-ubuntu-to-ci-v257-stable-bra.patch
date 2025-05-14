@@ -1,0 +1,23 @@
+From 9c8559bccfe266b7f1a36f337cbd868121e0c372 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 19 Dec 2024 11:46:50 +0000
+Subject: [PATCH] semaphore: switch debian/ubuntu to ci/v257-stable branch
+
+Packaging has diverged from main due to new files
+---
+ .semaphore/semaphore-runner.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.semaphore/semaphore-runner.sh b/.semaphore/semaphore-runner.sh
+index e903ced70d..74fc0ab36c 100755
+--- a/.semaphore/semaphore-runner.sh
++++ b/.semaphore/semaphore-runner.sh
+@@ -8,7 +8,7 @@ set -o pipefail
+ DISTRO="${DISTRO:-debian}"
+ RELEASE="${RELEASE:-bookworm}"
+ SALSA_URL="${SALSA_URL:-https://salsa.debian.org/systemd-team/systemd.git}"
+-BRANCH="${BRANCH:-debian/master}"
++BRANCH="${BRANCH:-ci/v257-stable}"
+ ARCH="${ARCH:-amd64}"
+ CONTAINER="${RELEASE}-${ARCH}"
+ CACHE_DIR=/var/tmp

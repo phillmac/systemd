@@ -1,0 +1,81 @@
+From 53301422a29b5610655f9c1587456064af1a3e80 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 25 Jan 2025 04:05:51 +0900
+Subject: [PATCH] machine: revert type change of "leader" in
+ io.systemd.Machine.Register method
+
+The varlink method io.systemd.Machine.Register() is in v256, hence type
+of "leader" cannot be changed.
+Let's revert the change by 755cb018c9b3e93245afb86ec94223756ddd70e4, and
+introduce another field "leaderProcessId", which takes detailed information
+of the process.
+
+Fixes a regression caused by 755cb018c9b3e93245afb86ec94223756ddd70e4.
+Fixes #36155.
+
+(cherry picked from commit 465865146657ad3b2a59f618e5e8a529b08561bd)
+---
+ src/machine/machine-varlink.c           |  5 +++++
+ src/shared/varlink-io.systemd.Machine.c | 25 ++++++++++++++-----------
+ 2 files changed, 19 insertions(+), 11 deletions(-)
+
+diff --git a/src/machine/machine-varlink.c b/src/machine/machine-varlink.c
+index 8ad3c87469..0566cb8bba 100644
+--- a/src/machine/machine-varlink.c
++++ b/src/machine/machine-varlink.c
+@@ -57,6 +57,10 @@ static int machine_leader(const char *name, sd_json_variant *variant, sd_json_di
+         if (temp.pid == 1) /* refuse PID 1 */
+                 return json_log(variant, flags, SYNTHETIC_ERRNO(EINVAL), "JSON field '%s' is not a valid leader PID.", strna(name));
+ 
++        /* When both leader and leaderProcessId are specified, they must be consistent with each other. */
++        if (pidref_is_set(leader) && !pidref_equal(leader, &temp))
++                return json_log(variant, flags, SYNTHETIC_ERRNO(EINVAL), "JSON field '%s' conflicts with already dispatched leader PID.", strna(name));
++
+         pidref_done(leader);
+         *leader = TAKE_PIDREF(temp);
+ 
+@@ -128,6 +132,7 @@ int vl_method_register(sd_varlink *link, sd_json_variant *parameters, sd_varlink
+                 { "service",           SD_JSON_VARIANT_STRING,        sd_json_dispatch_string,  offsetof(Machine, service),              0                 },
+                 { "class",             SD_JSON_VARIANT_STRING,        dispatch_machine_class,   offsetof(Machine, class),                SD_JSON_MANDATORY },
+                 { "leader",            _SD_JSON_VARIANT_TYPE_INVALID, machine_leader,           offsetof(Machine, leader),               SD_JSON_STRICT    },
++                { "leaderProcessId",   SD_JSON_VARIANT_OBJECT,        machine_leader,           offsetof(Machine, leader),               SD_JSON_STRICT    },
+                 { "rootDirectory",     SD_JSON_VARIANT_STRING,        json_dispatch_path,       offsetof(Machine, root_directory),       0                 },
+                 { "ifIndices",         SD_JSON_VARIANT_ARRAY,         machine_ifindices,        0,                                       0                 },
+                 { "vSockCid",          _SD_JSON_VARIANT_TYPE_INVALID, machine_cid,              offsetof(Machine, vsock_cid),            0                 },
+diff --git a/src/shared/varlink-io.systemd.Machine.c b/src/shared/varlink-io.systemd.Machine.c
+index 83a20f4f0e..dff4df324e 100644
+--- a/src/shared/varlink-io.systemd.Machine.c
++++ b/src/shared/varlink-io.systemd.Machine.c
+@@ -30,18 +30,21 @@ static SD_VARLINK_DEFINE_STRUCT_TYPE(
+ 
+ static SD_VARLINK_DEFINE_METHOD(
+                 Register,
+-                SD_VARLINK_DEFINE_INPUT(name,              SD_VARLINK_STRING, 0),
+-                SD_VARLINK_DEFINE_INPUT(id,                SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(service,           SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(class,             SD_VARLINK_STRING, 0),
+-                SD_VARLINK_DEFINE_INPUT_BY_TYPE(leader,    ProcessId,         SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(rootDirectory,     SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(ifIndices,         SD_VARLINK_INT,    SD_VARLINK_ARRAY|SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(vSockCid,          SD_VARLINK_INT,    SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(sshAddress,        SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
+-                SD_VARLINK_DEFINE_INPUT(sshPrivateKeyPath, SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(name,                    SD_VARLINK_STRING, 0),
++                SD_VARLINK_DEFINE_INPUT(id,                      SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(service,                 SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(class,                   SD_VARLINK_STRING, 0),
++                SD_VARLINK_FIELD_COMMENT("The leader PID as simple positive integer."),
++                SD_VARLINK_DEFINE_INPUT(leader,                  SD_VARLINK_INT,    SD_VARLINK_NULLABLE),
++                SD_VARLINK_FIELD_COMMENT("The leader PID as ProcessId structure. If both the leader and leaderProcessId parameters are specified they must reference the same process. Typically one would only specify one or the other however. It's generally recommended to specify leaderProcessId as it references a process in a robust way without risk of identifier recycling."),
++                SD_VARLINK_DEFINE_INPUT_BY_TYPE(leaderProcessId, ProcessId,         SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(rootDirectory,           SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(ifIndices,               SD_VARLINK_INT,    SD_VARLINK_ARRAY|SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(vSockCid,                SD_VARLINK_INT,    SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(sshAddress,              SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(sshPrivateKeyPath,       SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
+                 SD_VARLINK_FIELD_COMMENT("Controls whether to allocate a scope unit for the machine to register. If false, the client already took care of that and registered a service/scope specific to the machine."),
+-                SD_VARLINK_DEFINE_INPUT(allocateUnit,      SD_VARLINK_BOOL,   SD_VARLINK_NULLABLE),
++                SD_VARLINK_DEFINE_INPUT(allocateUnit,            SD_VARLINK_BOOL,   SD_VARLINK_NULLABLE),
+                 VARLINK_DEFINE_POLKIT_INPUT);
+ 
+ static SD_VARLINK_DEFINE_METHOD(

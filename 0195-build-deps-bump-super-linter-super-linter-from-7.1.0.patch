@@ -1,0 +1,37 @@
+From b3e9de25f2cae33a451c1f7e981437e1f7fb2e56 Mon Sep 17 00:00:00 2001
+From: "dependabot[bot]" <49699333+dependabot[bot]@users.noreply.github.com>
+Date: Sat, 1 Feb 2025 09:54:18 +0000
+Subject: [PATCH] build(deps): bump super-linter/super-linter from 7.1.0 to
+ 7.2.1
+
+Bumps [super-linter/super-linter](https://github.com/super-linter/super-linter) from 7.1.0 to 7.2.1.
+- [Release notes](https://github.com/super-linter/super-linter/releases)
+- [Changelog](https://github.com/super-linter/super-linter/blob/main/CHANGELOG.md)
+- [Commits](https://github.com/super-linter/super-linter/compare/b92721f792f381cedc002ecdbb9847a15ece5bb8...85f7611e0f7b53c8573cca84aa0ed4344f6f6a4d)
+
+---
+updated-dependencies:
+- dependency-name: super-linter/super-linter
+  dependency-type: direct:production
+  update-type: version-update:semver-minor
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+(cherry picked from commit 6e513fa489b1b0e94fc9d7f35290d5f56dd0f306)
+---
+ .github/workflows/linter.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/workflows/linter.yml b/.github/workflows/linter.yml
+index d9f6a37680..0a07dadccb 100644
+--- a/.github/workflows/linter.yml
++++ b/.github/workflows/linter.yml
+@@ -29,7 +29,7 @@ jobs:
+           fetch-depth: 0
+ 
+       - name: Lint Code Base
+-        uses: super-linter/super-linter/slim@b92721f792f381cedc002ecdbb9847a15ece5bb8
++        uses: super-linter/super-linter/slim@85f7611e0f7b53c8573cca84aa0ed4344f6f6a4d
+         env:
+           DEFAULT_BRANCH: main
+           MULTI_STATUS: false

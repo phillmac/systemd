@@ -1,0 +1,42 @@
+From 131eff83701ed40468fb68fb0ed33108f215950e Mon Sep 17 00:00:00 2001
+From: Thorsten Kukuk <kukuk@suse.com>
+Date: Fri, 7 Feb 2025 14:36:06 +0100
+Subject: [PATCH] import-pubring.gpg: add openSUSE build key
+
+(cherry picked from commit c8c5ce5772b08da0ad317331b1f4929c1b466ae0)
+---
+ src/import/import-pubring.gpg | Bin 9551 -> 10746 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/src/import/import-pubring.gpg b/src/import/import-pubring.gpg
+index be27776896f30f580b03ad79d733483f81c8d117..57f9d04d8bc0c84e55f15c9c64203294c8b2584e 100644
+GIT binary patch
+delta 1188
+zcmV;V1Y7&hO8Qf<PbGhu0u2OWuzn%|5CGowvXMDvvE(8=+@&SU_E8Slf^H<Iy=TEI
+zS6%|!Rr;dSXH7cO-5x+Ar83tegx9*`P$7%-urk0)G{a(Y9{+XN4Gf=sAH$xXse#Sy
+zG-pF)gJIcKn43scSiTRfb}R1lcC`amc~e~lqWm1$tO8YQH;aF-*RGY~DU<p9__sw}
+zitSehuHTbU4f28@q10GPoEOL$FO)J7@N~5RLze;jw}64Rxsfa7Sfp~8yx;)!WC!y}
+zx~TK}BiZ!3No8@^t~$NRp)$~)G%|l~PGw+$nw?DbvE(VpTK?GG`PObi|GE^>xH*k~
+zF51yT!QQCJT)=-PjIlpDEqG8(yj}Axlu3jU<{`FI<sZ0j6gVQS5zXpLEC%zbPvs(#
+zp<yTDENZYSo_fS=J*PXeXSb{;VgFEA`Q`U`c6(3ii-KxT-0=5&?0hi|WBj2`>Z-m2
+zdUmFR*Z@H_<ODQ=K31Be&S}J##NIscj&JHjEe`IJsQ7;mNc*x>BX)Z~!9n2hv4q~^
+z1#yvNqC@ZKEII+awTe1{d+L}6*0Sz-BIARoI>K*?yl<yX3`Pqk_%9)Q;Cw(fO$BBm
+zK1fGo5n|+I5>bsf7AcX~8g6x8YbK`3KSdtQN?e<JW~jS}bJhaJqb=i0TR`O%O1njI
+ziDk5(@=bqSZr+(xrwd6L2CoQ{J4FBy0RRE83;+OUaAyGk000000JJo3aAj^&RZ~SE
+zP;zf-Wn*+8Q)y>zX>MmAOJ#W=Ja2GiZgX{WWk7FmWo~nIb7d}Xa%VoU3;+OUaAyJl
+z000000Eq%V1QP)Q04N0lVz7Q90viJb2?vDE00xr+4IF<pqWEqpw*aK1YY+g5G8SR5
+z@<BRACIH*V=4z#rZriL4$Yz5$@}%<-7n{tcv}Ao>ff7I5IBR?s3((G2IlcbdqBDC+
+zZjT~Rv#m{*jbd)pDhiCQcJu$HW;Oj<_wS4)Fi>s@@FR7ncwu=Pd%C+AXz1y|eD<qB
+zeL94-q-%eCI4wN9f3x4#T(PLpb}9%Yk5+{`>NFTNz^&eq{)VirzI#_BI8^vM-a2#w
+zIUqqE5R6GZ#6tSwH}R((|ExP-RG9j59DNfrly2hi>w_|wDL=x^xn+H#Qj^yNxi&mX
+z{cJz}!DqHFI87{|hz!=nVAAc;|71?bLkgg`D(rttOT(@n6YM9$*2iI#4Vf>A|6eKW
+z8ayMnzVT#Y`fusF&P5Sx2p?Oa#G>FNVM9!D#%9&Nn<(c~HPs?YNgA@KqFmUFcS@BO
+z4B7Q=G>u-Xpqc3LSA%6SqV-(ODaJ7E_Z^Wm_WEFv5W%kvZx>2GT6whENT64&SRPJr
+zCm(+=FTOB7@SDTE)HOd&N!(ZiKFL0zjt{3PDel*B0rs(pr5czZ0EII~ujNGH1?F6M
+zOAvhD!c^hx@el8TC3nG0PYGseMzO{3?~J{iD^fX}+VG=_kIF7t8GGN+OrIZPMc&6A
+zJ<}sBrlR+b4t9Hgas-zwg|aYK-FuMrcj*{rvLwKJnq^*0>aC&r7#20K1^@$RaAyFO
+C!7JPV
+
+delta 7
+OcmewreBNt=zbXI_)dPzF
+

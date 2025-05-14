@@ -1,0 +1,25 @@
+From 0acc4cd05efab53c1d25b2dff47ed6103b0ddf0e Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 18 Dec 2024 12:32:59 +0100
+Subject: [PATCH] man: Document generator sandbox environment
+
+(cherry picked from commit a48803fd8464e56747f0e145af61bd746351c7d6)
+---
+ man/systemd.generator.xml | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/man/systemd.generator.xml b/man/systemd.generator.xml
+index 1a9b5d1653..ce09a6648f 100644
+--- a/man/systemd.generator.xml
++++ b/man/systemd.generator.xml
+@@ -64,6 +64,10 @@
+     override existing definitions. For tests, generators may be called with just one argument; the generator
+     should assume that all three paths are the same in that case.</para>
+ 
++    <para>Generators executed by the system manager are invoked in a sandbox with a private writable
++    <filename>/tmp/</filename> directory and where most of the file system is read-only except for the
++    generator output directories.</para>
++
+     <para>Directory paths for generator output differ by priority: <filename>…/generator.early</filename> has
+     priority higher than the admin configuration in <filename>/etc/</filename>, while
+     <filename>…/generator</filename> has lower priority than <filename>/etc/</filename> but higher than

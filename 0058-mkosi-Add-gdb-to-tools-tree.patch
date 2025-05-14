@@ -1,0 +1,22 @@
+From f91dab598b7b897c90868eecb308820c60e2d663 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 11:32:51 +0100
+Subject: [PATCH] mkosi: Add gdb to tools tree
+
+(cherry picked from commit 7337f4b1972a099714d596a5d0e7e26f7f2dab48)
+---
+ mkosi.conf.d/05-tools/mkosi.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf b/mkosi.conf.d/05-tools/mkosi.conf
+index 15c336a304..322851b627 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf
+@@ -3,6 +3,7 @@
+ [Build]
+ ToolsTreePackages=
+         gcc
++        gdb
+         gperf
+         lcov
+         llvm

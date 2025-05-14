@@ -1,0 +1,61 @@
+From c5524d94068c07ae57804050c7ab2b1c1cd0aeff Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 4 Feb 2025 20:24:17 +0100
+Subject: [PATCH] test: Move NO_BUILD instructions to a separate section
+
+This isn't relevant for regular development, so let's move it to a
+separate section.
+
+(cherry picked from commit 728a88e54998d143287ffe89faaeb9512cdf24e1)
+---
+ test/README.testsuite | 30 ++++++++++++++++--------------
+ 1 file changed, 16 insertions(+), 14 deletions(-)
+
+diff --git a/test/README.testsuite b/test/README.testsuite
+index 17f430eeff..cec46d3e73 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -8,20 +8,6 @@ latest version of mkosi. See
+ for more specific details. Make sure `mkosi` is available in `$PATH` when
+ reconfiguring meson to make sure it is picked up properly.
+ 
+-To make sure `mkosi` doesn't try to build systemd from source during the image build
+-process, you can add the following to `mkosi.local.conf`:
+-
+-```
+-[Build]
+-Environment=NO_BUILD=1
+-```
+-
+-You might also want to use the `PackageDirectories=` or `Repositories=` option to provide
+-mkosi with a directory or repository containing the systemd packages that should be installed
+-instead. If the repository containing the systemd packages is not a builtin repository known
+-by mkosi, you can use the `SandboxTrees=` option to write an extra repository definition
+-to /etc which is used when building the image instead.
+-
+ Next, we can build the integration test image with meson:
+ 
+ ```shell
+@@ -80,6 +66,22 @@ mkosi in the systemd reposistory, so any local modifications to the mkosi
+ configuration (e.g. in `mkosi.local.conf`) are automatically picked up and used
+ by the integration tests as well.
+ 
++## Running the integration tests without building systemd from source
++
++To make sure `mkosi` doesn't try to build systemd from source during the image build
++process, you can add the following to `mkosi.local.conf`:
++
++```
++[Build]
++Environment=NO_BUILD=1
++```
++
++You might also want to use the `PackageDirectories=` or `Repositories=` option to provide
++mkosi with a directory or repository containing the systemd packages that should be installed
++instead. If the repository containing the systemd packages is not a builtin repository known
++by mkosi, you can use the `SandboxTrees=` option to write an extra repository definition
++to /etc which is used when building the image instead.
++
+ ## Iterating on an integration test
+ 
+ To iterate on an integration test, let's first get a shell in the integration test environment by running

@@ -1,0 +1,27 @@
+From 5761eb9b76b99196f6f862a7f8cf1d4029a1bddc Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 10:25:50 +0100
+Subject: [PATCH] fmf: Fix dist-git example
+
+All that's needed is dist-git-source: true so remove the other settings
+that aren't required.
+
+(cherry picked from commit 0a85b3757968a2750286119760244e017c990263)
+---
+ test/fmf/integration-tests/test.sh | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index fe139567bd..73771d4237 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -13,9 +13,6 @@ setenforce 0 || true
+ # summary: systemd Fedora test suite
+ # discover:
+ #   how: fmf
+-#   url: https://github.com/systemd/systemd
+-#   ref: main
+-#   path: test/fmf
+ #   dist-git-source: true
+ #   dist-git-install-builddeps: false
+ # prepare:

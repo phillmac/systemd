@@ -1,0 +1,118 @@
+From 30c1127bfa58f94c98e2fc5a10bc6c272c72d017 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 22 Dec 2024 03:34:43 +0900
+Subject: [PATCH] string-util: modernize split_pair()
+
+- use _cleanup_free_ attribute,
+- rename output arguments,
+- trigger assertion when an empty separator is passed.
+
+(cherry picked from commit ac3f3026a99772fbe8d485b56de0a5819513a2c1)
+
+Resolves: RHEL-75774
+---
+ src/basic/string-util.c     | 28 ++++++++++------------------
+ src/basic/string-util.h     |  2 +-
+ src/test/test-string-util.c | 23 ++++++++++++-----------
+ 3 files changed, 23 insertions(+), 30 deletions(-)
+
+diff --git a/src/basic/string-util.c b/src/basic/string-util.c
+index 171a368059..7122d5145e 100644
+--- a/src/basic/string-util.c
++++ b/src/basic/string-util.c
+@@ -1044,34 +1044,26 @@ char* strrep(const char *s, unsigned n) {
+         return r;
+ }
+ 
+-int split_pair(const char *s, const char *sep, char **l, char **r) {
+-        char *x, *a, *b;
+-
++int split_pair(const char *s, const char *sep, char **ret_first, char **ret_second) {
+         assert(s);
+-        assert(sep);
+-        assert(l);
+-        assert(r);
+-
+-        if (isempty(sep))
+-                return -EINVAL;
++        assert(!isempty(sep));
++        assert(ret_first);
++        assert(ret_second);
+ 
+-        x = strstr(s, sep);
++        const char *x = strstr(s, sep);
+         if (!x)
+                 return -EINVAL;
+ 
+-        a = strndup(s, x - s);
++        _cleanup_free_ char *a = strndup(s, x - s);
+         if (!a)
+                 return -ENOMEM;
+ 
+-        b = strdup(x + strlen(sep));
+-        if (!b) {
+-                free(a);
++        _cleanup_free_ char *b = strdup(x + strlen(sep));
++        if (!b)
+                 return -ENOMEM;
+-        }
+-
+-        *l = a;
+-        *r = b;
+ 
++        *ret_first = TAKE_PTR(a);
++        *ret_second = TAKE_PTR(b);
+         return 0;
+ }
+ 
+diff --git a/src/basic/string-util.h b/src/basic/string-util.h
+index cc6aa183c0..a1592b6e6d 100644
+--- a/src/basic/string-util.h
++++ b/src/basic/string-util.h
+@@ -214,7 +214,7 @@ char* strrep(const char *s, unsigned n);
+                 _d_;                                                    \
+         })
+ 
+-int split_pair(const char *s, const char *sep, char **l, char **r);
++int split_pair(const char *s, const char *sep, char **ret_first, char **ret_second);
+ 
+ int free_and_strdup(char **p, const char *s);
+ static inline int free_and_strdup_warn(char **p, const char *s) {
+diff --git a/src/test/test-string-util.c b/src/test/test-string-util.c
+index 999d3bacb8..b692af6cc0 100644
+--- a/src/test/test-string-util.c
++++ b/src/test/test-string-util.c
+@@ -572,21 +572,22 @@ TEST(in_charset) {
+ TEST(split_pair) {
+         _cleanup_free_ char *a = NULL, *b = NULL;
+ 
+-        assert_se(split_pair("", "", &a, &b) == -EINVAL);
+-        assert_se(split_pair("foo=bar", "", &a, &b) == -EINVAL);
+-        assert_se(split_pair("", "=", &a, &b) == -EINVAL);
+-        assert_se(split_pair("foo=bar", "=", &a, &b) >= 0);
++        ASSERT_SIGNAL(split_pair("", NULL, &a, &b), SIGABRT);
++        ASSERT_SIGNAL(split_pair("", "", &a, &b), SIGABRT);
++        ASSERT_SIGNAL(split_pair("foo=bar", "", &a, &b), SIGABRT);
++        ASSERT_SIGNAL(split_pair(NULL, "=", &a, &b), SIGABRT);
++        ASSERT_ERROR(split_pair("", "=", &a, &b), EINVAL);
++        ASSERT_OK(split_pair("foo=bar", "=", &a, &b));
+         ASSERT_STREQ(a, "foo");
+         ASSERT_STREQ(b, "bar");
+-        free(a);
+-        free(b);
+-        assert_se(split_pair("==", "==", &a, &b) >= 0);
++        a = mfree(a);
++        b = mfree(b);
++        ASSERT_OK(split_pair("==", "==", &a, &b));
+         ASSERT_STREQ(a, "");
+         ASSERT_STREQ(b, "");
+-        free(a);
+-        free(b);
+-
+-        assert_se(split_pair("===", "==", &a, &b) >= 0);
++        a = mfree(a);
++        b = mfree(b);
++        ASSERT_OK(split_pair("===", "==", &a, &b));
+         ASSERT_STREQ(a, "");
+         ASSERT_STREQ(b, "=");
+ }

@@ -1,0 +1,67 @@
+From 3bf84a14d22f7e259b4adf4cc88895af0cdd1ccc Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 2 Jan 2025 15:48:54 +0100
+Subject: [PATCH] mkosi: Add docbook tools
+
+(cherry picked from commit fd3ee47d8d1cac09acf034cdbe53071ee6fdde74)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf          | 2 ++
+ mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf | 3 +++
+ mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf | 2 ++
+ mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf      | 2 ++
+ 4 files changed, 9 insertions(+)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
+index 5787aa8f44..c6ec83a6b0 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/arch.conf
+@@ -9,9 +9,11 @@ ToolsTreePackages=
+         github-cli
+         libcap
+         libmicrohttpd
++        libxslt
+         mypy
+         perl-json-xs
+         python-jinja
++        python-lxml
+         python-pytest
+         ruff
+         shellcheck
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+index 23731f7376..21d3741504 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+@@ -15,6 +15,9 @@ ToolsTreePackages=
+         pkgconfig(mount)
+         tpm2-tss-devel
+         python3-jinja2
++        python3-lxml
+         python3-mypy
+         python3-pytest
+         shellcheck
++        xsltproc
++        docbook-style-xsl
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
+index 46204fe8f6..106072f541 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/debian-ubuntu.conf
+@@ -17,5 +17,7 @@ ToolsTreePackages=
+         libtss2-dev
+         mypy
+         python3-jinja2
++        python3-lxml
+         python3-pytest
+         shellcheck
++        xsltproc
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+index d486875fab..8a659360fa 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+@@ -19,5 +19,7 @@ ToolsTreePackages=
+         python3-ruff
+         tpm2-0-tss-devel
+         python3-jinja2
++        python3-lxml
+         python3-pytest
++        xsltproc
+         ShellCheck

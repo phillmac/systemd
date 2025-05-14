@@ -1,0 +1,30 @@
+From 6f30e56bf3e5272e83cff11d153ae70c3ffb7624 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Thu, 26 Dec 2024 21:15:44 +0100
+Subject: [PATCH] core/unit-serialize: fix serialization of markers
+
+Follow-up for ff68472a20c208121b69ea13586f3105a219bc14
+
+(cherry picked from commit 5ce8d7d83902e920a34488c4193d9bc4b5bb70ae)
+---
+ src/core/unit-serialize.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/core/unit-serialize.c b/src/core/unit-serialize.c
+index f196242eaf..82102c0c32 100644
+--- a/src/core/unit-serialize.c
++++ b/src/core/unit-serialize.c
+@@ -21,10 +21,12 @@ static int serialize_markers(FILE *f, unsigned markers) {
+         if (markers == 0)
+                 return 0;
+ 
++        bool space = false;
++
+         fputs("markers=", f);
+         for (UnitMarker m = 0; m < _UNIT_MARKER_MAX; m++)
+                 if (FLAGS_SET(markers, 1u << m))
+-                        fputs(unit_marker_to_string(m), f);
++                        fputs_with_separator(f, unit_marker_to_string(m), /* separator = */ NULL, &space);
+         fputc('\n', f);
+         return 0;
+ }

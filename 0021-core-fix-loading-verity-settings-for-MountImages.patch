@@ -1,0 +1,64 @@
+From c52f82b8d53c986798480ceaab4a269ca70126b1 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 00:24:05 +0000
+Subject: [PATCH] core: fix loading verity settings for MountImages=
+
+The MountEntry logic was refactored to store the verity
+settings, and updated for ExtensionImages=, but not for
+MountImages=.
+
+Follow-up for a1a40297dbfa5bcd926d1a19320deb73c033c6f5
+
+(cherry picked from commit 59a83e11887e13a35d88fd7dc71a13b450433715)
+---
+ src/core/namespace.c                  | 8 ++++++++
+ test/units/TEST-50-DISSECT.dissect.sh | 3 +++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/src/core/namespace.c b/src/core/namespace.c
+index 57dbbc4fc7..10f4c50bcc 100644
+--- a/src/core/namespace.c
++++ b/src/core/namespace.c
+@@ -480,20 +480,28 @@ static int append_bind_mounts(MountList *ml, const BindMount *binds, size_t n) {
+ }
+ 
+ static int append_mount_images(MountList *ml, const MountImage *mount_images, size_t n) {
++        int r;
++
+         assert(ml);
+         assert(mount_images || n == 0);
+ 
+         FOREACH_ARRAY(m, mount_images, n) {
++                _cleanup_(verity_settings_done) VeritySettings verity = VERITY_SETTINGS_DEFAULT;
+                 MountEntry *me = mount_list_extend(ml);
+                 if (!me)
+                         return log_oom_debug();
+ 
++                r = verity_settings_load(&verity, m->source, /* root_hash_path= */ NULL, /* root_hash_sig_path= */ NULL);
++                if (r < 0)
++                        return log_debug_errno(r, "Failed to check verity root hash of %s: %m", m->source);
++
+                 *me = (MountEntry) {
+                         .path_const = m->destination,
+                         .mode = MOUNT_IMAGE,
+                         .source_const = m->source,
+                         .image_options_const = m->mount_options,
+                         .ignore = m->ignore_enoent,
++                        .verity = TAKE_GENERIC(verity, VeritySettings, VERITY_SETTINGS_DEFAULT),
+                 };
+         }
+ 
+diff --git a/test/units/TEST-50-DISSECT.dissect.sh b/test/units/TEST-50-DISSECT.dissect.sh
+index 6cf1213551..09cb676200 100755
+--- a/test/units/TEST-50-DISSECT.dissect.sh
++++ b/test/units/TEST-50-DISSECT.dissect.sh
+@@ -281,6 +281,9 @@ systemd-run -P \
+             -p RootHash="$MINIMAL_IMAGE_ROOTHASH" \
+             -p MountImages="$MINIMAL_IMAGE.gpt:/run/img1 $MINIMAL_IMAGE.raw:/run/img2" \
+             cat /run/img2/usr/lib/os-release | grep -q -F "MARKER=1"
++systemd-run -P \
++            -p MountImages="$MINIMAL_IMAGE.raw:/run/img2" \
++            veritysetup status "${MINIMAL_IMAGE_ROOTHASH}-verity" | grep -q "${MINIMAL_IMAGE_ROOTHASH}"
+ cat >/run/systemd/system/testservice-50c.service <<EOF
+ [Service]
+ MountAPIVFS=yes

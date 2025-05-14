@@ -1,0 +1,25 @@
+From b1fe0a92eb5b6945a3b65b955517e326b1ccf518 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 14 Jan 2025 13:53:26 +0100
+Subject: [PATCH] mkosi: Install libxslt on CentOS/Fedora instead of xsltproc
+
+Same package, but xsltproc is a very recently introduced Provides
+for libxslt, and isn't available on CentOS Stream 9, so let's install
+the package directly instead.
+
+(cherry picked from commit 05932f4768bc329f933774eef9a2286f706d3673)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+index 21d3741504..80874391e5 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/centos-fedora.conf
+@@ -19,5 +19,5 @@ ToolsTreePackages=
+         python3-mypy
+         python3-pytest
+         shellcheck
+-        xsltproc
++        libxslt
+         docbook-style-xsl

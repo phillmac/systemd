@@ -1,0 +1,40 @@
+From 7a1733c162f1258a85eef648ed283fffc56ff5c3 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Wed, 15 Jan 2025 15:06:46 +0100
+Subject: [PATCH] shared/bus-util: add missing `set.h` include
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+```
+In file included from ../src/shared/bus-get-properties.c:4:
+../src/shared/bus-message-util.h:22:60: error: unknown type name ‘Set’
+   22 | int bus_message_append_string_set(sd_bus_message *m, const Set *s);
+      |                                                            ^~~
+../src/shared/bus-get-properties.c: In function ‘bus_property_get_string_set’:
+../src/shared/bus-get-properties.c:178:9: error: unknown type name ‘Set’
+  178 |         Set **s = ASSERT_PTR(userdata);
+      |         ^~~
+```
+
+follow-up to https://github.com/systemd/systemd/commit/91080bc9733b5b2478bfc0ed58f6a7ae5da7e639
+
+(cherry picked from commit ca97d48bd425685d4ec20397812c3b1b006f5070)
+
+Resolves: RHEL-73780
+---
+ src/shared/bus-message-util.h | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/shared/bus-message-util.h b/src/shared/bus-message-util.h
+index d4a05f5b9c..02c670695e 100644
+--- a/src/shared/bus-message-util.h
++++ b/src/shared/bus-message-util.h
+@@ -4,6 +4,7 @@
+ #include "sd-bus.h"
+ 
+ #include "in-addr-util.h"
++#include "set.h"
+ #include "socket-netlink.h"
+ 
+ int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret);

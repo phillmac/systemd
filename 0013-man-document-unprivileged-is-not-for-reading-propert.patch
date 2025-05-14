@@ -1,0 +1,55 @@
+From cd727031a4daafe19f491df360c512433562f469 Mon Sep 17 00:00:00 2001
+From: Katariina Lounento <katariina.lounento@vaisala.com>
+Date: Mon, 9 Dec 2024 16:09:13 +0200
+Subject: [PATCH] man: document unprivileged is not for reading properties
+
+Document the fact that read-only properties may not have the flag
+SD_BUS_VTABLE_UNPRIVILEGED as that is not obvious especially given the
+flag is accepted for writable properties.
+
+Based on the check in `add_object_vtable_internal` called by
+`sd_bus_add_object_vtable` (as of the current tip of the main branch
+f7f5ba019206cacd486b0892fec76f70f525e04d):
+
+    case _SD_BUS_VTABLE_PROPERTY: {
+            [...]
+            if ([...] ||
+                [...]
+                (v->flags & SD_BUS_VTABLE_UNPRIVILEGED && v->type == _SD_BUS_VTABLE_PROPERTY)) {
+                    r = -EINVAL;
+                    goto fail;
+            }
+
+(where `_SD_BUS_VTABLE_PROPERTY` means read-only property whereas
+`_SD_BUS_VTABLE_WRITABLE_PROPERTY` maps to writable property).
+
+This was implemented in the commit
+adacb9575a09981fcf11279f2f661e3fc21e58ff ("bus: introduce "trusted" bus
+concept and encode access control in object vtables") where
+`SD_BUS_VTABLE_UNPRIVILEGED` was introduced:
+
+    Writable properties are also subject to SD_BUS_VTABLE_UNPRIVILEGED
+    and SD_BUS_VTABLE_CAPABILITY() for controlling write access to them.
+    Note however that read access is unrestricted, as PropertiesChanged
+    messages might send out the values anyway as an unrestricted
+    broadcast.
+
+(cherry picked from commit 3ca09aa4dd57327989eceb1298754601046ac041)
+---
+ man/sd_bus_add_object.xml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/man/sd_bus_add_object.xml b/man/sd_bus_add_object.xml
+index 4d14a7e731..5572f421fb 100644
+--- a/man/sd_bus_add_object.xml
++++ b/man/sd_bus_add_object.xml
+@@ -589,6 +589,9 @@
+           <constant>org.freedesktop.systemd1.Privileged</constant> annotation with value
+           <literal>true</literal> will be shown in introspection data.</para>
+ 
++          <para><constant>SD_BUS_VTABLE_UNPRIVILEGED</constant> may not be applied to read-only properties,
++          but read access (to both read-only and writable properties) is always unrestricted.</para>
++
+           <para>Note that this page describes checks implemented in the D-Bus client. The D-Bus server has an
+           additional policy that may permit or deny connections, see
+           "CONFIGURATION FILE" in

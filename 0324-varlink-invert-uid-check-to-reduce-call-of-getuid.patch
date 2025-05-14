@@ -1,0 +1,25 @@
+From 2f84b078931b287b117c4aa3e21aa8a30b8fcd9b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sun, 22 Dec 2024 01:34:04 +0900
+Subject: [PATCH] varlink: invert uid check to reduce call of getuid()
+
+(cherry picked from commit 4ea611b8a4fa42bc782e2dc5d9c0bb470bb91683)
+
+Resolves: RHEL-75774
+---
+ src/shared/varlink-io.systemd.service.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/shared/varlink-io.systemd.service.c b/src/shared/varlink-io.systemd.service.c
+index 62cfc9b637..06e32f9bf6 100644
+--- a/src/shared/varlink-io.systemd.service.c
++++ b/src/shared/varlink-io.systemd.service.c
+@@ -56,7 +56,7 @@ int varlink_method_set_log_level(sd_varlink *link, sd_json_variant *parameters,
+         if (r < 0)
+                 return r;
+ 
+-        if (uid != getuid() && uid != 0)
++        if (uid != 0 && uid != getuid())
+                 return sd_varlink_error(link, SD_VARLINK_ERROR_PERMISSION_DENIED, parameters);
+ 
+         log_debug("Received io.systemd.service.SetLogLevel(%i)", level);

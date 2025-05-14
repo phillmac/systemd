@@ -1,0 +1,25 @@
+From 85a9b7cfd1d9fc6d2a82ee9585eccbef543c520f Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 6 Jan 2025 23:02:30 +0100
+Subject: [PATCH] repart: Use streq_ptr()
+
+p->format is not guaranteed to be initialized.
+
+(cherry picked from commit ffcdaec632d8b96b63499054ff3492b03b33e233)
+---
+ src/repart/repart.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/repart/repart.c b/src/repart/repart.c
+index 7e6fd2a29a..2ddff313fc 100644
+--- a/src/repart/repart.c
++++ b/src/repart/repart.c
+@@ -2311,7 +2311,7 @@ static int partition_finalize_fstype(Partition *p, const char *path) {
+                 return log_oom();
+ 
+         const char *v = secure_getenv(e);
+-        if (!v || streq(p->format, v))
++        if (!v || streq_ptr(p->format, v))
+                 return 0;
+ 
+         log_syntax(NULL, LOG_NOTICE, path, 1, 0,

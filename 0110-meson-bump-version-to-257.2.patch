@@ -1,0 +1,16 @@
+From 7fa3b5018bfffa176c77a2a5794dce792eebadcb Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Tue, 7 Jan 2025 20:45:53 +0000
+Subject: [PATCH] meson: bump version to 257.2
+
+---
+ meson.version | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.version b/meson.version
+index 97fb426c59..f813cadc5d 100644
+--- a/meson.version
++++ b/meson.version
+@@ -1 +1 @@
+-257.1
++257.2

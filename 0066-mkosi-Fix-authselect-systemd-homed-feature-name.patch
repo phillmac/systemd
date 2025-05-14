@@ -1,0 +1,27 @@
+From 586b56f2fe741303af241f00c00c088dd2acadca Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Sat, 21 Dec 2024 19:10:42 +0100
+Subject: [PATCH] mkosi: Fix authselect systemd-homed feature name
+
+The feature name is with-systemd-homed, not with-homed.
+
+(cherry picked from commit 5495b11360d649dc8810d59b096231ba596e9436)
+---
+ mkosi.postinst.chroot | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.postinst.chroot b/mkosi.postinst.chroot
+index 0f9e361488..310a26fa14 100755
+--- a/mkosi.postinst.chroot
++++ b/mkosi.postinst.chroot
+@@ -24,8 +24,8 @@ if command -v authselect >/dev/null; then
+ 
+     authselect select "$PROFILE"
+ 
+-    if authselect list-features "$PROFILE" | grep -q "with-homed"; then
+-        authselect enable-feature with-homed
++    if authselect list-features "$PROFILE" | grep -q "with-systemd-homed"; then
++        authselect enable-feature with-systemd-homed
+     fi
+ fi
+ 

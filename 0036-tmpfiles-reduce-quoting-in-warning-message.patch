@@ -1,0 +1,35 @@
+From 3efa9e717f047bc4e51f6b1130468bdd6e004fdc Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Thu, 7 Nov 2024 15:45:24 +0100
+Subject: [PATCH] tmpfiles: reduce quoting in warning message
+
+We printed:
+systemd-tmpfiles[705]: /usr/lib/tmpfiles.d/20-systemd-shell-extra.conf:10: Unknown modifiers in command 'L$'.
+systemd-tmpfiles[705]: /usr/lib/tmpfiles.d/systemd-network.conf:10: Unknown modifiers in command 'd$'.
+systemd-tmpfiles[705]: /usr/lib/tmpfiles.d/systemd-network.conf:11: Unknown modifiers in command 'd$'.
+...
+
+There's a lot of additional characters here make the message harder to parse. We know
+that the command is a word without any whitespace, so quoting isn't really necessary.
+
+Change this to:
+... unknown modifiers in command: L$
+
+(cherry picked from commit 390bab53923eea822ac525d0e4aa4b7f86d8cd92)
+---
+ src/tmpfiles/tmpfiles.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/tmpfiles/tmpfiles.c b/src/tmpfiles/tmpfiles.c
+index 86bf16356d..bff05cda6f 100644
+--- a/src/tmpfiles/tmpfiles.c
++++ b/src/tmpfiles/tmpfiles.c
+@@ -3684,7 +3684,7 @@ static int parse_line(
+                 else {
+                         *invalid_config = true;
+                         return log_syntax(NULL, LOG_ERR, fname, line, SYNTHETIC_ERRNO(EBADMSG),
+-                                          "Unknown modifiers in command '%s'.", action);
++                                          "Unknown modifiers in command: %s", action);
+                 }
+ 
+         if (boot && !arg_boot) {

@@ -1,0 +1,35 @@
+From c189ecc7fe5039d98bbb448ab45ab0fa3842b3a3 Mon Sep 17 00:00:00 2001
+From: Ronan Pigott <ronan@rjp.ie>
+Date: Thu, 28 Nov 2024 12:51:38 -0700
+Subject: [PATCH] dbus: log disconnect on api and system busses
+
+This is an interesting event. Let's log about it.
+
+(cherry picked from commit 11ee1bab60abde67cd0edc470c93c1afe10d975d)
+---
+ src/core/dbus.c | 10 ++++++++--
+ 1 file changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/dbus.c b/src/core/dbus.c
+index 744b97f991..3f0f40e702 100644
+--- a/src/core/dbus.c
++++ b/src/core/dbus.c
+@@ -131,10 +131,16 @@ static int signal_disconnected(sd_bus_message *message, void *userdata, sd_bus_e
+         assert(message);
+         assert_se(bus = sd_bus_message_get_bus(message));
+ 
+-        if (bus == m->api_bus)
++        if (bus == m->api_bus) {
++                log_notice("Got disconnect on API bus.");
+                 bus_done_api(m);
+-        if (bus == m->system_bus)
++        }
++        if (bus == m->system_bus) {
++                /* If we are the system manager, this is already logged by the API bus. */
++                if (!MANAGER_IS_SYSTEM(m))
++                        log_notice("Got disconnect on system bus.");
+                 bus_done_system(m);
++        }
+ 
+         if (set_remove(m->private_buses, bus)) {
+                 log_debug("Got disconnect on private connection.");

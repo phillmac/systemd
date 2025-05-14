@@ -1,0 +1,41 @@
+From 3534e70879ea52d43a4ef048c62d8e09812d4757 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 22 Jan 2025 22:24:36 +0100
+Subject: [PATCH] mkosi: Run two more mkosi commands with sudo
+
+Running some mkosi commands as root and other not can lead to cache
+invalidations with the latest version, so make sure we run everything
+as root after we've built the tools tree.
+
+(cherry picked from commit 007d255d870bee37db03da1875c0387598bdedde)
+---
+ .github/workflows/coverage.yml | 2 +-
+ .github/workflows/mkosi.yml    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index c98ec27385..e337cc55d1 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -139,7 +139,7 @@ jobs:
+           sudo --preserve-env mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
+ 
+       - name: List coverage report
+-        run: mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
++        run: sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
+ 
+       - name: Coveralls
+         uses: coverallsapp/github-action@cfd0633edbd2411b532b808ba7a8b5e04f76d2c8
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 47a43c689f..c589a0c1fa 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -204,7 +204,7 @@ jobs:
+ 
+       - name: Run integration tests
+         run: |
+-          if [[ "$(mkosi sandbox meson test --help)" == *"--max-lines"* ]]; then
++          if [[ "$(sudo mkosi sandbox meson test --help)" == *"--max-lines"* ]]; then
+               MAX_LINES=(--max-lines 300)
+           else
+               MAX_LINES=()

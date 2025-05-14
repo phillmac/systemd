@@ -1,0 +1,35 @@
+From b555b473a4c206db28d75d82f2a7fc43accf998f Mon Sep 17 00:00:00 2001
+From: msizanoen <msizanoen@qtmlabs.xyz>
+Date: Wed, 12 Feb 2025 22:09:01 +0700
+Subject: [PATCH] login: Continue watching leader pidfd after stop
+
+This ensures that garbage collection will be triggered when the leader
+process dies.
+
+(cherry picked from commit b2a4109031c1bd79c498f8642df150deeebe1708)
+---
+ src/login/logind-session.c | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/login/logind-session.c b/src/login/logind-session.c
+index 351b64b60b..e825d39f6c 100644
+--- a/src/login/logind-session.c
++++ b/src/login/logind-session.c
+@@ -90,6 +90,9 @@ static int session_dispatch_leader_pidfd(sd_event_source *es, int fd, uint32_t r
+         Session *s = ASSERT_PTR(userdata);
+ 
+         assert(s->leader.fd == fd);
++
++        s->leader_pidfd_event_source = sd_event_source_unref(s->leader_pidfd_event_source);
++
+         session_stop(s, /* force= */ false);
+ 
+         return 1;
+@@ -950,7 +953,6 @@ int session_stop(Session *s, bool force) {
+                 return 0;
+ 
+         s->timer_event_source = sd_event_source_unref(s->timer_event_source);
+-        s->leader_pidfd_event_source = sd_event_source_unref(s->leader_pidfd_event_source);
+ 
+         if (s->seat)
+                 seat_evict_position(s->seat, s);

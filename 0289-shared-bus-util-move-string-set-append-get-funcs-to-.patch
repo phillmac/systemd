@@ -1,0 +1,184 @@
+From e0c7b4d3ca67508c319fa28ef562dfc0c9982765 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Sat, 11 Jan 2025 18:04:37 +0100
+Subject: [PATCH] shared/bus-util: move string set append/get funcs to
+ bus-message-util and bus-get-properties, respectively
+
+(cherry picked from commit 91080bc9733b5b2478bfc0ed58f6a7ae5da7e639)
+
+Resolves: RHEL-73780
+---
+ src/core/dbus-cgroup.c          |  1 +
+ src/shared/bus-get-properties.c | 19 +++++++++++++++++
+ src/shared/bus-get-properties.h |  2 ++
+ src/shared/bus-message-util.c   | 19 +++++++++++++++++
+ src/shared/bus-message-util.h   |  2 ++
+ src/shared/bus-util.c           | 37 ---------------------------------
+ src/shared/bus-util.h           |  4 ----
+ 7 files changed, 43 insertions(+), 41 deletions(-)
+
+diff --git a/src/core/dbus-cgroup.c b/src/core/dbus-cgroup.c
+index fd48f3b07c..c99f1e29ac 100644
+--- a/src/core/dbus-cgroup.c
++++ b/src/core/dbus-cgroup.c
+@@ -7,6 +7,7 @@
+ #include "bpf-firewall.h"
+ #include "bpf-foreign.h"
+ #include "bus-get-properties.h"
++#include "bus-message-util.h"
+ #include "bus-util.h"
+ #include "cgroup-util.h"
+ #include "cgroup.h"
+diff --git a/src/shared/bus-get-properties.c b/src/shared/bus-get-properties.c
+index 53e5d6b99f..bf267a23a5 100644
+--- a/src/shared/bus-get-properties.c
++++ b/src/shared/bus-get-properties.c
+@@ -1,6 +1,7 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include "bus-get-properties.h"
++#include "bus-message-util.h"
+ #include "rlimit-util.h"
+ #include "stdio-util.h"
+ #include "string-util.h"
+@@ -164,3 +165,21 @@ int bus_property_get_rlimit(
+ 
+         return sd_bus_message_append(reply, "t", u);
+ }
++
++int bus_property_get_string_set(
++                sd_bus *bus,
++                const char *path,
++                const char *interface,
++                const char *property,
++                sd_bus_message *reply,
++                void *userdata,
++                sd_bus_error *error) {
++
++        Set **s = ASSERT_PTR(userdata);
++
++        assert(bus);
++        assert(property);
++        assert(reply);
++
++        return bus_message_append_string_set(reply, *s);
++}
+diff --git a/src/shared/bus-get-properties.h b/src/shared/bus-get-properties.h
+index 4c35126502..9ddf5454de 100644
+--- a/src/shared/bus-get-properties.h
++++ b/src/shared/bus-get-properties.h
+@@ -52,6 +52,8 @@ assert_cc(sizeof(mode_t) == sizeof(uint32_t));
+ 
+ int bus_property_get_rlimit(sd_bus *bus, const char *path, const char *interface, const char *property, sd_bus_message *reply, void *userdata, sd_bus_error *error);
+ 
++int bus_property_get_string_set(sd_bus *bus, const char *path, const char *interface, const char *property, sd_bus_message *reply, void *userdata, sd_bus_error *error);
++
+ #define BUS_DEFINE_PROPERTY_GET_GLOBAL(function, bus_type, val)         \
+         int function(sd_bus *bus,                                       \
+                      const char *path,                                  \
+diff --git a/src/shared/bus-message-util.c b/src/shared/bus-message-util.c
+index a6523ff00e..8da112cacc 100644
+--- a/src/shared/bus-message-util.c
++++ b/src/shared/bus-message-util.c
+@@ -216,6 +216,25 @@ clear:
+         return r;
+ }
+ 
++int bus_message_append_string_set(sd_bus_message *m, const Set *set) {
++        int r;
++
++        assert(m);
++
++        r = sd_bus_message_open_container(m, 'a', "s");
++        if (r < 0)
++                return r;
++
++        const char *s;
++        SET_FOREACH(s, set) {
++                r = sd_bus_message_append(m, "s", s);
++                if (r < 0)
++                        return r;
++        }
++
++        return sd_bus_message_close_container(m);
++}
++
+ int bus_message_dump_string(sd_bus_message *message) {
+         const char *s;
+         int r;
+diff --git a/src/shared/bus-message-util.h b/src/shared/bus-message-util.h
+index baec1cb92b..d4a05f5b9c 100644
+--- a/src/shared/bus-message-util.h
++++ b/src/shared/bus-message-util.h
+@@ -19,6 +19,8 @@ int bus_message_read_dns_servers(
+                         struct in_addr_full ***ret_dns,
+                         size_t *ret_n_dns);
+ 
++int bus_message_append_string_set(sd_bus_message *m, const Set *s);
++
+ int bus_message_dump_string(sd_bus_message *message);
+ int bus_message_dump_fd(sd_bus_message *message);
+ 
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index 362dd78537..bdce97790d 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -862,43 +862,6 @@ int bus_register_malloc_status(sd_bus *bus, const char *destination) {
+         return 0;
+ }
+ 
+-int bus_message_append_string_set(sd_bus_message *m, Set *set) {
+-        const char *s;
+-        int r;
+-
+-        assert(m);
+-
+-        r = sd_bus_message_open_container(m, 'a', "s");
+-        if (r < 0)
+-                return r;
+-
+-        SET_FOREACH(s, set) {
+-                r = sd_bus_message_append(m, "s", s);
+-                if (r < 0)
+-                        return r;
+-        }
+-
+-        return sd_bus_message_close_container(m);
+-}
+-
+-int bus_property_get_string_set(
+-                sd_bus *bus,
+-                const char *path,
+-                const char *interface,
+-                const char *property,
+-                sd_bus_message *reply,
+-                void *userdata,
+-                sd_bus_error *error) {
+-
+-        Set **s = ASSERT_PTR(userdata);
+-
+-        assert(bus);
+-        assert(property);
+-        assert(reply);
+-
+-        return bus_message_append_string_set(reply, *s);
+-}
+-
+ int bus_creds_get_pidref(
+                 sd_bus_creds *c,
+                 PidRef *ret) {
+diff --git a/src/shared/bus-util.h b/src/shared/bus-util.h
+index a2193ebf97..e49ba66a10 100644
+--- a/src/shared/bus-util.h
++++ b/src/shared/bus-util.h
+@@ -75,10 +75,6 @@ int bus_reply_pair_array(sd_bus_message *m, char **l);
+ /* Listen to GetMallocInfo() calls to 'destination' and return malloc_info() via FD */
+ int bus_register_malloc_status(sd_bus *bus, const char *destination);
+ 
+-int bus_message_append_string_set(sd_bus_message *m, Set *s);
+-
+-int bus_property_get_string_set(sd_bus *bus, const char *path, const char *interface, const char *property, sd_bus_message *reply, void *userdata, sd_bus_error *error);
+-
+ int bus_creds_get_pidref(sd_bus_creds *c, PidRef *ret);
+ int bus_query_sender_pidref(sd_bus_message *m, PidRef *ret);
+ 

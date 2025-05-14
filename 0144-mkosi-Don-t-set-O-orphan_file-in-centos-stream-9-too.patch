@@ -1,0 +1,46 @@
+From 9e904dd55813ebd4e19c1e151a36baecfc5c063a Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 17 Jan 2025 16:39:09 +0100
+Subject: [PATCH] mkosi: Don't set -O ^orphan_file in centos stream 9 tools
+ tree
+
+(cherry picked from commit 26025dba3ec967e4897338c838d21d06240a99c0)
+---
+ mkosi.conf.d/10-centos/mkosi.conf                   |  3 ---
+ .../10-centos/mkosi.conf.d/10-orphan-file.conf      | 13 +++++++++++++
+ 2 files changed, 13 insertions(+), 3 deletions(-)
+ create mode 100644 mkosi.conf.d/10-centos/mkosi.conf.d/10-orphan-file.conf
+
+diff --git a/mkosi.conf.d/10-centos/mkosi.conf b/mkosi.conf.d/10-centos/mkosi.conf
+index d2178315a2..33ba3b8334 100644
+--- a/mkosi.conf.d/10-centos/mkosi.conf
++++ b/mkosi.conf.d/10-centos/mkosi.conf
+@@ -12,9 +12,6 @@ Environment=
+         # fails to mount on duplicate filesystem UUIDs which happens when running tests in parallel so we use
+         # ext4 instead.
+         SYSTEMD_REPART_OVERRIDE_FSTYPE_ROOT=ext4
+-        # The kernel versions in CentOS Stream 9 doesn't support orphan_file, but later versions of
+-        # mkfs.ext4 enabled it by default, so we disable it explicitly.
+-        SYSTEMD_REPART_MKFS_OPTIONS_EXT4="-O ^orphan_file"
+ 
+ [Content]
+ Packages=
+diff --git a/mkosi.conf.d/10-centos/mkosi.conf.d/10-orphan-file.conf b/mkosi.conf.d/10-centos/mkosi.conf.d/10-orphan-file.conf
+new file mode 100644
+index 0000000000..075df65196
+--- /dev/null
++++ b/mkosi.conf.d/10-centos/mkosi.conf.d/10-orphan-file.conf
+@@ -0,0 +1,13 @@
++# SPDX-License-Identifier: LGPL-2.1-or-later
++
++[Match]
++ToolsTreeDistribution=|!centos
++ToolsTreeRelease=|!9
++
++[Build]
++# The kernel versions in CentOS Stream 9 doesn't support orphan_file, but later versions of
++# mkfs.ext4 enabled it by default, so we disable it explicitly. Except that older versions
++# of mkfs.ext4 don't know about "orphan_file" so we skip it on some tools tree variants where
++# we know "orphan_file" is not supported.
++Environment=
++        SYSTEMD_REPART_MKFS_OPTIONS_EXT4="-O ^orphan_file"

@@ -1,0 +1,113 @@
+From fe5b433e75df158a041553b6877080a1520ef1da Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 11 Dec 2024 09:05:34 +0900
+Subject: [PATCH] journalctl: make --invocation and --list-invocations accept
+ unit name without suffix
+
+Fixes #35538.
+
+(cherry picked from commit e8823b5e352711c68ab3282697a6ab1cfb06d25a)
+---
+ src/journal/journalctl-util.c            | 21 +++++++++++++++++----
+ test/units/TEST-04-JOURNAL.invocation.sh |  9 ++++++++-
+ 2 files changed, 25 insertions(+), 5 deletions(-)
+
+diff --git a/src/journal/journalctl-util.c b/src/journal/journalctl-util.c
+index 1996bddf60..62d6ed7f32 100644
+--- a/src/journal/journalctl-util.c
++++ b/src/journal/journalctl-util.c
+@@ -10,6 +10,7 @@
+ #include "rlimit-util.h"
+ #include "strv.h"
+ #include "terminal-util.h"
++#include "unit-name.h"
+ 
+ char* format_timestamp_maybe_utc(char *buf, size_t l, usec_t t) {
+         assert(buf);
+@@ -117,6 +118,7 @@ int journal_acquire_boot(sd_journal *j) {
+ 
+ int acquire_unit(const char *option_name, const char **ret_unit, LogIdType *ret_type) {
+         size_t n;
++        int r;
+ 
+         assert(option_name);
+         assert(ret_unit);
+@@ -132,15 +134,26 @@ int acquire_unit(const char *option_name, const char **ret_unit, LogIdType *ret_
+                                        "Using %s with multiple units is not supported.",
+                                        option_name);
+ 
++        LogIdType type;
++        char **units;
+         if (!strv_isempty(arg_system_units)) {
+-                *ret_type = LOG_SYSTEM_UNIT_INVOCATION_ID;
+-                *ret_unit = arg_system_units[0];
++                type = LOG_SYSTEM_UNIT_INVOCATION_ID;
++                units = arg_system_units;
+         } else {
+                 assert(!strv_isempty(arg_user_units));
+-                *ret_type = LOG_USER_UNIT_INVOCATION_ID;
+-                *ret_unit = arg_user_units[0];
++                type = LOG_USER_UNIT_INVOCATION_ID;
++                units = arg_user_units;
+         }
+ 
++        _cleanup_free_ char *u = NULL;
++        r = unit_name_mangle(units[0], arg_quiet ? 0 : UNIT_NAME_MANGLE_WARN, &u);
++        if (r < 0)
++                return log_error_errno(r, "Failed to mangle unit name '%s': %m", units[0]);
++
++        free_and_replace(units[0], u);
++
++        *ret_type = type;
++        *ret_unit = units[0];
+         return 0;
+ }
+ 
+diff --git a/test/units/TEST-04-JOURNAL.invocation.sh b/test/units/TEST-04-JOURNAL.invocation.sh
+index e7a6f547b4..3ac931e263 100755
+--- a/test/units/TEST-04-JOURNAL.invocation.sh
++++ b/test/units/TEST-04-JOURNAL.invocation.sh
+@@ -7,7 +7,8 @@ set -o pipefail
+ # shellcheck source=test/units/util.sh
+ . "$(dirname "$0")"/util.sh
+ 
+-SERVICE_NAME=invocation-id-test-"$RANDOM".service
++SERVICE_NAME_SHORT=invocation-id-test-"$RANDOM"
++SERVICE_NAME="$SERVICE_NAME_SHORT".service
+ 
+ TMP_DIR=$(mktemp -d)
+ 
+@@ -26,6 +27,7 @@ done
+ # systemd[1]: invocation-id-test-26448.service: Deactivated successfully.
+ journalctl --sync
+ 
++journalctl --list-invocation -u "$SERVICE_NAME_SHORT" | tee "$TMP_DIR"/short
+ journalctl --list-invocation -u "$SERVICE_NAME" | tee "$TMP_DIR"/10
+ journalctl --list-invocation -u "$SERVICE_NAME" --reverse | tee "$TMP_DIR"/10-r
+ journalctl --list-invocation -u "$SERVICE_NAME" -n +10 | tee "$TMP_DIR"/p10
+@@ -44,6 +46,7 @@ journalctl --list-invocation -u "$SERVICE_NAME" -n +5 --reverse | tee "$TMP_DIR"
+ [[ $(cat "$TMP_DIR"/p5 | wc -l) == 6 ]]
+ [[ $(cat "$TMP_DIR"/p5-r | wc -l) == 6 ]]
+ 
++diff "$TMP_DIR"/10 "$TMP_DIR"/short
+ diff <(tail -n 10 "$TMP_DIR"/10 | tac) <(tail -n 10 "$TMP_DIR"/10-r)
+ diff <(tail -n 5 "$TMP_DIR"/10) <(tail -n 5 "$TMP_DIR"/5)
+ diff <(tail -n 5 "$TMP_DIR"/10 | tac) <(tail -n 5 "$TMP_DIR"/5-r)
+@@ -54,6 +57,8 @@ diff <(tail -n 10 "$TMP_DIR"/p10 | head -n 5 | tac) <(tail -n 5 "$TMP_DIR"/p5-r)
+ tail -n 10 "$TMP_DIR"/10 |
+     while read -r idx invocation _; do
+         i="$(( idx + 10 ))"
++        assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${i}" -u "$SERVICE_NAME_SHORT")"
++        assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${idx}" -u "$SERVICE_NAME_SHORT")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${i}" -u "$SERVICE_NAME")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${idx}" -u "$SERVICE_NAME")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${invocation}")"
+@@ -62,6 +67,8 @@ tail -n 10 "$TMP_DIR"/10 |
+ tail -n 10 "$TMP_DIR"/p10 |
+     while read -r i invocation _; do
+         idx="$(( i - 10 ))"
++        assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${i}" -u "$SERVICE_NAME_SHORT")"
++        assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${idx}" -u "$SERVICE_NAME_SHORT")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${i}" -u "$SERVICE_NAME")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${idx}" -u "$SERVICE_NAME")"
+         assert_in "invocation ${i} ${invocation}" "$(journalctl --no-hostname -n 1 -t bash --invocation="${invocation}")"

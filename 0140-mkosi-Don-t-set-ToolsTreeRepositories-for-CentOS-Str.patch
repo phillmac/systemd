@@ -1,0 +1,27 @@
+From 053b8c9854d08e3866ecf15f72ee1f3681ea648a Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 17 Jan 2025 15:29:14 +0100
+Subject: [PATCH] mkosi: Don't set ToolsTreeRepositories= for CentOS Stream
+ tools
+
+mkosi does this itself so no need to do it in systemd.
+
+(cherry picked from commit 8fa4a292a64c71a05869f495fab77f2d2bd08894)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf | 7 -------
+ 1 file changed, 7 deletions(-)
+ delete mode 100644 mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
+deleted file mode 100644
+index 737fec3a3d..0000000000
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/centos.conf
++++ /dev/null
+@@ -1,7 +0,0 @@
+-# SPDX-License-Identifier: LGPL-2.1-or-later
+-
+-[Match]
+-ToolsTreeDistribution=centos
+-
+-[Build]
+-ToolsTreeRepositories=epel,epel-next

@@ -1,0 +1,59 @@
+From 48b404d546e6cb6d32d9cb346bbd43760311790b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 16 Dec 2024 12:37:17 +0900
+Subject: [PATCH] systemctl-edit: ignore ENOENT from unit_is_masked()
+
+If a specified unit does not exist, then it is definitely not masked.
+
+Fixes #35632.
+
+(cherry picked from commit b58b00e4c33474505009c8118d6cfdf29a2c6cb1)
+---
+ src/systemctl/systemctl-edit.c  |  4 ++--
+ test/units/TEST-26-SYSTEMCTL.sh | 11 +++++++++++
+ 2 files changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/src/systemctl/systemctl-edit.c b/src/systemctl/systemctl-edit.c
+index c42a31153d..7165fa1cf7 100644
+--- a/src/systemctl/systemctl-edit.c
++++ b/src/systemctl/systemctl-edit.c
+@@ -349,8 +349,8 @@ int verb_edit(int argc, char *argv[], void *userdata) {
+ 
+         STRV_FOREACH(tmp, names) {
+                 r = unit_is_masked(bus, *tmp);
+-                if (r < 0)
+-                        return r;
++                if (r < 0 && r != -ENOENT)
++                        return log_error_errno(r, "Failed to check if unit %s is masked: %m", *tmp);
+                 if (r > 0)
+                         return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Cannot edit %s: unit is masked.", *tmp);
+         }
+diff --git a/test/units/TEST-26-SYSTEMCTL.sh b/test/units/TEST-26-SYSTEMCTL.sh
+index ed7b9f64bf..8e895aa9ae 100755
+--- a/test/units/TEST-26-SYSTEMCTL.sh
++++ b/test/units/TEST-26-SYSTEMCTL.sh
+@@ -21,6 +21,7 @@ at_exit() {
+ #       the 'revert' verb as well
+ export UNIT_NAME="systemctl-test-$RANDOM.service"
+ export UNIT_NAME2="systemctl-test-$RANDOM.service"
++export UNIT_NAME_TEMPLATE="systemctl-test-${RANDOM}@.service"
+ 
+ cat >"/usr/lib/systemd/system/$UNIT_NAME" <<\EOF
+ [Unit]
+@@ -65,6 +66,16 @@ EOF
+ printf '%s\n' '[Unit]'   'Description=spectacular' '# this comment should remain' | \
+     cmp - "/etc/systemd/system/$UNIT_NAME.d/override2.conf"
+ 
++# Edit nonexistent template unit, see issue #35632.
++systemctl edit "$UNIT_NAME_TEMPLATE" --stdin --runtime --force --full <<EOF
++[Unit]
++Description=template unit test
++# this comment should remain
++
++EOF
++printf '%s\n' '[Unit]' 'Description=template unit test' '# this comment should remain' | \
++    cmp - "/run/systemd/system/$UNIT_NAME_TEMPLATE"
++
+ # Test simultaneous editing of two units and creation of drop-in for a nonexistent unit
+ systemctl edit "$UNIT_NAME" "$UNIT_NAME2" --stdin --force --drop-in=override2.conf <<<'[X-Section]'
+ printf '%s\n' '[X-Section]' | cmp - "/etc/systemd/system/$UNIT_NAME.d/override2.conf"

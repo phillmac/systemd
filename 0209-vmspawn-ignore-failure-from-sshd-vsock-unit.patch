@@ -1,0 +1,26 @@
+From 94605ab4153900886767030017fa42b2cea3ca6c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Martin=20Hundeb=C3=B8ll?= <martin@geanix.com>
+Date: Thu, 6 Feb 2025 11:33:49 +0100
+Subject: [PATCH] vmspawn: ignore failure from sshd-vsock@ unit
+
+The "main" sshd@.service unit ignores the return code from per-session
+instances, so do the same for the vsock variant.
+
+(cherry picked from commit df8bd4c171bf88feef0302a0d0476e22e5594c82)
+---
+ src/vmspawn/vmspawn.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/vmspawn/vmspawn.c b/src/vmspawn/vmspawn.c
+index 1c49aff4a3..70e5a31265 100644
+--- a/src/vmspawn/vmspawn.c
++++ b/src/vmspawn/vmspawn.c
+@@ -2050,7 +2050,7 @@ static int run_virtual_machine(int kvm_device_fd, int vhost_device_fd) {
+                                 "systemd.unit-dropin.sshd-vsock@.service:"
+                                 "[Service]\n"
+                                 "ExecStart=\n"
+-                                "ExecStart=sshd -i -o 'AuthorizedKeysFile=%d/ssh.ephemeral-authorized_keys-all .ssh/authorized_keys'\n"
++                                "ExecStart=-sshd -i -o 'AuthorizedKeysFile=%d/ssh.ephemeral-authorized_keys-all .ssh/authorized_keys'\n"
+                                 "ImportCredential=ssh.ephemeral-authorized_keys-all\n");
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to set credential systemd.unit-dropin.sshd-vsock@.service: %m");

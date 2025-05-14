@@ -1,0 +1,24 @@
+From debe1f7f56d8123c9953cd2ca068d39156a4b964 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 15:05:33 +0100
+Subject: [PATCH] mkosi.clangd: Don't pass --host if we're not using
+ flatpak-spawn
+
+(cherry picked from commit b133f57544cb6cce244bb8566fbacc952db76d73)
+---
+ mkosi.clangd | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.clangd b/mkosi.clangd
+index 7cd447c4ee..10c44a70d8 100755
+--- a/mkosi.clangd
++++ b/mkosi.clangd
+@@ -7,7 +7,7 @@ else
+     SPAWN=()
+ fi
+ 
+-MKOSI_CONFIG="$("${SPAWN[@]}" --host mkosi --json summary | jq -r .Images[-1])"
++MKOSI_CONFIG="$("${SPAWN[@]}" mkosi --json summary | jq -r .Images[-1])"
+ DISTRIBUTION="$(jq -r .Distribution <<< "$MKOSI_CONFIG")"
+ RELEASE="$(jq -r .Release <<< "$MKOSI_CONFIG")"
+ ARCH="$(jq -r .Architecture <<< "$MKOSI_CONFIG")"

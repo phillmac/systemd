@@ -1,0 +1,23 @@
+From cc599a20eff836cc92ad5c94953d55d408d3a6d7 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 7 Jan 2025 14:39:53 +0100
+Subject: [PATCH] fmf: Check out target branch in packit
+
+(cherry picked from commit 3c9ffd2e4b81e6bbc8cb28634432b6c9dccd661e)
+---
+ test/fmf/integration-tests/test.sh | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 690e07aa56..4984fb119b 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -30,7 +30,7 @@ if [[ -n "${TMT_SOURCE_DIR:-}" ]]; then
+     pushd "$TMT_SOURCE_DIR/*/"
+ elif [[ -n "${PACKIT_TARGET_URL:-}" ]]; then
+     # Prepare systemd source tree
+-    git clone "$PACKIT_TARGET_URL" systemd
++    git clone "$PACKIT_TARGET_URL" systemd --branch "$PACKIT_TARGET_BRANCH"
+     pushd systemd
+ 
+     # If we're running in a pull request job, merge the remote branch into the current main

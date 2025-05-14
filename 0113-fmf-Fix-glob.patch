@@ -1,0 +1,31 @@
+From 45d45ebfac5eaad5bcd80400475d9e1e894d4a88 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 10:38:21 +0100
+Subject: [PATCH] fmf: Fix glob
+
+Globs inside quotes aren't expanded and we need the glob to be more
+specific to avoid matching multiple entries inside the tmt source
+directory.
+
+(cherry picked from commit fc1b08dee2ccf706580fa448e66831d1e853d054)
+---
+ test/fmf/integration-tests/test.sh | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 73771d4237..0a1595fa97 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -23,8 +23,11 @@ setenforce 0 || true
+ # execute:
+ #   how: tmt
+ 
++shopt -s extglob
++
+ if [[ -n "${TMT_SOURCE_DIR:-}" ]]; then
+-    pushd "$TMT_SOURCE_DIR/*/"
++    # Match either directories ending with branch names (e.g. systemd-fmf) or releases (e.g systemd-257.1).
++    pushd "$TMT_SOURCE_DIR"/systemd-+([0-9a-z.~])/
+ elif [[ -n "${PACKIT_TARGET_URL:-}" ]]; then
+     # Prepare systemd source tree
+     git clone "$PACKIT_TARGET_URL" systemd --branch "$PACKIT_TARGET_BRANCH"

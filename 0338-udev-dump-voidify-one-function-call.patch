@@ -1,0 +1,29 @@
+From cde8350ec4085cada729256d3be46e25a6a55aa5 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 23 Jan 2025 01:48:04 +0900
+Subject: [PATCH] udev-dump: voidify one function call
+
+Fixes CID#1590377.
+
+(cherry picked from commit f3cbd4da121bd4df8483376fce71663d7bf38937)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-dump.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/udev/udev-dump.c b/src/udev/udev-dump.c
+index 5900eef8af..26e65979eb 100644
+--- a/src/udev/udev-dump.c
++++ b/src/udev/udev-dump.c
+@@ -29,8 +29,8 @@ void dump_event(UdevEvent *event, FILE *f) {
+         if (sd_device_get_devnum(dev, NULL) >= 0) {
+ 
+                 if (sd_device_get_devlink_first(dev)) {
+-                        int prio;
+-                        device_get_devlink_priority(dev, &prio);
++                        int prio = 0;
++                        (void) device_get_devlink_priority(dev, &prio);
+                         fprintf(f, "%sDevice node symlinks:%s (priority=%i)\n", ansi_highlight(), ansi_normal(), prio);
+                         FOREACH_DEVICE_DEVLINK(dev, devlink)
+                                 fprintf(f, "  %s\n", devlink);

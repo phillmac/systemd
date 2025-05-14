@@ -1,0 +1,43 @@
+From 1a259b4e6006a48d5e3a83680f3341e1c68a2ba2 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 16:46:11 +0000
+Subject: [PATCH] mkosi: update debian commit reference
+
+* e8b7c9a4dd Install 81-net-bridge.rules
+* 50d2997a07 Install systemd-creds bash completion
+* ff0c42823c test: fix flaky boot-and-services test
+* 2a19dee4ba test: fix flaky boot-and-services test
+* a15a0bfe60 Update changelog for 257-2 release
+* c24eafcb7e Backport patches to fix test failures
+* 29840f9b68 udev: install dmi_memory_id and its rules on riscv64
+* 44893bdb32 Update changelog for 257-1 release
+* 7f71d995fb Update symbols file for v257
+* 2dd2b80499 Update upstream source from tag 'upstream/257'
+* 51a3271a85 Update changelog for 257~rc3-1 release
+* 8e687227c5 Update symbols for 257~rc3
+* c9bae527d6 Drop patches, merged upstream
+* e8cf329870 Update upstream source from tag 'upstream/257_rc3'
+* 794457516d autopkgtest: fix one more tzdata dependency
+* 16bb143da1 Bump version in tzdata dependency due to p-u upload
+* f2ddf70604 sysctl: Add file trigger on /usr/lib/sysctl.d to restart systemd-sysctl
+* 79260cb0f4 Increase minimum sections in stub PE header on arm64/armhf/riscv64 to 500
+* ed3af24635 systemd-ukfy: recommend systemd-boot-efi for the stub
+
+(cherry picked from commit 8d20606eec236232fb003594b3e6c88131744f6b)
+---
+ mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
+index 5fb7dab758..6914a9ed59 100644
+--- a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.conf
+@@ -9,7 +9,7 @@ Environment=
+         GIT_URL=https://salsa.debian.org/systemd-team/systemd.git
+         GIT_SUBDIR=debian
+         GIT_BRANCH=debian/master
+-        GIT_COMMIT=51cd22f3684725a1b199012555e7378f2f468c16
++        GIT_COMMIT=e8b7c9a4dda2888fec41ac020e1194cfdf57eb5d
+         PKG_SUBDIR=debian
+ 
+ [Content]

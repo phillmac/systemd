@@ -1,0 +1,76 @@
+From 2cfdc83a3c0eb749448d63d072fb00f42d63084c Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 7 Jan 2025 17:41:41 +0900
+Subject: [PATCH] udev: sort builtins
+
+Then, 'udevadm test-builtin --help' lists builtins alphabetically.
+
+(cherry picked from commit 86a08e70a83330bc003432cf0d00ff5341acf0a0)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-builtin.c | 2 +-
+ src/udev/udev-builtin.h | 2 +-
+ src/udev/udev-def.h     | 4 ++--
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/udev/udev-builtin.c b/src/udev/udev-builtin.c
+index 3d22ddf945..fc6ecc095b 100644
+--- a/src/udev/udev-builtin.c
++++ b/src/udev/udev-builtin.c
+@@ -26,10 +26,10 @@ static const UdevBuiltin *const builtins[_UDEV_BUILTIN_MAX] = {
+         [UDEV_BUILTIN_NET_ID] = &udev_builtin_net_id,
+         [UDEV_BUILTIN_NET_LINK] = &udev_builtin_net_setup_link,
+         [UDEV_BUILTIN_PATH_ID] = &udev_builtin_path_id,
+-        [UDEV_BUILTIN_USB_ID] = &udev_builtin_usb_id,
+ #if HAVE_ACL
+         [UDEV_BUILTIN_UACCESS] = &udev_builtin_uaccess,
+ #endif
++        [UDEV_BUILTIN_USB_ID] = &udev_builtin_usb_id,
+ };
+ 
+ void udev_builtin_init(void) {
+diff --git a/src/udev/udev-builtin.h b/src/udev/udev-builtin.h
+index 3b5f3bd120..83cf103ab5 100644
+--- a/src/udev/udev-builtin.h
++++ b/src/udev/udev-builtin.h
+@@ -47,10 +47,10 @@ extern const UdevBuiltin udev_builtin_net_driver;
+ extern const UdevBuiltin udev_builtin_net_id;
+ extern const UdevBuiltin udev_builtin_net_setup_link;
+ extern const UdevBuiltin udev_builtin_path_id;
+-extern const UdevBuiltin udev_builtin_usb_id;
+ #if HAVE_ACL
+ extern const UdevBuiltin udev_builtin_uaccess;
+ #endif
++extern const UdevBuiltin udev_builtin_usb_id;
+ 
+ void udev_builtin_init(void);
+ void udev_builtin_exit(void);
+diff --git a/src/udev/udev-def.h b/src/udev/udev-def.h
+index ed231764bc..c157c487cf 100644
+--- a/src/udev/udev-def.h
++++ b/src/udev/udev-def.h
+@@ -50,10 +50,10 @@ typedef enum UdevBuiltinCommand {
+         UDEV_BUILTIN_NET_ID,
+         UDEV_BUILTIN_NET_LINK,
+         UDEV_BUILTIN_PATH_ID,
+-        UDEV_BUILTIN_USB_ID,
+ #if HAVE_ACL
+         UDEV_BUILTIN_UACCESS,
+ #endif
++        UDEV_BUILTIN_USB_ID,
+         _UDEV_BUILTIN_MAX,
+         _UDEV_BUILTIN_INVALID = -EINVAL,
+ } UdevBuiltinCommand;
+@@ -73,10 +73,10 @@ typedef enum UdevReloadFlags {
+         UDEV_RELOAD_BUILTIN_NET_ID   = 1u << UDEV_BUILTIN_NET_ID,
+         UDEV_RELOAD_BUILTIN_NET_LINK = 1u << UDEV_BUILTIN_NET_LINK,
+         UDEV_RELOAD_BUILTIN_PATH_ID  = 1u << UDEV_BUILTIN_PATH_ID,
+-        UDEV_RELOAD_BUILTIN_USB_ID   = 1u << UDEV_BUILTIN_USB_ID,
+ #if HAVE_ACL
+         UDEV_RELOAD_BUILTIN_UACCESS  = 1u << UDEV_BUILTIN_UACCESS,
+ #endif
++        UDEV_RELOAD_BUILTIN_USB_ID   = 1u << UDEV_BUILTIN_USB_ID,
+         UDEV_RELOAD_KILL_WORKERS     = 1u << (_UDEV_BUILTIN_MAX + 0),
+         UDEV_RELOAD_RULES            = 1u << (_UDEV_BUILTIN_MAX + 1),
+ } UdevReloadFlags;

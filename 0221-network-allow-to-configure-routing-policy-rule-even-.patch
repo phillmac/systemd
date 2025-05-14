@@ -1,0 +1,98 @@
+From 4f3d08be04bfa4ac39e6e9c17a0e893f75178198 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 4 Feb 2025 12:07:21 +0900
+Subject: [PATCH] network: allow to configure routing policy rule even if
+ requesting interface is not activated yet
+
+In the kernel, all routing policy rules are not assigned to any interface,
+and we can configure them even if the relevant interface is down state.
+
+Fixes a regression caused by 4f8b153d903fd4a6e8d7d3e49113582d70d1525a (v257).
+Fixes #36244.
+
+(cherry picked from commit 5078e36632c68f4578cf7507ee14d9ada207983f)
+---
+ src/network/networkd-link.c                | 11 +++++++++
+ src/network/networkd-link.h                |  1 +
+ src/network/networkd-routing-policy-rule.c | 27 +++++++++++++++++++++-
+ 3 files changed, 38 insertions(+), 1 deletion(-)
+
+diff --git a/src/network/networkd-link.c b/src/network/networkd-link.c
+index 3c042e6c18..3da7cf2aff 100644
+--- a/src/network/networkd-link.c
++++ b/src/network/networkd-link.c
+@@ -199,6 +199,17 @@ bool link_is_ready_to_configure(Link *link, bool allow_unmanaged) {
+         return check_ready_for_all_sr_iov_ports(link, allow_unmanaged, link_is_ready_to_configure_one);
+ }
+ 
++bool link_is_ready_to_configure_by_name(Manager *manager, const char *name, bool allow_unmanaged) {
++        assert(manager);
++        assert(name);
++
++        Link *link;
++        if (link_get_by_name(manager, name, &link) < 0)
++                return false;
++
++        return link_is_ready_to_configure(link, allow_unmanaged);
++}
++
+ void link_ntp_settings_clear(Link *link) {
+         link->ntp = strv_free(link->ntp);
+ }
+diff --git a/src/network/networkd-link.h b/src/network/networkd-link.h
+index 113217cdb6..c5806cea33 100644
+--- a/src/network/networkd-link.h
++++ b/src/network/networkd-link.h
+@@ -225,6 +225,7 @@ typedef struct Link {
+ typedef int (*link_netlink_message_handler_t)(sd_netlink*, sd_netlink_message*, Link*);
+ 
+ bool link_is_ready_to_configure(Link *link, bool allow_unmanaged);
++bool link_is_ready_to_configure_by_name(Manager *manager, const char *name, bool allow_unmanaged);
+ 
+ void link_ntp_settings_clear(Link *link);
+ void link_dns_settings_clear(Link *link);
+diff --git a/src/network/networkd-routing-policy-rule.c b/src/network/networkd-routing-policy-rule.c
+index 1075f68e7d..0c20a3830c 100644
+--- a/src/network/networkd-routing-policy-rule.c
++++ b/src/network/networkd-routing-policy-rule.c
+@@ -863,6 +863,31 @@ int link_drop_routing_policy_rules(Link *link, bool only_static) {
+         return r;
+ }
+ 
++static int routing_policy_rule_is_ready_to_configure(const RoutingPolicyRule *rule, Link *link) {
++        assert(rule);
++        assert(link);
++        assert(link->manager);
++
++        /* For routing policy rules, it is not necessary to check operstate and friends of the interface.
++         * Hence, here we refuse to configure rules only when the interface is already removed, or in the
++         * failed state. */
++        if (!IN_SET(link->state, LINK_STATE_CONFIGURING, LINK_STATE_CONFIGURED))
++                return false;
++
++        /* Strictly speaking checking existence of IIF and OIF below is not necessary. But, configuring
++         * routing policy rule with non-existent IIF or OIF is mostly meaningless, and 'ip rule' command
++         * shows [detached] for such rules, that may confuse users. Let's postpone to configure if one of
++         * IIF/OIF does not exist. */
++
++        if (rule->iif && !link_is_ready_to_configure_by_name(link->manager, rule->iif, /* allow_unmanaged = */ true))
++                return false;
++
++        if (rule->oif && !link_is_ready_to_configure_by_name(link->manager, rule->oif, /* allow_unmanaged = */ true))
++                return false;
++
++        return true;
++}
++
+ static int routing_policy_rule_process_request(Request *req, Link *link, RoutingPolicyRule *rule) {
+         RoutingPolicyRule *existing;
+         int r;
+@@ -872,7 +897,7 @@ static int routing_policy_rule_process_request(Request *req, Link *link, Routing
+         assert(link->manager);
+         assert(rule);
+ 
+-        if (!link_is_ready_to_configure(link, false))
++        if (!routing_policy_rule_is_ready_to_configure(rule, link))
+                 return 0;
+ 
+         r = routing_policy_rule_configure(rule, link, req);

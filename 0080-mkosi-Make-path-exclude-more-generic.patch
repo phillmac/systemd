@@ -1,0 +1,33 @@
+From ef6f0afb544c38e71824412012f657aeb5780d1a Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Sun, 5 Jan 2025 23:19:44 +0100
+Subject: [PATCH] mkosi: Make path exclude more generic
+
+The systemd rpms we try to install in packit have /usr/bin/bash and
+/usr/bin/python3 as dependencies which breaks dnf5 because mkosi
+doesn't download filelists metadata and
+https://bugzilla.redhat.com/show_bug.cgi?id=2263771 is still not fixed
+almost a year after being reported.
+
+(cherry picked from commit 8a9b989cba75810406b0c881bcabe03c27fa47e5)
+---
+ mkosi.conf.d/10-centos-fedora/mkosi.prepare | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/mkosi.conf.d/10-centos-fedora/mkosi.prepare b/mkosi.conf.d/10-centos-fedora/mkosi.prepare
+index 9aca0096d5..1e5bd21995 100755
+--- a/mkosi.conf.d/10-centos-fedora/mkosi.prepare
++++ b/mkosi.conf.d/10-centos-fedora/mkosi.prepare
+@@ -12,8 +12,11 @@ for DEPS in --requires --recommends --suggests; do
+     # We need --latest-limit=1 to only consider the newest version of the packages.
+     # --latest-limit=1 is per <name>.<arch> so we have to pass --arch= explicitly to make sure i686 packages
+     # are not considered on x86-64.
++    # Because mkosi does not download the filelists repository metadata, we have to exclude all path based
++    # dependencies, (even those within /usr and /bin because of
++    # https://bugzilla.redhat.com/show_bug.cgi?id=2263771).
+     dnf repoquery --arch="$DISTRIBUTION_ARCHITECTURE,noarch" --latest-limit=1 --quiet "$DEPS" "${PACKAGES[@]}" |
+-        grep --extended-regexp --invert-match --regexp "$(IFS=\| ; echo "${PACKAGES[*]}")" --regexp /bin/sh --regexp grubby --regexp sdubby --regexp libcurl-minimal |
++        grep --extended-regexp --invert-match --regexp "$(IFS=\| ; echo "${PACKAGES[*]}")" --regexp /bin --regexp /usr --regexp grubby --regexp sdubby --regexp libcurl-minimal |
+         sort --unique |
+         xargs --delimiter '\n' --no-run-if-empty mkosi-install
+ done

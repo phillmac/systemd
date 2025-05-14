@@ -1,0 +1,197 @@
+From d502fb075bb28704030598e58b93e6b274ef9bb1 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Sat, 11 Jan 2025 16:52:05 +0100
+Subject: [PATCH] shared/bus-util: move bus_message_read_id128() to
+ bus-message-util
+
+(cherry picked from commit ab33edb05b7d4c90fb80f46aa6b951c505048798)
+
+Resolves: RHEL-73780
+---
+ src/core/dbus-manager.c         |  1 +
+ src/hostname/hostnamectl.c      |  1 +
+ src/machine/machinectl.c        |  1 +
+ src/machine/machined-dbus.c     |  1 +
+ src/run/run.c                   |  1 +
+ src/shared/bus-map-properties.c |  1 +
+ src/shared/bus-message-util.c   | 29 +++++++++++++++++++++++++++++
+ src/shared/bus-message-util.h   |  2 ++
+ src/shared/bus-util.c           | 28 ----------------------------
+ src/shared/bus-util.h           |  2 --
+ 10 files changed, 37 insertions(+), 30 deletions(-)
+
+diff --git a/src/core/dbus-manager.c b/src/core/dbus-manager.c
+index c4a7e2a20b..8e39d67a00 100644
+--- a/src/core/dbus-manager.c
++++ b/src/core/dbus-manager.c
+@@ -11,6 +11,7 @@
+ #include "bus-common-errors.h"
+ #include "bus-get-properties.h"
+ #include "bus-log-control-api.h"
++#include "bus-message-util.h"
+ #include "bus-util.h"
+ #include "chase.h"
+ #include "confidential-virt.h"
+diff --git a/src/hostname/hostnamectl.c b/src/hostname/hostnamectl.c
+index cd4f86af80..2d1334f654 100644
+--- a/src/hostname/hostnamectl.c
++++ b/src/hostname/hostnamectl.c
+@@ -18,6 +18,7 @@
+ #include "bus-error.h"
+ #include "bus-locator.h"
+ #include "bus-map-properties.h"
++#include "bus-message-util.h"
+ #include "format-table.h"
+ #include "hostname-setup.h"
+ #include "hostname-util.h"
+diff --git a/src/machine/machinectl.c b/src/machine/machinectl.c
+index 7843b9aa63..8854d9a550 100644
+--- a/src/machine/machinectl.c
++++ b/src/machine/machinectl.c
+@@ -21,6 +21,7 @@
+ #include "bus-error.h"
+ #include "bus-locator.h"
+ #include "bus-map-properties.h"
++#include "bus-message-util.h"
+ #include "bus-print-properties.h"
+ #include "bus-unit-procs.h"
+ #include "bus-unit-util.h"
+diff --git a/src/machine/machined-dbus.c b/src/machine/machined-dbus.c
+index f4915f67da..05e44b5030 100644
+--- a/src/machine/machined-dbus.c
++++ b/src/machine/machined-dbus.c
+@@ -10,6 +10,7 @@
+ #include "bus-common-errors.h"
+ #include "bus-get-properties.h"
+ #include "bus-locator.h"
++#include "bus-message-util.h"
+ #include "bus-polkit.h"
+ #include "cgroup-util.h"
+ #include "discover-image.h"
+diff --git a/src/run/run.c b/src/run/run.c
+index 1b13e74b83..c4e79adc7a 100644
+--- a/src/run/run.c
++++ b/src/run/run.c
+@@ -15,6 +15,7 @@
+ #include "bus-error.h"
+ #include "bus-locator.h"
+ #include "bus-map-properties.h"
++#include "bus-message-util.h"
+ #include "bus-unit-util.h"
+ #include "bus-wait-for-jobs.h"
+ #include "calendarspec.h"
+diff --git a/src/shared/bus-map-properties.c b/src/shared/bus-map-properties.c
+index a6cd752894..18d83c336f 100644
+--- a/src/shared/bus-map-properties.c
++++ b/src/shared/bus-map-properties.c
+@@ -5,6 +5,7 @@
+ #include "bus-util.h"
+ #include "strv.h"
+ #include "bus-message.h"
++#include "bus-message-util.h"
+ 
+ int bus_map_id128(sd_bus *bus, const char *member, sd_bus_message *m, sd_bus_error *error, void *userdata) {
+         sd_id128_t *p = userdata;
+diff --git a/src/shared/bus-message-util.c b/src/shared/bus-message-util.c
+index d8c483ef62..e93be9b3c5 100644
+--- a/src/shared/bus-message-util.c
++++ b/src/shared/bus-message-util.c
+@@ -7,6 +7,35 @@
+ #include "copy.h"
+ #include "resolve-util.h"
+ 
++int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret) {
++        const void *a;
++        size_t sz;
++        int r;
++
++        assert(m);
++
++        r = sd_bus_message_read_array(m, 'y', &a, &sz);
++        if (r < 0)
++                return r;
++
++        switch (sz) {
++
++        case 0:
++                if (ret)
++                        *ret = SD_ID128_NULL;
++                return 0;
++
++        case sizeof(sd_id128_t):
++                if (ret)
++                        memcpy(ret, a, sz);
++                return !memeqzero(a, sz); /* This mimics sd_id128_is_null(), but ret may be NULL,
++                                           * and a may be misaligned, so use memeqzero() here. */
++
++        default:
++                return -EINVAL;
++        }
++}
++
+ int bus_message_read_ifindex(sd_bus_message *message, sd_bus_error *error, int *ret) {
+         int ifindex, r;
+ 
+diff --git a/src/shared/bus-message-util.h b/src/shared/bus-message-util.h
+index 50025766c2..698960561c 100644
+--- a/src/shared/bus-message-util.h
++++ b/src/shared/bus-message-util.h
+@@ -6,6 +6,8 @@
+ #include "in-addr-util.h"
+ #include "socket-netlink.h"
+ 
++int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret);
++
+ int bus_message_read_ifindex(sd_bus_message *message, sd_bus_error *error, int *ret);
+ int bus_message_read_family(sd_bus_message *message, sd_bus_error *error, int *ret);
+ int bus_message_read_in_addr_auto(sd_bus_message *message, sd_bus_error *error, int *ret_family, union in_addr_union *ret_addr);
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index 2cdde97b78..d3d3f1733e 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -953,34 +953,6 @@ int bus_query_sender_pidref(
+         return bus_creds_get_pidref(creds, ret);
+ }
+ 
+-int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret) {
+-        const void *a;
+-        size_t sz;
+-        int r;
+-
+-        assert(m);
+-
+-        r = sd_bus_message_read_array(m, 'y', &a, &sz);
+-        if (r < 0)
+-                return r;
+-
+-        switch (sz) {
+-        case 0:
+-                if (ret)
+-                        *ret = SD_ID128_NULL;
+-                return 0;
+-
+-        case sizeof(sd_id128_t):
+-                if (ret)
+-                        memcpy(ret, a, sz);
+-                return !memeqzero(a, sz); /* This mimics sd_id128_is_null(), but ret may be NULL,
+-                                           * and a may be misaligned, so use memeqzero() here. */
+-
+-        default:
+-                return -EINVAL;
+-        }
+-}
+-
+ static const char* const bus_transport_table[] = {
+         [BUS_TRANSPORT_LOCAL]   = "local",
+         [BUS_TRANSPORT_REMOTE]  = "remote",
+diff --git a/src/shared/bus-util.h b/src/shared/bus-util.h
+index 83522ad1c1..c2b9b126c8 100644
+--- a/src/shared/bus-util.h
++++ b/src/shared/bus-util.h
+@@ -84,6 +84,4 @@ int bus_property_get_string_set(sd_bus *bus, const char *path, const char *inter
+ int bus_creds_get_pidref(sd_bus_creds *c, PidRef *ret);
+ int bus_query_sender_pidref(sd_bus_message *m, PidRef *ret);
+ 
+-int bus_message_read_id128(sd_bus_message *m, sd_id128_t *ret);
+-
+ const char* bus_transport_to_string(BusTransport transport) _const_;

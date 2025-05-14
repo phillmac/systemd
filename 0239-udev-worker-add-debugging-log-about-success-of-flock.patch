@@ -1,0 +1,23 @@
+From a112fca1212c1488c6c43991df2be1fc171b8138 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 12 Feb 2025 09:20:51 +0900
+Subject: [PATCH] udev-worker: add debugging log about success of flock() for
+ whole block device
+
+(cherry picked from commit 951def0e276c041a262b3f147bb42206195fe13e)
+---
+ src/udev/udev-worker.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/udev/udev-worker.c b/src/udev/udev-worker.c
+index 59f56f653c..fc1bfd684c 100644
+--- a/src/udev/udev-worker.c
++++ b/src/udev/udev-worker.c
+@@ -123,6 +123,7 @@ static int worker_lock_whole_disk(sd_device *dev, int *ret_fd) {
+         if (flock(fd, LOCK_SH|LOCK_NB) < 0)
+                 return log_device_debug_errno(dev, errno, "Failed to flock(%s): %m", val);
+ 
++        log_device_debug(dev, "Successfully took flock(LOCK_SH) for %s, it will be released after the event has been processed.", val);
+         *ret_fd = TAKE_FD(fd);
+         return 1;
+ 

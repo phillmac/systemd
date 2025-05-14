@@ -1,0 +1,27 @@
+From fdefe7c099925a6432f97d860217e6b1b429c279 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 11 Jan 2025 05:27:44 +0900
+Subject: [PATCH] udevadm-test: add missing oom check
+
+(cherry picked from commit 22ca9406c45bb07a02d28da13f6e3909071c9176)
+
+Resolves: RHEL-75774
+---
+ src/udev/udevadm-test.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/udev/udevadm-test.c b/src/udev/udevadm-test.c
+index 574745c42c..fcd8b231cf 100644
+--- a/src/udev/udevadm-test.c
++++ b/src/udev/udevadm-test.c
+@@ -129,6 +129,10 @@ int test_main(int argc, char *argv[], void *userdata) {
+         device_seal(dev);
+ 
+         event = udev_event_new(dev, NULL, EVENT_UDEVADM_TEST);
++        if (!event) {
++                log_oom();
++                goto out;
++        }
+ 
+         assert_se(sigfillset(&mask) >= 0);
+         assert_se(sigprocmask(SIG_SETMASK, &mask, &sigmask_orig) >= 0);

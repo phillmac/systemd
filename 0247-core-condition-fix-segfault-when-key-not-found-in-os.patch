@@ -1,0 +1,82 @@
+From 8f8514c03f166c352ebdcb577c29d2dff88a37f7 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Thu, 13 Feb 2025 15:49:50 +0100
+Subject: [PATCH] core/condition: fix segfault when key not found in os-release
+
+'ConditionOSRelease=|ID_LIKE$=*rhel*' results in a segfault.
+The key 'ID_LIKE' is not present in Fedora's os-release file.
+
+I think the most reasonable behaviour is to treat missing keys as empty.
+This matches the "shell-like" sprit, since in a shell empty keys would
+by default be treated as empty too. Thus, "ID_LIKE=" would match, if
+ID_LIKE is not present in the file, and ID_LIKE=!$foo" would also match.
+The other option would be to make those matches fail, but I think that'd
+make the feature harder to use, esp. with negative matches.
+
+Documentation is updated to clarify the new behaviour.
+
+https://bugzilla.redhat.com/show_bug.cgi?id=2345544
+(cherry picked from commit de02b551adcf74e5677454fd36bf7653b1a4def1)
+---
+ man/systemd.unit.xml      |  2 ++
+ src/shared/condition.c    |  4 +++-
+ src/test/test-condition.c | 18 ++++++++++++++++++
+ 3 files changed, 23 insertions(+), 1 deletion(-)
+
+diff --git a/man/systemd.unit.xml b/man/systemd.unit.xml
+index 2c7f0bd71f..d44eb028ca 100644
+--- a/man/systemd.unit.xml
++++ b/man/systemd.unit.xml
+@@ -1960,6 +1960,8 @@
+           wildcard comparisons (<literal>*</literal>, <literal>?</literal>, <literal>[]</literal>) are
+           supported with the <literal>$=</literal> (match) and <literal>!$=</literal> (non-match).</para>
+ 
++          <para>If the given key is not found in the file, the match is done against an empty value.</para>
++
+           <xi:include href="version-info.xml" xpointer="v249"/>
+           </listitem>
+         </varlistentry>
+diff --git a/src/shared/condition.c b/src/shared/condition.c
+index 9dfa1f8901..1a03fdbe37 100644
+--- a/src/shared/condition.c
++++ b/src/shared/condition.c
+@@ -273,7 +273,9 @@ static int condition_test_osrelease(Condition *c, char **env) {
+                 if (r < 0)
+                         return log_debug_errno(r, "Failed to parse os-release: %m");
+ 
+-                r = version_or_fnmatch_compare(operator, actual_value, word);
++                /* If not found, use "". This means that missing and empty assignments
++                 * in the file have the same result. */
++                r = version_or_fnmatch_compare(operator, strempty(actual_value), word);
+                 if (r < 0)
+                         return r;
+                 if (!r)
+diff --git a/src/test/test-condition.c b/src/test/test-condition.c
+index fc27924621..eb94abe324 100644
+--- a/src/test/test-condition.c
++++ b/src/test/test-condition.c
+@@ -1095,6 +1095,24 @@ TEST(condition_test_os_release) {
+         ASSERT_OK_POSITIVE(condition_test(condition, environ));
+         condition_free(condition);
+ 
++        /* Test shell style globs */
++
++        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_LIKE$=*THISHOPEFULLYWONTEXIST*", false, false));
++        ASSERT_OK_ZERO(condition_test(condition, environ));
++        condition_free(condition);
++
++        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_THISHOPEFULLYWONTEXIST$=*rhel*", false, false));
++        ASSERT_OK_ZERO(condition_test(condition, environ));
++        condition_free(condition);
++
++        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_LIKE!$=*THISHOPEFULLYWONTEXIST*", false, false));
++        ASSERT_OK_POSITIVE(condition_test(condition, environ));
++        condition_free(condition);
++
++        ASSERT_NOT_NULL(condition = condition_new(CONDITION_OS_RELEASE, "ID_THISHOPEFULLYWONTEXIST!$=*rhel*", false, false));
++        ASSERT_OK_POSITIVE(condition_test(condition, environ));
++        condition_free(condition);
++
+         /* load_os_release_pairs() removes quotes, we have to add them back,
+          * otherwise we get a string: "PRETTY_NAME=Debian GNU/Linux 10 (buster)"
+          * which is wrong, as the value is not quoted anymore. */

@@ -1,0 +1,47 @@
+From 383e2e5a8b45bd7ee11bdfd26ddd44998da87fe3 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Mon, 9 Dec 2024 20:24:34 +0100
+Subject: [PATCH] docs/HACKING: use 'run0' to indicate which commands require
+ privileges
+
+(cherry picked from commit 6ed73883c68304f6677ff342f457aad3c18ab6c6)
+---
+ docs/HACKING.md | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index afc4e49965..15955f5b7a 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -49,7 +49,7 @@ To build and boot an OS image with the latest systemd installed:
+ ```sh
+ $ mkosi -f genkey                               # Generate signing keys once.
+ $ mkosi -f sandbox meson compile -C build mkosi # (re-)build the OS image
+-$ sudo mkosi boot                               # Boot the image with systemd-nspawn.
++$ run0 mkosi boot                               # Boot the image with systemd-nspawn.
+ $ mkosi vm                                      # Boot the image with qemu.
+ ```
+ 
+@@ -132,17 +132,17 @@ To upgrade the systemd packages on the host system to the newer versions built
+ by mkosi, run the following:
+ 
+ ```sh
+-dnf upgrade build/mkosi.builddir/<distribution>~<release>~<architecture>/*.rpm                                           # Fedora/CentOS
+-apt-get install build/mkosi.builddir/<distribution>~<release>~<architecture>/*.deb                                       # Debian/Ubuntu
+-pacman --upgrade --needed --noconfirm build/mkosi.builddir/<distribution>~<release>~<architecture>/*.pkg.tar             # Arch Linux
+-zypper --non-interactive install --allow-unsigned-rpm build/mkosi.builddir/<distribution>~<release>~<architecture>/*.rpm # OpenSUSE
++run0 dnf upgrade build/mkosi.builddir/<distribution>~<release>~<architecture>/*.rpm                                           # Fedora/CentOS
++run0 apt-get install build/mkosi.builddir/<distribution>~<release>~<architecture>/*.deb                                       # Debian/Ubuntu
++run0 pacman --upgrade --needed --noconfirm build/mkosi.builddir/<distribution>~<release>~<architecture>/*.pkg.tar             # Arch Linux
++run0 zypper --non-interactive install --allow-unsigned-rpm build/mkosi.builddir/<distribution>~<release>~<architecture>/*.rpm # OpenSUSE
+ ```
+ 
+ To downgrade back to the old version shipped by the distribution, run the
+ following:
+ 
+ ```sh
+-dnf downgrade "systemd*" # Fedora/CentOS
++run0 dnf downgrade "systemd*" # Fedora/CentOS
+ # TODO: Other distributions
+ ```
+ 

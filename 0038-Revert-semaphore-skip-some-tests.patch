@@ -1,0 +1,26 @@
+From 61e321c452309b6686b345ff3be363d37dfb21d6 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 13 Dec 2024 23:43:28 +0000
+Subject: [PATCH] Revert "semaphore: skip some tests"
+
+This reverts commit e19cae12ff2e832ce7d79aa483e1aa27ed0ea1f4.
+
+(cherry picked from commit 7406e0a3afafc1e1c994a88a4e988e94177e5550)
+---
+ .semaphore/semaphore-runner.sh | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/.semaphore/semaphore-runner.sh b/.semaphore/semaphore-runner.sh
+index b663674652..e903ced70d 100755
+--- a/.semaphore/semaphore-runner.sh
++++ b/.semaphore/semaphore-runner.sh
+@@ -109,9 +109,6 @@ EOF
+                                                        --env DPKG_DEB_COMPRESSOR_TYPE="none" \
+                                                        --env DEB_BUILD_PROFILES="pkg.systemd.upstream noudeb nodoc" \
+                                                        --env TEST_UPSTREAM=1 \
+-                                                       --skip-test localed-locale \
+-                                                       --skip-test localed-x11-keymap \
+-                                                       --skip-test build-with-static-libsystemd \
+                                                        ../systemd_*.dsc \
+                                                        -o "$ARTIFACTS_DIR" \
+                                                        -- lxc -s "$CONTAINER" \

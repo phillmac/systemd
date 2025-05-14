@@ -1,0 +1,28 @@
+From e768cf55b19caec6c8936050b245f398aba8b884 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 11 Dec 2024 20:44:25 +0000
+Subject: [PATCH] semaphore: skip some tests
+
+semaphore CI runs are always very close to the limit of 1hr, and often
+time out when it's particularly oversubscribed.
+Skip some low-value test cases to shorten the runtime.
+
+(cherry picked from commit e19cae12ff2e832ce7d79aa483e1aa27ed0ea1f4)
+---
+ .semaphore/semaphore-runner.sh | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/.semaphore/semaphore-runner.sh b/.semaphore/semaphore-runner.sh
+index e903ced70d..b663674652 100755
+--- a/.semaphore/semaphore-runner.sh
++++ b/.semaphore/semaphore-runner.sh
+@@ -109,6 +109,9 @@ EOF
+                                                        --env DPKG_DEB_COMPRESSOR_TYPE="none" \
+                                                        --env DEB_BUILD_PROFILES="pkg.systemd.upstream noudeb nodoc" \
+                                                        --env TEST_UPSTREAM=1 \
++                                                       --skip-test localed-locale \
++                                                       --skip-test localed-x11-keymap \
++                                                       --skip-test build-with-static-libsystemd \
+                                                        ../systemd_*.dsc \
+                                                        -o "$ARTIFACTS_DIR" \
+                                                        -- lxc -s "$CONTAINER" \

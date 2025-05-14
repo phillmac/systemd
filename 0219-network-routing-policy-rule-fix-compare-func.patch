@@ -1,0 +1,37 @@
+From 6e7eddecaae58147806b3e04472fd4d90d8efcc0 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 5 Feb 2025 09:14:51 +0900
+Subject: [PATCH] network/routing-policy-rule: fix compare func
+
+Previously, when comparing an existing and requested routing policy
+rules, `all` flag was unset, thus the from and to addresses in the two
+rules were not compared. Hence, a new request with from and/or to
+addresses might be considered as it already exists even the addresses of
+existing one were different from the newly requested one.
+
+All existing rules have valid family, i.e. AF_INET or AF_INET6. And,
+all requesting rules with from and/or to addresses also have a valid
+family. Hence, even `all` flag is unset, the addresses can be and must
+be compared in that case.
+
+Fixes a regression caused by fc58350aa464cd2414b6fe9fec089412120c7d52 (v257).
+Fixes #35874.
+
+(cherry picked from commit bc45d9c9592d3fcd24894199be1902704f48d62c)
+---
+ src/network/networkd-routing-policy-rule.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/network/networkd-routing-policy-rule.c b/src/network/networkd-routing-policy-rule.c
+index 1a04af6359..1075f68e7d 100644
+--- a/src/network/networkd-routing-policy-rule.c
++++ b/src/network/networkd-routing-policy-rule.c
+@@ -318,7 +318,7 @@ static int routing_policy_rule_compare_func_full(const RoutingPolicyRule *a, con
+         if (r != 0)
+                 return r;
+ 
+-        if (all) {
++        if (a->family == b->family && a->family != AF_UNSPEC) {
+                 r = memcmp(&a->from.address, &b->from.address, FAMILY_ADDRESS_SIZE(a->family));
+                 if (r != 0)
+                         return r;

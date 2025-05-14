@@ -1,0 +1,37 @@
+From 34581e87d6f279057fa7ce371bb42381f477a72c Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 10 Jan 2025 14:51:24 +0100
+Subject: [PATCH] test: Move StateDirectory= directive into dropin
+
+The integration-test-setup calls require StateDirectory= but some
+tests override the test unit used which then won't have StateDirectory=
+so let's move StateDirectory= into the dropin as well to avoid this
+issue.
+
+(cherry picked from commit 1f17ec0ed419627a686ee6e719ac7f55cf082ada)
+---
+ test/integration-test-wrapper.py | 1 +
+ test/test.service.in             | 1 -
+ 2 files changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index 94904cfbc4..610c34c903 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -470,6 +470,7 @@ def main() -> None:
+             [Service]
+             ExecStartPre=/usr/lib/systemd/tests/testdata/integration-test-setup.sh setup
+             ExecStopPost=/usr/lib/systemd/tests/testdata/integration-test-setup.sh finalize
++            StateDirectory=%N
+             """
+         )
+ 
+diff --git a/test/test.service.in b/test/test.service.in
+index 75f703698f..790c513da4 100644
+--- a/test/test.service.in
++++ b/test/test.service.in
+@@ -10,4 +10,3 @@ ExecStartPre=rm -f /failed /testok
+ ExecStart=@command@
+ Type=oneshot
+ MemoryAccounting=@memory-accounting@
+-StateDirectory=%N

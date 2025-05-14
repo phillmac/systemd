@@ -1,0 +1,48 @@
+From 74d673d7ae13e561e4f72d0f16a35fb8f5f3f5be Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Thu, 2 Jan 2025 04:13:23 +0100
+Subject: [PATCH] shared/hibernate-util: don't attempt to fiemap fd if no
+ backing dev available
+
+Prompted by #35798
+
+Co-authored-by: Yu Watanabe <watanabe.yu+github@gmail.com>
+(cherry picked from commit 6d3b2273b1e14d79548a018674ad6e5a5b8b8009)
+---
+ src/shared/hibernate-util.c | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/src/shared/hibernate-util.c b/src/shared/hibernate-util.c
+index 1213fdc2c7..49ce787d02 100644
+--- a/src/shared/hibernate-util.c
++++ b/src/shared/hibernate-util.c
+@@ -235,6 +235,8 @@ static int swap_entry_get_resume_config(SwapEntry *swap) {
+         r = get_block_device_fd(fd, &swap->devno);
+         if (r < 0)
+                 return r;
++        if (r == 0)
++                return -EMEDIUMTYPE;
+ 
+         r = fd_is_fs_type(fd, BTRFS_SUPER_MAGIC);
+         if (r < 0)
+@@ -362,14 +364,16 @@ int find_suitable_hibernation_device_full(HibernationDevice *ret_device, uint64_
+ 
+         FOREACH_ARRAY(swap, entries.swaps, entries.n_swaps) {
+                 r = swap_entry_get_resume_config(swap);
+-                if (r < 0)
+-                        return log_debug_errno(r, "Failed to get devno and offset for swap '%s': %m", swap->path);
+-                if (swap->devno == 0) {
++                if (r == -EMEDIUMTYPE) {
+                         assert(swap->swapfile);
+ 
+-                        log_debug("Swap file '%s' is not backed by block device, ignoring: %m", swap->path);
++                        log_debug_errno(r, "Unable to acquire backing block device for swap file '%s' (maybe on a RAID btrfs?), ignoring.",
++                                        swap->path);
+                         continue;
+                 }
++                if (r < 0)
++                        return log_debug_errno(r, "Failed to get devno and offset for swap '%s': %m", swap->path);
++                assert(swap->devno > 0);
+ 
+                 if (resume_config_devno > 0) {
+                         if (swap->devno == resume_config_devno &&

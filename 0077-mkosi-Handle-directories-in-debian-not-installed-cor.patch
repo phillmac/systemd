@@ -1,0 +1,31 @@
+From 472239d4301d25eb3c7c69eb7e8f13542ef2769f Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 3 Jan 2025 10:20:45 +0100
+Subject: [PATCH] mkosi: Handle directories in debian/not-installed correctly
+
+If a directory is specified without a glob pattern, we have to exclude
+all files in that directory, so add a recursive glob to every directory
+and enable the bash globstar feature when globbing to '**/*' matches all
+files and directories beneath the given directory.
+
+(cherry picked from commit d304b95beb76fd62ea249357df526fb211426edc)
+---
+ .../build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot      | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
+index b17483a03f..569bf64499 100755
+--- a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
+@@ -111,8 +111,9 @@ if ! build; then
+     if [[ -f debian/not-installed ]]; then
+         pushd debian/tmp
+         grep --invert-match "^#" ../not-installed |
+-            xargs -I {} bash -O nullglob -c "printf '%s\n' {}" |
+-            sed "/^$/d" |
++            xargs -I {} sh -c "test -d '{}' && echo '{}/**/*' || echo '{}'" |
++            xargs -I {} bash -O nullglob -O globstar -c "printf '%s\n' {}" |
++            sed --expression "/^$/d" --expression "s#//*#/#g" |
+             xargs -I {} sh -c "test -f '{}' && echo '{}' || true" >>/tmp/packaged-files
+         popd
+     fi

@@ -1,0 +1,487 @@
+From edf345c8736485b43cf63310f7ac20f2fcdbe10d Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Thu, 16 May 2024 14:36:04 +0200
+Subject: [PATCH] ci: setup source-git automation
+
+rhel-only: ci
+
+Related: RHEL-36636
+
+ci: deploy systemd man to GitHub Pages
+
+rhel-only: ci
+
+Related: RHEL-36636
+
+ci: allow to pass parameters together with rhel-only note
+
+Supported parameters:
+
+* feature - for feature related commits (cross-version)
+* bugfix - for bugfix related commits (cross-version)
+* doc - for documentation related commits (usually version specific)
+* workaround - for workaround related commits (usually version specific)
+* ci - for CI related commits (version specific)
+* test - for test related commits (version specific)
+* other - for commits that do not fit into any of the above categories or use just `rhel-only`
+
+rhel-only: ci
+
+Related: RHEL-36636
+
+doc: add downstream CONTRIBUTING document
+
+rhel-only: doc
+
+Related: RHEL-40924
+
+ci: allow `policy` as rhel-only keyword
+
+rhel-only: ci
+
+Related: RHEL-40924
+
+ci: rename beta branch to match dist-git name
+
+rhel-only: ci
+
+Related: RHEL-57603
+---
+ .github/advanced-commit-linter.yml            | 17 +++++
+ .github/auto-merge.yml                        |  4 +
+ .github/pull-request-validator.yml            |  4 +
+ .github/regression-sniffer.yml                |  1 +
+ .github/tracker-validator.yml                 | 31 ++++++++
+ .github/workflows/deploy-man-pages.yml        | 59 ++++++++++++++
+ .github/workflows/gather-pr-metadata.yml      | 12 ++-
+ .../source-git-automation-on-demand.yml       | 72 ++++++++++++++++++
+ .github/workflows/source-git-automation.yml   | 45 +++++++++++
+ CONTRIBUTING.md                               | 76 +++++++++++++++++++
+ README.md                                     |  2 +-
+ 11 files changed, 315 insertions(+), 8 deletions(-)
+ create mode 100644 .github/advanced-commit-linter.yml
+ create mode 100644 .github/auto-merge.yml
+ create mode 100644 .github/pull-request-validator.yml
+ create mode 100644 .github/regression-sniffer.yml
+ create mode 100644 .github/tracker-validator.yml
+ create mode 100644 .github/workflows/deploy-man-pages.yml
+ create mode 100644 .github/workflows/source-git-automation-on-demand.yml
+ create mode 100644 .github/workflows/source-git-automation.yml
+ create mode 100644 CONTRIBUTING.md
+
+diff --git a/.github/advanced-commit-linter.yml b/.github/advanced-commit-linter.yml
+new file mode 100644
+index 0000000000..4a7e6542b4
+--- /dev/null
++++ b/.github/advanced-commit-linter.yml
+@@ -0,0 +1,17 @@
++policy:
++  cherry-pick:
++    upstream:
++      - github: systemd/systemd
++    exception:
++      note:
++        - 'rhel-only: (feature|bugfix|policy|doc|workaround|ci|test|other)'
++        - 'RHEL-only: (feature|bugfix|policy|doc|workaround|ci|test|other)'
++  tracker:
++    - keyword:
++        - 'Resolves: '
++        - 'Related: '
++        - 'Reverts: '
++      type: jira
++      issue-format:
++        - 'RHEL-\d+$'
++      url: 'https://issues.redhat.com/browse/'
+diff --git a/.github/auto-merge.yml b/.github/auto-merge.yml
+new file mode 100644
+index 0000000000..35c2539295
+--- /dev/null
++++ b/.github/auto-merge.yml
+@@ -0,0 +1,4 @@
++labels:
++  dont-merge: dont-merge
++  manual-merge: pr/needs-manual-merge
++target-branch': ['main']
+diff --git a/.github/pull-request-validator.yml b/.github/pull-request-validator.yml
+new file mode 100644
+index 0000000000..4bb5bbec12
+--- /dev/null
++++ b/.github/pull-request-validator.yml
+@@ -0,0 +1,4 @@
++labels:
++  missing-review: pr/needs-review
++  changes-requested: pr/changes-requested
++  missing-failing-ci: pr/needs-ci
+diff --git a/.github/regression-sniffer.yml b/.github/regression-sniffer.yml
+new file mode 100644
+index 0000000000..3824028e92
+--- /dev/null
++++ b/.github/regression-sniffer.yml
+@@ -0,0 +1 @@
++upstream: systemd/systemd
+diff --git a/.github/tracker-validator.yml b/.github/tracker-validator.yml
+new file mode 100644
+index 0000000000..1226b8a92a
+--- /dev/null
++++ b/.github/tracker-validator.yml
+@@ -0,0 +1,31 @@
++labels:
++  missing-tracker: tracker/missing
++  invalid-product: tracker/invalid-product
++  invalid-component: tracker/invalid-component
++  unapproved: tracker/unapproved
++products:
++  - Red Hat Enterprise Linux 10
++  - CentOS Stream 10
++  - rhel-10.0-beta
++  - rhel-10.0
++  - rhel-10.0.z
++  - rhel-10.1
++  - rhel-10.1.z
++  - rhel-10.2
++  - rhel-10.2.z
++  - rhel-10.3
++  - rhel-10.3.z
++  - rhel-10.4
++  - rhel-10.4.z
++  - rhel-10.5
++  - rhel-10.5.z
++  - rhel-10.6
++  - rhel-10.6.z
++  - rhel-10.7
++  - rhel-10.7.z
++  - rhel-10.8
++  - rhel-10.8.z
++  - rhel-10.9
++  - rhel-10.9.z
++  - rhel-10.10
++  - rhel-10.10.z
+diff --git a/.github/workflows/deploy-man-pages.yml b/.github/workflows/deploy-man-pages.yml
+new file mode 100644
+index 0000000000..9739228a87
+--- /dev/null
++++ b/.github/workflows/deploy-man-pages.yml
+@@ -0,0 +1,59 @@
++name: Deploy systemd man to Pages
++
++on:
++  push:
++    branches: [ main ]
++    paths:
++      - man/*
++      - .github/workflows/deploy-man-pages.yml
++  schedule:
++    # Run every Monday at 4:00 AM UTC
++    - cron: 0 4 * * 1
++  workflow_dispatch:
++
++permissions:
++  contents: read
++
++# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
++# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
++concurrency:
++  group: pages
++  cancel-in-progress: false
++
++jobs:
++  # Single deploy job since we're just deploying
++  deploy:
++    environment:
++      name: github-pages
++      url: ${{ steps.deployment.outputs.page_url }}
++    runs-on: ubuntu-latest
++
++    permissions:
++      pages: write
++      id-token: write
++
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Install dependencies
++        run: |
++          sudo add-apt-repository -y --no-update --enable-source
++          sudo apt-get -y update
++          sudo apt-get -y build-dep systemd
++
++      - name: Build HTML man pages
++        run: |
++          meson setup build
++          ninja -C build man/html
++
++      - name: Setup Pages
++        uses: actions/configure-pages@v4
++
++      - name: Upload artifact
++        uses: actions/upload-pages-artifact@v3
++        with:
++          path: ./build/man
++
++      - name: Deploy to GitHub Pages
++        id: deployment
++        uses: actions/deploy-pages@v4
+diff --git a/.github/workflows/gather-pr-metadata.yml b/.github/workflows/gather-pr-metadata.yml
+index 20160ab91f..fde51a480f 100644
+--- a/.github/workflows/gather-pr-metadata.yml
++++ b/.github/workflows/gather-pr-metadata.yml
+@@ -1,18 +1,17 @@
+ ---
+-
+ name: Gather Pull Request Metadata
+ 
+ on:
+   pull_request:
+-    branches: [ main ]
++    types: [ opened, reopened, synchronize ]
++    branches: [ main, rhel-10.0.beta, rhel-10.* ]
+ 
+ permissions:
+   contents: read
+ 
+ jobs:
+   gather-metadata:
+-    if: github.repository == 'systemd/systemd'
+-    runs-on: ubuntu-24.04
++    runs-on: ubuntu-latest
+ 
+     steps:
+       - name: Repository checkout
+@@ -20,11 +19,10 @@ jobs:
+ 
+       - id: metadata
+         name: Gather Pull Request Metadata
+-        uses: redhat-plumbers-in-action/gather-pull-request-metadata@17821d3bc27c1efed339595898c2e622accc5a1b
++        uses: redhat-plumbers-in-action/gather-pull-request-metadata@v1
+ 
+       - name: Upload Pull Request Metadata artifact
+-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3
++        uses: actions/upload-artifact@v4
+         with:
+           name: Pull Request Metadata
+           path: ${{ steps.metadata.outputs.metadata-file }}
+-          retention-days: 1
+diff --git a/.github/workflows/source-git-automation-on-demand.yml b/.github/workflows/source-git-automation-on-demand.yml
+new file mode 100644
+index 0000000000..af9ea781f6
+--- /dev/null
++++ b/.github/workflows/source-git-automation-on-demand.yml
+@@ -0,0 +1,72 @@
++name: Source git Automation Scheduled/On Demand
++on:
++  schedule:
++    # Workflow runs every 45 minutes
++    - cron: '*/45 * * * *'
++  workflow_dispatch:
++    inputs:
++      pr-number:
++        description: 'Pull Request number/s ; when not provided, the workflow will run for all open PRs'
++        required: true
++        default: '0'
++
++permissions:
++  contents: read
++
++jobs:
++  # Get all open PRs
++  gather-pull-requests:
++    if: github.repository == 'redhat-plumbers/systemd-rhel10'
++    runs-on: ubuntu-latest
++
++    outputs:
++      pr-numbers: ${{ steps.get-pr-numbers.outputs.result }}
++      pr-numbers-manual: ${{ steps.parse-manual-input.outputs.result }}
++
++    steps:
++      - id: get-pr-numbers
++        if: inputs.pr-number == '0'
++        name: Get all open PRs
++        uses: actions/github-script@v6
++        with:
++          # !FIXME: this is not working if there is more than 100 PRs opened
++          script: |
++            const { data: pullRequests } = await github.rest.pulls.list({
++              owner: context.repo.owner,
++              repo: context.repo.repo,
++              state: 'open',
++              per_page: 100
++            });
++            return pullRequests.map(pr => pr.number);
++
++      - id: parse-manual-input
++        if: inputs.pr-number != '0'
++        name: Parse manual input
++        run: |
++          # shellcheck disable=SC2086
++          echo "result="[ ${{ inputs.pr-number }} ]"" >> $GITHUB_OUTPUT
++        shell: bash
++
++  validate-pr:
++    name: 'Validation of Pull Request #${{ matrix.pr-number }}'
++    needs: [ gather-pull-requests ]
++    runs-on: ubuntu-latest
++
++    strategy:
++      fail-fast: false
++      matrix:
++        pr-number: ${{ inputs.pr-number == 0 && fromJSON(needs.gather-pull-requests.outputs.pr-numbers) || fromJSON(needs.gather-pull-requests.outputs.pr-numbers-manual) }}
++
++    permissions:
++      # required for merging PRs
++      contents: write
++      # required for PR comments and setting labels
++      pull-requests: write
++
++    steps:
++      - name: Source-git Automation
++        uses: redhat-plumbers-in-action/source-git-automation@v1
++        with:
++          pr-number: ${{ matrix.pr-number }}
++          jira-api-token: ${{ secrets.JIRA_API_TOKEN }}
++          token: ${{ secrets.GITHUB_TOKEN }}
+diff --git a/.github/workflows/source-git-automation.yml b/.github/workflows/source-git-automation.yml
+new file mode 100644
+index 0000000000..d58242efa7
+--- /dev/null
++++ b/.github/workflows/source-git-automation.yml
+@@ -0,0 +1,45 @@
++name: Source git Automation
++on:
++  workflow_run:
++    workflows: [ Gather Pull Request Metadata ]
++    types:
++      - completed
++
++permissions:
++  contents: read
++
++jobs:
++  download-metadata:
++    if: >
++      github.event.workflow_run.event == 'pull_request' &&
++      github.event.workflow_run.conclusion == 'success' &&
++      github.repository == 'redhat-plumbers/systemd-rhel10'
++    runs-on: ubuntu-latest
++
++    outputs:
++      pr-metadata: ${{ steps.Artifact.outputs.pr-metadata-json }}
++
++    steps:
++      - id: Artifact
++        name: Download Artifact
++        uses: redhat-plumbers-in-action/download-artifact@v1
++        with:
++          name: Pull Request Metadata
++
++  source-git-automation:
++    needs: [ download-metadata ]
++    runs-on: ubuntu-latest
++
++    permissions:
++      # required for merging PRs
++      contents: write
++      # required for PR comments and setting labels
++      pull-requests: write
++
++    steps:
++      - name: Source-git Automation
++        uses: redhat-plumbers-in-action/source-git-automation@v1
++        with:
++          pr-metadata: ${{ needs.download-metadata.outputs.pr-metadata }}
++          jira-api-token: ${{ secrets.JIRA_API_TOKEN }}
++          token: ${{ secrets.GITHUB_TOKEN }}
+diff --git a/CONTRIBUTING.md b/CONTRIBUTING.md
+new file mode 100644
+index 0000000000..c2e3a2d4d0
+--- /dev/null
++++ b/CONTRIBUTING.md
+@@ -0,0 +1,76 @@
++# Contributing
++
++Welcome to systemd source-git for CentOS Stream and RHEL. When contributing, please follow the guide below.
++
++## Workflow
++
++```mermaid
++flowchart LR
++    A(Issue) --> B{is fixed\nupstream}
++    B -->|YES| C(backport\nupstream patch)
++    B -->|NO| D(upstream\nsubmit issue or PR)
++    D --> E{accepted\nand fixed}
++    E -->|YES| C
++    E -->|NO| F(rhel-only patch) --> G
++    C --> G(submit PR)
++```
++
++## Filing issues
++
++When you find an issue with systemd used in **CentOS Stream** or **RHEL**, please file an issue in Red Hat [Jira ticket system](https://issues.redhat.com/secure/CreateIssueDetails!init.jspa?pid=12332745&issuetype=1&components=12380515).
++
++GitHub Issues are not supported tracking system. If your issue is reproducible using the latest upstream version of systemd, please consider creating [upstream issue](https://github.com/systemd/systemd/issues/new/choose).
++
++## Posting Pull Requests
++
++Every Pull Request has to comply with the following rules:
++
++- Each commit has to reference [upstream](https://github.com/systemd/systemd) commit.
++- Each commit has to reference the approved issue/tracker.
++- Pull requests have to pass mandatory CI validation and testing
++- Pull requests have to be approved by at least one systemd downstream maintainer
++
++### Upstream reference
++
++When doing a back-port of an upstream commit, always use `cherry-pick -x <sha>`. Consider proposing a change upstream first when an upstream commit doesn't exist.
++If the change isn't upstream relevant or accepted by upstream, mark the commit with the `rhel-only: <parameter>` string, where a `<parameter>` is:
++
++- `feature` - for feature-related commits (cross-version)
++- `bugfix` - for bugfix-related commits (cross-version)
++- `policy` - for policy-related commits (cross-version)
++- `doc` - for documentation-related commits (usually version-specific)
++- `workaround` - for workaround-related commits (usually version-specific)
++- `ci` - for CI-related commits (version-specific)
++- `test` - for test-related commits (version-specific)
++- `other` - for commits that do not fit into any of the above categories (version-specific)
++
++```md
++doc: Fix TYPO
++
++rhel-only: doc
++
++Resolves: RHEL-678
++```
++
++### Issue reference
++
++Each commit has to reference the relevant approved systemd issue (see: [Filling issues section](#filing-issues)). For referencing issues, we use the following keywords:
++
++- **Resolves** for commits that directly resolve issues described in a referenced tracker
++- **Related** for commits related to the referenced issue, but they don't fix it. Usually, tests and documentation.
++- **Reverts** for commits that reverts previously merged commit
++
++When referencing issues, use the following structure: `<keyword>: <issue ID>`. See the example below:
++
++```md
++doc: Fix TYPO
++
++(cherry picked from commit c5afbac31bb33e7b1f4d59b253425af991a630a4)
++
++Resolves: RHEL-678
++```
++
++### Validation and testing
++
++Each Pull Request has to pass all enabled tests that are automatically run using GitHub Actions, CentOS Stream CI, and others.
++If CI failure is unrelated to the change introduced in Pull Request, the downstream maintainer will set the `ci-waived` label and explain why CI was waived.
+diff --git a/README.md b/README.md
+index 9e026b287c..5e82465f77 100644
+--- a/README.md
++++ b/README.md
+@@ -27,7 +27,7 @@ Please see the [Code Map](docs/ARCHITECTURE.md) for information about this repos
+ 
+ Please see the [Hacking guide](docs/HACKING.md) for information on how to hack on systemd and test your modifications.
+ 
+-Please see our [Contribution Guidelines](docs/CONTRIBUTING.md) for more information about filing GitHub Issues and posting GitHub Pull Requests.
++Please see our [Contribution Guidelines](CONTRIBUTING.md) for more information about filing GitHub Issues and posting GitHub Pull Requests.
+ 
+ When preparing patches for systemd, please follow our [Coding Style Guidelines](docs/CODING_STYLE.md).
+ 

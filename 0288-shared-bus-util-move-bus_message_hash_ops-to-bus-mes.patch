@@ -1,0 +1,157 @@
+From 42319407ae279478143e30d9c2878140b23e969c Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Sat, 11 Jan 2025 17:10:43 +0100
+Subject: [PATCH] shared/bus-util: move bus_message_hash_ops to
+ bus-message-util
+
+(cherry picked from commit e3d37628aabff92e4b756e63ef0a6cd4569ce743)
+
+Resolves: RHEL-73780
+---
+ src/home/homed-manager-bus.c         |  9 +++++----
+ src/login/logind-brightness.c        |  4 ++--
+ src/shared/bus-message-util.c        |  4 ++++
+ src/shared/bus-message-util.h        |  2 ++
+ src/shared/bus-util.c                | 10 ----------
+ src/shared/bus-util.h                |  2 --
+ src/systemctl/systemctl-list-units.c |  1 +
+ src/timedate/timedated.c             |  1 +
+ 8 files changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/src/home/homed-manager-bus.c b/src/home/homed-manager-bus.c
+index 69c7680b9e..08c917aee2 100644
+--- a/src/home/homed-manager-bus.c
++++ b/src/home/homed-manager-bus.c
+@@ -4,6 +4,7 @@
+ 
+ #include "alloc-util.h"
+ #include "bus-common-errors.h"
++#include "bus-message-util.h"
+ #include "bus-polkit.h"
+ #include "format-util.h"
+ #include "home-util.h"
+@@ -704,17 +705,17 @@ static int method_rebalance(sd_bus_message *message, void *userdata, sd_bus_erro
+         int r;
+ 
+         r = manager_schedule_rebalance(m, /* immediately= */ true);
+-        if (r == 0)
+-                return sd_bus_reply_method_errorf(message, BUS_ERROR_REBALANCE_NOT_NEEDED, "No home directories need rebalancing.");
+         if (r < 0)
+                 return r;
++        if (r == 0)
++                return sd_bus_reply_method_errorf(message, BUS_ERROR_REBALANCE_NOT_NEEDED, "No home directories need rebalancing.");
+ 
+         /* Keep a reference to this message, so that we can reply to it once we are done */
+-        r = set_ensure_put(&m->rebalance_queued_method_calls, &bus_message_hash_ops, message);
++        r = set_ensure_consume(&m->rebalance_queued_method_calls, &bus_message_hash_ops, sd_bus_message_ref(message));
+         if (r < 0)
+                 return log_error_errno(r, "Failed to track rebalance bus message: %m");
++        assert(r > 0);
+ 
+-        sd_bus_message_ref(message);
+         return 1;
+ }
+ 
+diff --git a/src/login/logind-brightness.c b/src/login/logind-brightness.c
+index 40bcb39ce0..b3e7718394 100644
+--- a/src/login/logind-brightness.c
++++ b/src/login/logind-brightness.c
+@@ -1,5 +1,6 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
++#include "bus-message-util.h"
+ #include "bus-util.h"
+ #include "device-util.h"
+ #include "hash-funcs.h"
+@@ -173,10 +174,9 @@ static int set_add_message(Set **set, sd_bus_message *message) {
+         if (r <= 0)
+                 return r;
+ 
+-        r = set_ensure_put(set, &bus_message_hash_ops, message);
++        r = set_ensure_consume(set, &bus_message_hash_ops, sd_bus_message_ref(message));
+         if (r <= 0)
+                 return r;
+-        sd_bus_message_ref(message);
+ 
+         return 1;
+ }
+diff --git a/src/shared/bus-message-util.c b/src/shared/bus-message-util.c
+index e93be9b3c5..a6523ff00e 100644
+--- a/src/shared/bus-message-util.c
++++ b/src/shared/bus-message-util.c
+@@ -246,3 +246,7 @@ int bus_message_dump_fd(sd_bus_message *message) {
+ 
+         return 0;
+ }
++
++DEFINE_HASH_OPS_WITH_VALUE_DESTRUCTOR(bus_message_hash_ops,
++                                      void, trivial_hash_func, trivial_compare_func,
++                                      sd_bus_message, sd_bus_message_unref);
+diff --git a/src/shared/bus-message-util.h b/src/shared/bus-message-util.h
+index 698960561c..baec1cb92b 100644
+--- a/src/shared/bus-message-util.h
++++ b/src/shared/bus-message-util.h
+@@ -21,3 +21,5 @@ int bus_message_read_dns_servers(
+ 
+ int bus_message_dump_string(sd_bus_message *message);
+ int bus_message_dump_fd(sd_bus_message *message);
++
++extern const struct hash_ops bus_message_hash_ops;
+diff --git a/src/shared/bus-util.c b/src/shared/bus-util.c
+index d3d3f1733e..362dd78537 100644
+--- a/src/shared/bus-util.c
++++ b/src/shared/bus-util.c
+@@ -862,16 +862,6 @@ int bus_register_malloc_status(sd_bus *bus, const char *destination) {
+         return 0;
+ }
+ 
+-static void bus_message_unref_wrapper(void *m) {
+-        sd_bus_message_unref(m);
+-}
+-
+-const struct hash_ops bus_message_hash_ops = {
+-        .hash = trivial_hash_func,
+-        .compare = trivial_compare_func,
+-        .free_value = bus_message_unref_wrapper,
+-};
+-
+ int bus_message_append_string_set(sd_bus_message *m, Set *set) {
+         const char *s;
+         int r;
+diff --git a/src/shared/bus-util.h b/src/shared/bus-util.h
+index c2b9b126c8..a2193ebf97 100644
+--- a/src/shared/bus-util.h
++++ b/src/shared/bus-util.h
+@@ -75,8 +75,6 @@ int bus_reply_pair_array(sd_bus_message *m, char **l);
+ /* Listen to GetMallocInfo() calls to 'destination' and return malloc_info() via FD */
+ int bus_register_malloc_status(sd_bus *bus, const char *destination);
+ 
+-extern const struct hash_ops bus_message_hash_ops;
+-
+ int bus_message_append_string_set(sd_bus_message *m, Set *s);
+ 
+ int bus_property_get_string_set(sd_bus *bus, const char *path, const char *interface, const char *property, sd_bus_message *reply, void *userdata, sd_bus_error *error);
+diff --git a/src/systemctl/systemctl-list-units.c b/src/systemctl/systemctl-list-units.c
+index a2f3074358..b7cb103513 100644
+--- a/src/systemctl/systemctl-list-units.c
++++ b/src/systemctl/systemctl-list-units.c
+@@ -5,6 +5,7 @@
+ #include "ansi-color.h"
+ #include "bus-error.h"
+ #include "bus-locator.h"
++#include "bus-message-util.h"
+ #include "format-table.h"
+ #include "locale-util.h"
+ #include "path-util.h"
+diff --git a/src/timedate/timedated.c b/src/timedate/timedated.c
+index c79bb864df..b196034a25 100644
+--- a/src/timedate/timedated.c
++++ b/src/timedate/timedated.c
+@@ -17,6 +17,7 @@
+ #include "bus-locator.h"
+ #include "bus-log-control-api.h"
+ #include "bus-map-properties.h"
++#include "bus-message-util.h"
+ #include "bus-polkit.h"
+ #include "bus-unit-util.h"
+ #include "clock-util.h"

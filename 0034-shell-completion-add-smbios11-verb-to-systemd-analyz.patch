@@ -1,0 +1,25 @@
+From 63b6d6aab14487ca4581c639b175f2fa5dfcb6e2 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 12:41:45 +0000
+Subject: [PATCH] shell-completion: add smbios11 verb to systemd-analyze
+
+Follow-up for 8c5045f9b2681774e8731dc0d142c207b61aedf6
+
+(cherry picked from commit e7fce6a370894de3a3ded32910e0a4b251d805df)
+---
+ shell-completion/bash/systemd-analyze | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/shell-completion/bash/systemd-analyze b/shell-completion/bash/systemd-analyze
+index 7c5cb1c512..caec77e718 100644
+--- a/shell-completion/bash/systemd-analyze
++++ b/shell-completion/bash/systemd-analyze
+@@ -67,7 +67,7 @@ _systemd_analyze() {
+     )
+ 
+     local -A VERBS=(
+-        [STANDALONE]='time blame unit-files unit-paths exit-status compare-versions calendar timestamp timespan pcrs srk has-tpm2'
++        [STANDALONE]='time blame unit-files unit-paths exit-status compare-versions calendar timestamp timespan pcrs srk has-tpm2 smbios11'
+         [CRITICAL_CHAIN]='critical-chain'
+         [DOT]='dot'
+         [DUMP]='dump'

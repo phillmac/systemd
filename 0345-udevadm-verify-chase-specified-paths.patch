@@ -1,0 +1,541 @@
+From 109617461d161e7a0e1a167a4cef92830628f671 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 9 Jan 2025 10:27:11 +0900
+Subject: [PATCH] udevadm-verify: chase specified paths
+
+Also, when a filename is specified, also search udev rules file in
+udev/rules.d directories.
+
+This also refuses non-existing files, and file neither nor a regular
+nor a directory, e.g. /dev/null.
+
+(cherry picked from commit 7cb4508c5af465ab1be1b103e6c2b613eb58e63c)
+
+Resolves: RHEL-75774
+---
+ man/udevadm.xml               |  28 +++++----
+ src/udev/udevadm-util.c       | 109 ++++++++++++++++++++++++++++++++++
+ src/udev/udevadm-util.h       |   1 +
+ src/udev/udevadm-verify.c     |  85 ++++++--------------------
+ test/units/TEST-17-UDEV.11.sh |  79 ++++++++++++------------
+ 5 files changed, 182 insertions(+), 120 deletions(-)
+
+diff --git a/man/udevadm.xml b/man/udevadm.xml
+index 79907b30c3..eed84d27cc 100644
+--- a/man/udevadm.xml
++++ b/man/udevadm.xml
+@@ -935,9 +935,15 @@
+ 
+       <para>Verify syntactic, semantic, and stylistic correctness of udev rules files.</para>
+ 
+-      <para>Positional arguments could be used to specify one or more files to check.
+-      If no files are specified, the udev rules are read from the files located in
+-      the same udev/rules.d directories that are processed by the udev daemon.</para>
++      <para>Positional arguments can be used to specify one or more files to check. Each argument must be an
++      absolute path to a udev rules file or a directory that contains rules files, or a file name of udev
++      rules file (e.g. <filename>99-systemd.rules</filename>). If a file name is specified, the file will be
++      searched in the <filename>udev/rules.d</filename> directories that are processed by
++      <command>systemd-udevd</command>, and searched in the current working directory if not found. If no
++      files are specified, the udev rules are read from the files located in the same
++      <filename>udev/rules.d</filename> directories that are processed by <command>systemd-udevd</command>.
++      See <citerefentry><refentrytitle>udev</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more
++      details about the search paths.</para>
+ 
+       <para>The exit status is <constant>0</constant> if all specified udev
+       rules files are syntactically, semantically, and stylistically correct,
+@@ -961,8 +967,11 @@
+         <varlistentry>
+           <term><option>--root=<replaceable>PATH</replaceable></option></term>
+           <listitem>
+-            <para>When looking for udev rules files located in udev/rules.d directories,
+-            operate on files underneath the specified root path <replaceable>PATH</replaceable>.</para>
++            <para>When looking for udev rules files located in the <filename>udev/rules.d</filename>
++            directories, operate on files underneath the specified root path <replaceable>PATH</replaceable>.
++            When a file name is specified, and it is not found in the <filename>udev/rules.d</filename>
++            directories, the file will be searched in the specified root path
++            <replaceable>PATH</replaceable>, rather than the current working directory.</para>
+ 
+             <xi:include href="version-info.xml" xpointer="v254"/>
+           </listitem>
+@@ -1192,12 +1201,9 @@
+   <refsect1>
+     <title>See Also</title>
+     <para><simplelist type="inline">
+-      <member><citerefentry>
+-        <refentrytitle>udev</refentrytitle><manvolnum>7</manvolnum>
+-      </citerefentry></member>
+-      <member><citerefentry>
+-        <refentrytitle>systemd-udevd.service</refentrytitle><manvolnum>8</manvolnum>
+-      </citerefentry></member>
++      <member><citerefentry><refentrytitle>udev</refentrytitle><manvolnum>7</manvolnum></citerefentry></member>
++      <member><citerefentry><refentrytitle>systemd-udevd.service</refentrytitle><manvolnum>8</manvolnum></citerefentry></member>
++      <member><citerefentry><refentrytitle>udev.conf</refentrytitle><manvolnum>5</manvolnum></citerefentry></member>
+     </simplelist></para>
+   </refsect1>
+ </refentry>
+diff --git a/src/udev/udevadm-util.c b/src/udev/udevadm-util.c
+index 2447edad19..4aa5e6b6d7 100644
+--- a/src/udev/udevadm-util.c
++++ b/src/udev/udevadm-util.c
+@@ -5,6 +5,9 @@
+ #include "alloc-util.h"
+ #include "bus-error.h"
+ #include "bus-util.h"
++#include "chase.h"
++#include "conf-files.h"
++#include "constants.h"
+ #include "device-private.h"
+ #include "path-util.h"
+ #include "udevadm-util.h"
+@@ -122,3 +125,109 @@ int parse_device_action(const char *str, sd_device_action_t *action) {
+         *action = a;
+         return 1;
+ }
++
++static int search_rules_file_in_conf_dirs(const char *s, const char *root, char ***files) {
++        _cleanup_free_ char *filename = NULL;
++        int r;
++
++        assert(s);
++
++        if (!endswith(s, ".rules"))
++                filename = strjoin(s, ".rules");
++        else
++                filename = strdup(s);
++        if (!filename)
++                return log_oom();
++
++        if (!filename_is_valid(filename))
++                return 0;
++
++        STRV_FOREACH(p, CONF_PATHS_STRV("udev/rules.d")) {
++                _cleanup_free_ char *path = NULL, *resolved = NULL;
++
++                path = path_join(*p, filename);
++                if (!path)
++                        return log_oom();
++
++                r = chase(path, root, CHASE_PREFIX_ROOT | CHASE_MUST_BE_REGULAR, &resolved, /* ret_fd = */ NULL);
++                if (r == -ENOENT)
++                        continue;
++                if (r < 0)
++                        return log_error_errno(r, "Failed to chase \"%s\": %m", path);
++
++                r = strv_consume(files, TAKE_PTR(resolved));
++                if (r < 0)
++                        return log_oom();
++
++                return 1; /* found */
++        }
++
++        return 0;
++}
++
++static int search_rules_file(const char *s, const char *root, char ***files) {
++        int r;
++
++        assert(s);
++        assert(files);
++
++        /* If the input is a file name (e.g. 99-systemd.rules), then try to find it in udev/rules.d directories. */
++        r = search_rules_file_in_conf_dirs(s, root, files);
++        if (r != 0)
++                return r;
++
++        /* If not found, or if it is a path, then chase it. */
++        struct stat st;
++        _cleanup_free_ char *resolved = NULL;
++        r = chase_and_stat(s, root, CHASE_PREFIX_ROOT, &resolved, &st);
++        if (r < 0)
++                return log_error_errno(r, "Failed to chase \"%s\": %m", s);
++
++        r = stat_verify_regular(&st);
++        if (r == -EISDIR) {
++                _cleanup_strv_free_ char **files_in_dir = NULL;
++
++                r = conf_files_list_strv(&files_in_dir, ".rules", root, 0, (const char* const*) STRV_MAKE_CONST(s));
++                if (r < 0)
++                        return log_error_errno(r, "Failed to enumerate rules files in '%s': %m", resolved);
++
++                r = strv_extend_strv_consume(files, TAKE_PTR(files_in_dir), /* filter_duplicates = */ false);
++                if (r < 0)
++                        return log_oom();
++
++                return 0;
++        }
++        if (r < 0)
++                return log_error_errno(r, "'%s' is neither a regular file nor a directory: %m", resolved);
++
++        r = strv_consume(files, TAKE_PTR(resolved));
++        if (r < 0)
++                return log_oom();
++
++        return 0;
++}
++
++int search_rules_files(char * const *a, const char *root, char ***ret) {
++        _cleanup_strv_free_ char **files = NULL;
++        int r;
++
++        assert(ret);
++
++        if (strv_isempty(a)) {
++                r = conf_files_list_strv(&files, ".rules", root, 0, (const char* const*) CONF_PATHS_STRV("udev/rules.d"));
++                if (r < 0)
++                        return log_error_errno(r, "Failed to enumerate rules files: %m");
++
++                if (root && strv_isempty(files))
++                        return log_error_errno(SYNTHETIC_ERRNO(ENOENT), "No rules files found in %s.", root);
++
++        } else
++                STRV_FOREACH(s, a) {
++                        r = search_rules_file(*s, root, &files);
++                        if (r < 0)
++                                return r;
++                }
++
++        *ret = TAKE_PTR(files);
++        return 0;
++}
+diff --git a/src/udev/udevadm-util.h b/src/udev/udevadm-util.h
+index 7fb4556413..9a396a1faa 100644
+--- a/src/udev/udevadm-util.h
++++ b/src/udev/udevadm-util.h
+@@ -6,3 +6,4 @@
+ int find_device(const char *id, const char *prefix, sd_device **ret);
+ int find_device_with_action(const char *id, sd_device_action_t action, sd_device **ret);
+ int parse_device_action(const char *str, sd_device_action_t *action);
++int search_rules_files(char * const *a, const char *root, char ***ret);
+diff --git a/src/udev/udevadm-verify.c b/src/udev/udevadm-verify.c
+index 32202508f3..fb8cdee4f2 100644
+--- a/src/udev/udevadm-verify.c
++++ b/src/udev/udevadm-verify.c
+@@ -7,16 +7,15 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
+-#include "conf-files.h"
+-#include "constants.h"
++#include "errno-util.h"
+ #include "log.h"
+ #include "parse-argument.h"
+ #include "pretty-print.h"
+-#include "stat-util.h"
+ #include "static-destruct.h"
+ #include "strv.h"
+ #include "udev-rules.h"
+ #include "udevadm.h"
++#include "udevadm-util.h"
+ 
+ static ResolveNameTiming arg_resolve_name_timing = RESOLVE_NAME_EARLY;
+ static char *arg_root = NULL;
+@@ -109,10 +108,6 @@ static int parse_argv(int argc, char *argv[]) {
+                         assert_not_reached();
+                 }
+ 
+-        if (arg_root && optind < argc)
+-                return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+-                                       "Combination of --root= and FILEs is not supported.");
+-
+         return 1;
+ }
+ 
+@@ -139,57 +134,20 @@ static int verify_rules_file(UdevRules *rules, const char *fname) {
+         return 0;
+ }
+ 
+-static int verify_rules_filelist(UdevRules *rules, char **files, size_t *fail_count, size_t *success_count, bool walk_dirs);
+-
+-static int verify_rules_dir(UdevRules *rules, const char *dir, size_t *fail_count, size_t *success_count) {
+-        int r;
+-        _cleanup_strv_free_ char **files = NULL;
+-
+-        assert(rules);
+-        assert(dir);
+-        assert(fail_count);
+-        assert(success_count);
+-
+-        r = conf_files_list(&files, ".rules", NULL, 0, dir);
+-        if (r < 0)
+-                return log_error_errno(r, "Failed to enumerate rules files: %m");
+-
+-        return verify_rules_filelist(rules, files, fail_count, success_count, /* walk_dirs */ false);
+-}
+-
+-static int verify_rules_filelist(UdevRules *rules, char **files, size_t *fail_count, size_t *success_count, bool walk_dirs) {
+-        int r, rv = 0;
+-
+-        assert(rules);
+-        assert(files);
+-        assert(fail_count);
+-        assert(success_count);
+-
+-        STRV_FOREACH(fp, files) {
+-                if (walk_dirs && is_dir(*fp, /* follow = */ true) > 0)
+-                        r = verify_rules_dir(rules, *fp, fail_count, success_count);
+-                else {
+-                        r = verify_rules_file(rules, *fp);
+-                        if (r < 0)
+-                                ++(*fail_count);
+-                        else
+-                                ++(*success_count);
+-                }
+-                if (r < 0 && rv >= 0)
+-                        rv = r;
+-        }
+-
+-        return rv;
+-}
+-
+ static int verify_rules(UdevRules *rules, char **files) {
+         size_t fail_count = 0, success_count = 0;
+-        int r;
++        int r, ret = 0;
+ 
+         assert(rules);
+-        assert(files);
+ 
+-        r = verify_rules_filelist(rules, files, &fail_count, &success_count, /* walk_dirs */ true);
++        STRV_FOREACH(fp, files) {
++                r = verify_rules_file(rules, *fp);
++                if (r < 0)
++                        ++fail_count;
++                else
++                        ++success_count;
++                RET_GATHER(ret, r);
++        }
+ 
+         if (arg_summary)
+                 printf("\n%s%zu udev rules files have been checked.%s\n"
+@@ -203,7 +161,7 @@ static int verify_rules(UdevRules *rules, char **files) {
+                        fail_count,
+                        fail_count > 0 ? ansi_normal() : "");
+ 
+-        return r;
++        return ret;
+ }
+ 
+ int verify_main(int argc, char *argv[], void *userdata) {
+@@ -218,19 +176,10 @@ int verify_main(int argc, char *argv[], void *userdata) {
+         if (!rules)
+                 return -ENOMEM;
+ 
+-        if (optind == argc) {
+-                const char* const* rules_dirs = STRV_MAKE_CONST(CONF_PATHS("udev/rules.d"));
+-                _cleanup_strv_free_ char **files = NULL;
+-
+-                r = conf_files_list_strv(&files, ".rules", arg_root, 0, rules_dirs);
+-                if (r < 0)
+-                        return log_error_errno(r, "Failed to enumerate rules files: %m");
+-                if (arg_root && strv_isempty(files))
+-                        return log_error_errno(SYNTHETIC_ERRNO(ENOENT),
+-                                               "No rules files found in %s.", arg_root);
+-
+-                return verify_rules(rules, files);
+-        }
++        _cleanup_strv_free_ char **files = NULL;
++        r = search_rules_files(strv_skip(argv, optind), arg_root, &files);
++        if (r < 0)
++                return r;
+ 
+-        return verify_rules(rules, strv_skip(argv, optind));
++        return verify_rules(rules, files);
+ }
+diff --git a/test/units/TEST-17-UDEV.11.sh b/test/units/TEST-17-UDEV.11.sh
+index c0d87b7151..ac99a80b0f 100755
+--- a/test/units/TEST-17-UDEV.11.sh
++++ b/test/units/TEST-17-UDEV.11.sh
+@@ -8,6 +8,8 @@ set -o pipefail
+ # shellcheck source=test/units/util.sh
+ . "$(dirname "$0")"/util.sh
+ 
++PATH=/var/build:$PATH
++
+ # shellcheck disable=SC2317
+ cleanup() {
+     cd /
+@@ -101,7 +103,6 @@ assert_0 -h
+ assert_0 --help
+ assert_0 -V
+ assert_0 --version
+-assert_0 /dev/null
+ 
+ # unrecognized option '--unknown'
+ assert_1 --unknown
+@@ -116,13 +117,9 @@ assert_1 --resolve-names=now
+ # Failed to parse rules file ./nosuchfile: No such file or directory
+ assert_1 ./nosuchfile
+ # Failed to parse rules file ./nosuchfile: No such file or directory
+-cat >"${exo}" <<EOF
+-
+-3 udev rules files have been checked.
+-  Success: 2
+-  Fail:    1
+-EOF
+-assert_1 /dev/null ./nosuchfile /dev/null
++assert_1 ./nosuchfile /dev/null
++# '/dev/null' is neither a regular file nor a directory: File descriptor in bad state
++assert_1 /dev/null
+ 
+ rules_dir='etc/udev/rules.d'
+ mkdir -p "${rules_dir}"
+@@ -148,8 +145,6 @@ assert_0 --root="${workdir}" --no-summary
+ cp "${workdir}/default_output_1_success" "${exo}"
+ assert_0 "${rules_dir}"
+ 
+-# Combination of --root= and FILEs is not supported.
+-assert_1 --root="${workdir}" /dev/null
+ # No rules files found in nosuchdir
+ assert_1 --root=nosuchdir
+ 
+@@ -161,7 +156,7 @@ assert_0 "${rules}"
+ 
+ # Failed to parse rules file ${rules}: No buffer space available
+ printf '%16384s\n' ' ' >"${rules}"
+-echo "Failed to parse rules file ${rules}: No buffer space available" >"${exp}"
++echo "Failed to parse rules file $(pwd)/${rules}: No buffer space available" >"${exp}"
+ assert_1 "${rules}"
+ 
+ {
+@@ -174,17 +169,17 @@ assert_0 "${rules}"
+ printf 'RUN+="/bin/true"%8176s\\\n #\n' ' ' ' ' >"${rules}"
+ echo >>"${rules}"
+ cat >"${exp}" <<EOF
+-${rules}:1 Line is too long, ignored.
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:1 Line is too long, ignored.
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+ assert_1 "${rules}"
+ 
+ printf '\\\n' >"${rules}"
+ cat >"${exp}" <<EOF
+-${rules}:1 Unexpected EOF after line continuation, line ignored.
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:1 Unexpected EOF after line continuation, line ignored.
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+-assert_1 "${rules}"
++assert_1 --root="${workdir}" "${rules}"
+ 
+ test_syntax_error() {
+     local rule msg
+@@ -194,8 +189,8 @@ test_syntax_error() {
+ 
+     printf '%s\n' "${rule}" >"${rules}"
+     cat >"${exp}" <<EOF
+-${rules}:1 ${msg}
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:1 ${msg}
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+     assert_1 "${rules}"
+ }
+@@ -208,8 +203,8 @@ test_style_error() {
+ 
+     printf '%s\n' "${rule}" >"${rules}"
+     cat >"${exp}" <<EOF
+-${rules}:1 ${msg}
+-${rules}: udev rules have style issues.
++$(pwd)/${rules}:1 ${msg}
++$(pwd)/${rules}: udev rules have style issues.
+ EOF
+     assert_0_impl --no-style "${rules}"
+     assert_1_impl "${rules}"
+@@ -365,9 +360,9 @@ assert_0 "${rules}"
+ 
+ echo 'GOTO="a"' >"${rules}"
+ cat >"${exp}" <<EOF
+-${rules}:1 GOTO="a" has no matching label, ignoring.
+-${rules}:1 The line has no effect any more, dropping.
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:1 GOTO="a" has no matching label, ignoring.
++$(pwd)/${rules}:1 The line has no effect any more, dropping.
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+ assert_1 "${rules}"
+ 
+@@ -383,8 +378,8 @@ LABEL="b"
+ LABEL="b"
+ EOF
+ cat >"${exp}" <<EOF
+-${rules}:3 style: LABEL="b" is unused.
+-${rules}: udev rules have style issues.
++$(pwd)/${rules}:3 style: LABEL="b" is unused.
++$(pwd)/${rules}: udev rules have style issues.
+ EOF
+ assert_0_impl --no-style "${rules}"
+ assert_1_impl "${rules}"
+@@ -394,11 +389,11 @@ GOTO="a"
+ LABEL="a", LABEL="b"
+ EOF
+ cat >"${exp}" <<EOF
+-${rules}:2 Contains multiple LABEL keys, ignoring LABEL="a".
+-${rules}:1 GOTO="a" has no matching label, ignoring.
+-${rules}:1 The line has no effect any more, dropping.
+-${rules}:2 style: LABEL="b" is unused.
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:2 Contains multiple LABEL keys, ignoring LABEL="a".
++$(pwd)/${rules}:1 GOTO="a" has no matching label, ignoring.
++$(pwd)/${rules}:1 The line has no effect any more, dropping.
++$(pwd)/${rules}:2 style: LABEL="b" is unused.
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+ assert_1 "${rules}"
+ 
+@@ -406,9 +401,9 @@ cat >"${rules}" <<'EOF'
+ KERNEL!="", KERNEL=="?*", KERNEL=="", NAME="a"
+ EOF
+ cat >"${exp}" <<EOF
+-${rules}:1 duplicate expressions.
+-${rules}:1 conflicting match expressions, the line has no effect.
+-${rules}: udev rules check failed.
++$(pwd)/${rules}:1 duplicate expressions.
++$(pwd)/${rules}:1 conflicting match expressions, the line has no effect.
++$(pwd)/${rules}: udev rules check failed.
+ EOF
+ assert_1 "${rules}"
+ 
+@@ -416,9 +411,9 @@ cat >"${rules}" <<'EOF'
+ ACTION=="a"NAME="b"
+ EOF
+ cat >"${exp}" <<EOF
+-${rules}:1 style: a comma between tokens is expected.
+-${rules}:1 style: whitespace between tokens is expected.
+-${rules}: udev rules have style issues.
++$(pwd)/${rules}:1 style: a comma between tokens is expected.
++$(pwd)/${rules}:1 style: whitespace between tokens is expected.
++$(pwd)/${rules}: udev rules have style issues.
+ EOF
+ assert_0_impl --no-style "${rules}"
+ assert_1_impl "${rules}"
+@@ -428,22 +423,24 @@ cat >"${rules}" <<'EOF'
+ ACTION=="a" ,NAME="b"
+ EOF
+ cat >"${exp}" <<EOF
+-${rules}:1 style: stray whitespace before comma.
+-${rules}:1 style: whitespace after comma is expected.
+-${rules}: udev rules have style issues.
++$(pwd)/${rules}:1 style: stray whitespace before comma.
++$(pwd)/${rules}:1 style: whitespace after comma is expected.
++$(pwd)/${rules}: udev rules have style issues.
+ EOF
+ assert_0_impl --no-style "${rules}"
+ assert_1_impl "${rules}"
+ next_test_number
+ 
+ # udevadm verify --root
+-sed "s|sample-[0-9]*.rules|${workdir}/${rules_dir}/&|" sample-*.exp >"${workdir}/${exp}"
++#sed "s|sample-[0-9]*.rules|${workdir}/${rules_dir}/&|" sample-*.exp >"${workdir}/${exp}"
++cat sample-*.exp >"${workdir}/${exp}"
+ cd -
+ assert_1 --root="${workdir}"
+ cd -
+ 
+ # udevadm verify path/
+-sed "s|sample-[0-9]*.rules|${workdir}/${rules_dir}/&|" sample-*.exp >"${workdir}/${exp}"
++#sed "s|sample-[0-9]*.rules|${workdir}/${rules_dir}/&|" sample-*.exp >"${workdir}/${exp}"
++cat sample-*.exp >"${workdir}/${exp}"
+ cd -
+ assert_1 "${rules_dir}"
+ cd -

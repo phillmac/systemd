@@ -1,0 +1,46 @@
+From 480e39dbbb3df253e02a4908dfcfecf1fb3511e2 Mon Sep 17 00:00:00 2001
+From: Michael Olbrich <m.olbrich@pengutronix.de>
+Date: Sun, 9 Feb 2025 13:32:36 +0100
+Subject: [PATCH] missing_sched: add CLONE_PIDFD
+
+CLONE_PIDFD was introduced in v5.2 and in sched.h in glibc-2.31 so
+without this, building with older version fails with:
+
+src/basic/raw-clone.h:41:108: error: 'CLONE_PIDFD' undeclared (first use in this function); did you mean 'CLONE_FILES'?
+
+(cherry picked from commit e91c5cf06ab7ca9e5576c6feac5f743927f2b063)
+---
+ src/basic/missing_sched.h | 7 +++++++
+ src/basic/raw-clone.h     | 1 +
+ 2 files changed, 8 insertions(+)
+
+diff --git a/src/basic/missing_sched.h b/src/basic/missing_sched.h
+index bbfc30cc8f..6e5e2b1e20 100644
+--- a/src/basic/missing_sched.h
++++ b/src/basic/missing_sched.h
+@@ -13,6 +13,13 @@
+ assert_cc(CLONE_NEWCGROUP == 0x02000000);
+ #endif
+ 
++/* b3e5838252665ee4cfa76b82bdf1198dca81e5be (5.2) */
++#ifndef CLONE_PIDFD
++#  define CLONE_PIDFD 0x00001000
++#else
++assert_cc(CLONE_PIDFD == 0x00001000);
++#endif
++
+ /* 769071ac9f20b6a447410c7eaa55d1a5233ef40c (5.8) */
+ #ifndef CLONE_NEWTIME
+ #  define CLONE_NEWTIME 0x00000080
+diff --git a/src/basic/raw-clone.h b/src/basic/raw-clone.h
+index 36202cc0ba..91b0069fb5 100644
+--- a/src/basic/raw-clone.h
++++ b/src/basic/raw-clone.h
+@@ -11,6 +11,7 @@
+ 
+ #include "log.h"
+ #include "macro.h"
++#include "missing_sched.h"
+ #include "process-util.h"
+ 
+ /**

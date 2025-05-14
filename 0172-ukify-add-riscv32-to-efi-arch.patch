@@ -1,0 +1,25 @@
+From 48537b312fa5dd6d2466d3cf3eeac2785d9ad650 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sat, 25 Jan 2025 01:25:28 +0000
+Subject: [PATCH] ukify: add riscv32 to --efi-arch
+
+It is supported in the arch mapping at the top and in elf2efi, so add it here too
+
+(cherry picked from commit d1429288ae4cf611ac3df6f604ddb4d6af480cf8)
+---
+ src/ukify/ukify.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index bfd00096db..4919076098 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -1772,7 +1772,7 @@ CONFIG_ITEMS = [
+     ConfigItem(
+         '--efi-arch',
+         metavar='ARCH',
+-        choices=('ia32', 'x64', 'arm', 'aa64', 'riscv64', 'loongarch32', 'loongarch64'),
++        choices=('ia32', 'x64', 'arm', 'aa64', 'riscv32', 'riscv64', 'loongarch32', 'loongarch64'),
+         help='target EFI architecture',
+         config_key='UKI/EFIArch',
+     ),

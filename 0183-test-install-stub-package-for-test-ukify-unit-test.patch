@@ -1,0 +1,22 @@
+From 6ad1efb288c33c8531a815831f3b8d245df884a1 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Sun, 26 Jan 2025 20:06:36 +0000
+Subject: [PATCH] test: install stub package for test-ukify unit test
+
+(cherry picked from commit 78ce88e2656aedee8b38b36edcf1e074b90ff53a)
+---
+ .github/workflows/unit_tests.sh | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/.github/workflows/unit_tests.sh b/.github/workflows/unit_tests.sh
+index 4433d847ce..168bcc55c3 100755
+--- a/.github/workflows/unit_tests.sh
++++ b/.github/workflows/unit_tests.sh
+@@ -24,6 +24,7 @@ ADDITIONAL_DEPS=(
+     python3-pyparsing
+     python3-pytest
+     rpm
++    systemd-boot-efi
+     zstd
+ )
+ 

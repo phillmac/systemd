@@ -1,0 +1,27 @@
+From 4162c331dd4fc6657d1f51c90a7a0223e9f4a30d Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 12 Dec 2024 11:58:42 +0000
+Subject: [PATCH] mkosi: Fix opensuse build
+
+The opensuse spec still looks for README.testsuite so hack it to look
+for README.md instead now that we changed the name in the repo.
+
+(cherry picked from commit 3aa725732161f11788a51405f9c5204190e7a0e9)
+---
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+index 7349038638..c9089b78c4 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+@@ -60,6 +60,9 @@ fi
+ # TODO: Drop when the spec is fixed (either the patch is adapted or not applied when building for upstream).
+ sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR/systemd.spec"
+ 
++# TODO: Drop when the opensuse spec uses README.md instead of README.testsuite.
++sed --in-place 's/README.testsuite/README.md/' "pkg/$PKG_SUBDIR/systemd.spec"
++
+ build() {
+     IFS=
+     # shellcheck disable=SC2046

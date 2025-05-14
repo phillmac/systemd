@@ -1,0 +1,23 @@
+From d6ebbd871e33954495644862f3067e71c0686fd9 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 13 Jan 2025 10:33:20 +0100
+Subject: [PATCH] test: Fix bug in integration test wrapper
+
+(cherry picked from commit 79ac78e3680a425d86c7a90e6846c630c9583b48)
+---
+ test/integration-test-wrapper.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/integration-test-wrapper.py b/test/integration-test-wrapper.py
+index 610c34c903..5321faef57 100755
+--- a/test/integration-test-wrapper.py
++++ b/test/integration-test-wrapper.py
+@@ -443,7 +443,7 @@ def main() -> None:
+         )
+ 
+     if os.getenv('TEST_JOURNAL_USE_TMP', '0') == '1':
+-        journal_file = Path(f'/tmp/systemd-integration-tests/journal/{name.journal}')
++        journal_file = Path(f'/tmp/systemd-integration-tests/journal/{name}.journal')
+     else:
+         journal_file = (args.meson_build_dir / f'test/journal/{name}.journal').absolute()
+ 

@@ -1,0 +1,30 @@
+From b24ade737cbc163b5b11b45ee81498b01db32688 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 19 Dec 2024 11:43:01 +0100
+Subject: [PATCH] mkosi: Use build/ as extra search path by default
+
+Building systemd with mkosi generally requires a very recent version
+of systemd which might not be installed on the host. Let's configure
+mkosi to look for extra executables in the build/ directory by default
+so that we prefer systemd executables from the build directory over those
+on the host as those on the host are likely to be too old.
+
+(cherry picked from commit 8c5b4df5435ff9e49421ef8db0ca6de06c856b04)
+---
+ mkosi.conf.d/20-extra-search-path.conf | 7 +++++++
+ 1 file changed, 7 insertions(+)
+ create mode 100644 mkosi.conf.d/20-extra-search-path.conf
+
+diff --git a/mkosi.conf.d/20-extra-search-path.conf b/mkosi.conf.d/20-extra-search-path.conf
+new file mode 100644
+index 0000000000..b7308f7f21
+--- /dev/null
++++ b/mkosi.conf.d/20-extra-search-path.conf
+@@ -0,0 +1,7 @@
++# SPDX-License-Identifier: LGPL-2.1-or-later
++
++[Match]
++PathExists=build/
++
++[Build]
++ExtraSearchPaths=build/

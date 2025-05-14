@@ -1,0 +1,56 @@
+From 29ac2b6515d2eecfaec95b98f0bf5ce8c2881669 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Thu, 9 Jan 2025 11:15:49 +0100
+Subject: [PATCH] process-util: do not unblock unrelated signals while forking
+
+This makes sure when we are blocking signals in preparation for fork()
+we'll not temporarily unblock any signals previously set, by mistake.
+
+It's safe for us to block more, but not to unblock signals already
+blocked. Fix that.
+
+Fixes: #35470
+(cherry picked from commit 78933625084b11c495c073fc7c34067315a1da50)
+---
+ src/basic/process-util.c | 14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/src/basic/process-util.c b/src/basic/process-util.c
+index 3253a9c3fb..18fbadf175 100644
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -1423,11 +1423,6 @@ int must_be_root(void) {
+         return log_error_errno(SYNTHETIC_ERRNO(EPERM), "Need to be root.");
+ }
+ 
+-static void restore_sigsetp(sigset_t **ssp) {
+-        if (*ssp)
+-                (void) sigprocmask(SIG_SETMASK, *ssp, NULL);
+-}
+-
+ pid_t clone_with_nested_stack(int (*fn)(void *), int flags, void *userdata) {
+         size_t ps;
+         pid_t pid;
+@@ -1467,6 +1462,11 @@ pid_t clone_with_nested_stack(int (*fn)(void *), int flags, void *userdata) {
+         return pid;
+ }
+ 
++static void restore_sigsetp(sigset_t **ssp) {
++        if (*ssp)
++                (void) sigprocmask(SIG_SETMASK, *ssp, NULL);
++}
++
+ static int fork_flags_to_signal(ForkFlags flags) {
+         return (flags & FORK_DEATHSIG_SIGTERM) ? SIGTERM :
+                 (flags & FORK_DEATHSIG_SIGINT) ? SIGINT :
+@@ -1519,8 +1519,8 @@ int safe_fork_full(
+         }
+ 
+         if (block_signals) {
+-                if (sigprocmask(SIG_SETMASK, &ss, &saved_ss) < 0)
+-                        return log_full_errno(prio, errno, "Failed to set signal mask: %m");
++                if (sigprocmask(SIG_BLOCK, &ss, &saved_ss) < 0)
++                        return log_full_errno(prio, errno, "Failed to block signal mask: %m");
+                 saved_ssp = &saved_ss;
+         }
+ 

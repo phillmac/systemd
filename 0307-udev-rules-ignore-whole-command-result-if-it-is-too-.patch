@@ -1,0 +1,38 @@
+From c2163f365b7f565358d6f5d9ba78cce087cf4cf9 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 15 Jan 2025 23:43:37 +0900
+Subject: [PATCH] udev-rules: ignore whole command result if it is too long and
+ does not contain newline
+
+(cherry picked from commit 68b1e1b61ab333bb4dee4a43373bad54080e755f)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-rules.c | 7 +++++--
+ 1 file changed, 5 insertions(+), 2 deletions(-)
+
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 53370f6085..9aa98a3b3c 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -2379,15 +2379,18 @@ static int udev_rule_apply_token_to_event(
+                 }
+ 
+                 if (truncated) {
+-                        bool found = false;
++                        log_event_debug(event, token, "Result of \"%s\" is too long and truncated, ignoring the last line of the result.", buf);
+ 
+                         /* Drop the last line. */
++                        bool found = false;
+                         for (char *p = PTR_SUB1(buf + strlen(buf), buf); p; p = PTR_SUB1(p, buf))
+                                 if (strchr(NEWLINE, *p)) {
+                                         *p = '\0';
+                                         found = true;
+-                                } else if (found)
+                                         break;
++                                }
++                        if (!found)
++                                buf[0] = '\0';
+                 }
+ 
+                 r = strv_split_newlines_full(&lines, result, EXTRACT_RETAIN_ESCAPE);

@@ -1,0 +1,19 @@
+From 3267661c626bd904395e3dd0f5e24b550f7309fe Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 13:11:51 +0000
+Subject: [PATCH] meson.version: change to 257.1
+
+This is used to detect in various CIs that we are on a stable branch,
+so set the new version early, otherwise some scripts will think it's
+running in main
+---
+ meson.version | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/meson.version b/meson.version
+index a700e79997..97fb426c59 100644
+--- a/meson.version
++++ b/meson.version
+@@ -1 +1 @@
+-257
++257.1

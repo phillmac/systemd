@@ -1,0 +1,28 @@
+From a8c7d1de26dcae24618b264afc30dce4ebd621fe Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 9 Jan 2025 15:13:18 +0100
+Subject: [PATCH] fmf: Move meson logs and failed test journals to test
+ artifacts dir
+
+(cherry picked from commit 0e444c948e7d8ddbdec83116b68af7d876e2d2f6)
+---
+ test/fmf/integration-tests/test.sh | 7 ++++++-
+ 1 file changed, 6 insertions(+), 1 deletion(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 8cea79cf30..762016f2a5 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -125,6 +125,11 @@ mkosi -f sandbox \
+     --suite integration-tests \
+     --print-errorlogs \
+     --no-stdsplit \
+-    --num-processes "$(($(nproc) - 1))"
++    --num-processes "$(($(nproc) - 1))" && EC=0 || EC=$?
++
++find build/meson-logs -type f -exec mv {} "$TMT_TEST_DATA" \;
++find build/test/journal -type f -exec mv {} "$TMT_TEST_DATA" \;
+ 
+ popd
++
++exit "$EC"

@@ -1,0 +1,23 @@
+From 05a135c36e164bbda708af99597742788ef4eeea Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Sat, 25 Jan 2025 20:42:54 +0100
+Subject: [PATCH] boot: Improve log message
+
+(cherry picked from commit ff83795469a20af02a9bf3285992128799b16302)
+---
+ src/boot/boot.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/boot/boot.c b/src/boot/boot.c
+index 4ef519d404..e0a30d0184 100644
+--- a/src/boot/boot.c
++++ b/src/boot/boot.c
+@@ -1396,7 +1396,7 @@ static EFI_STATUS boot_entry_bump_counters(BootEntry *entry) {
+ 
+         err = root->Open(root, &handle, old_path, EFI_FILE_MODE_READ|EFI_FILE_MODE_WRITE, 0ULL);
+         if (err != EFI_SUCCESS)
+-                return log_error_status(err, "Error opening boot entry: %m");
++                return log_error_status(err, "Error opening boot entry '%ls': %m", old_path);
+ 
+         err = get_file_info(handle, &file_info, &file_info_size);
+         if (err != EFI_SUCCESS)

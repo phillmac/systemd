@@ -1,0 +1,23 @@
+From f4215e7909a74e01f3275c8537d9574924aefa4c Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 11 Dec 2024 10:31:41 +0100
+Subject: [PATCH] analyze: tab fix
+
+(cherry picked from commit 7167bee6c672f9a0729631ba1f7459dd5e18f549)
+---
+ src/analyze/analyze-plot.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/analyze/analyze-plot.c b/src/analyze/analyze-plot.c
+index c50343d71c..20d6811f9b 100644
+--- a/src/analyze/analyze-plot.c
++++ b/src/analyze/analyze-plot.c
+@@ -170,7 +170,7 @@ static void plot_tooltip(const UnitTimes *ut) {
+         svg("%s:\n", ut->name);
+         svg("Activating: %"PRI_USEC".%.3"PRI_USEC"\n", ut->activating / USEC_PER_SEC, ut->activating % USEC_PER_SEC);
+         svg("Activated: %"PRI_USEC".%.3"PRI_USEC"\n", ut->activated / USEC_PER_SEC, ut->activated % USEC_PER_SEC);
+-        
++
+         UnitDependency i;
+         FOREACH_ARGUMENT(i, UNIT_AFTER, UNIT_BEFORE, UNIT_REQUIRES, UNIT_REQUISITE, UNIT_WANTS, UNIT_CONFLICTS, UNIT_UPHOLDS)
+                 if (!strv_isempty(ut->deps[i])) {

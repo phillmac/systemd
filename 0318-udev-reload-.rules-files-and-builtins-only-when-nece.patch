@@ -1,0 +1,136 @@
+From 8224a238bb1ddd9328ba6d0c5aabb972dd49a06c Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 4 Dec 2024 04:31:31 +0900
+Subject: [PATCH] udev: reload .rules files and builtins only when necessary
+
+Previously, even if e.g. .rules files are unchanged, all .rules files
+are reloaded when other kind of config files like .link files or
+.hwdb.bin are changed, vice versa.
+
+(cherry picked from commit 0f72af536f957b5755551de5f1815baef8f377b7)
+
+Resolves: RHEL-75774
+---
+ src/udev/udev-builtin.c | 23 ++++++++++++++++++++---
+ src/udev/udev-builtin.h |  3 ++-
+ src/udev/udev-def.h     | 23 +++++++++++++++++++++++
+ src/udev/udev-manager.c | 15 +++++++++------
+ 4 files changed, 54 insertions(+), 10 deletions(-)
+
+diff --git a/src/udev/udev-builtin.c b/src/udev/udev-builtin.c
+index 2118c2f3df..3d22ddf945 100644
+--- a/src/udev/udev-builtin.c
++++ b/src/udev/udev-builtin.c
+@@ -54,11 +54,28 @@ void udev_builtin_exit(void) {
+         initialized = false;
+ }
+ 
+-bool udev_builtin_should_reload(void) {
++UdevReloadFlags udev_builtin_should_reload(void) {
++        UdevReloadFlags flags = 0;
++
+         for (UdevBuiltinCommand i = 0; i < _UDEV_BUILTIN_MAX; i++)
+                 if (builtins[i] && builtins[i]->should_reload && builtins[i]->should_reload())
+-                        return true;
+-        return false;
++                        flags |= 1u << i;
++
++        if (flags != 0)
++                flags |= UDEV_RELOAD_KILL_WORKERS;
++
++        return flags;
++}
++
++void udev_builtin_reload(UdevReloadFlags flags) {
++        for (UdevBuiltinCommand i = 0; i < _UDEV_BUILTIN_MAX; i++) {
++                if (!FLAGS_SET(flags, 1u << i) || !builtins[i])
++                        continue;
++                if (builtins[i]->exit)
++                        builtins[i]->exit();
++                if (builtins[i]->init)
++                        builtins[i]->init();
++        }
+ }
+ 
+ void udev_builtin_list(void) {
+diff --git a/src/udev/udev-builtin.h b/src/udev/udev-builtin.h
+index 8c2016e5f0..3b5f3bd120 100644
+--- a/src/udev/udev-builtin.h
++++ b/src/udev/udev-builtin.h
+@@ -59,7 +59,8 @@ const char* udev_builtin_name(UdevBuiltinCommand cmd);
+ bool udev_builtin_run_once(UdevBuiltinCommand cmd);
+ int udev_builtin_run(UdevEvent *event, UdevBuiltinCommand cmd, const char *command);
+ void udev_builtin_list(void);
+-bool udev_builtin_should_reload(void);
++UdevReloadFlags udev_builtin_should_reload(void);
++void udev_builtin_reload(UdevReloadFlags flags);
+ int udev_builtin_add_property(UdevEvent *event, const char *key, const char *val);
+ int udev_builtin_add_propertyf(UdevEvent *event, const char *key, const char *valf, ...) _printf_(3, 4);
+ int udev_builtin_import_property(UdevEvent *event, const char *key);
+diff --git a/src/udev/udev-def.h b/src/udev/udev-def.h
+index 6ff3feacec..9d9fc78247 100644
+--- a/src/udev/udev-def.h
++++ b/src/udev/udev-def.h
+@@ -55,3 +55,26 @@ typedef enum UdevBuiltinCommand {
+         _UDEV_BUILTIN_MAX,
+         _UDEV_BUILTIN_INVALID = -EINVAL,
+ } UdevBuiltinCommand;
++
++typedef enum UdevReloadFlags {
++#if HAVE_BLKID
++        UDEV_RELOAD_BUILTIN_BLKID    = 1u << UDEV_BUILTIN_BLKID,
++#endif
++        UDEV_RELOAD_BUILTIN_BTRFS    = 1u << UDEV_BUILTIN_BTRFS,
++        UDEV_RELOAD_BUILTIN_HWDB     = 1u << UDEV_BUILTIN_HWDB,
++        UDEV_RELOAD_BUILTIN_INPUT_ID = 1u << UDEV_BUILTIN_INPUT_ID,
++        UDEV_RELOAD_BUILTIN_KEYBOARD = 1u << UDEV_BUILTIN_KEYBOARD,
++#if HAVE_KMOD
++        UDEV_RELOAD_BUILTIN_KMOD     = 1u << UDEV_BUILTIN_KMOD,
++#endif
++        UDEV_RELOAD_BUILTIN_DRIVER   = 1u << UDEV_BUILTIN_NET_DRIVER,
++        UDEV_RELOAD_BUILTIN_NET_ID   = 1u << UDEV_BUILTIN_NET_ID,
++        UDEV_RELOAD_BUILTIN_NET_LINK = 1u << UDEV_BUILTIN_NET_LINK,
++        UDEV_RELOAD_BUILTIN_PATH_ID  = 1u << UDEV_BUILTIN_PATH_ID,
++        UDEV_RELOAD_BUILTIN_USB_ID   = 1u << UDEV_BUILTIN_USB_ID,
++#if HAVE_ACL
++        UDEV_RELOAD_BUILTIN_UACCESS  = 1u << UDEV_BUILTIN_UACCESS,
++#endif
++        UDEV_RELOAD_KILL_WORKERS     = 1u << (_UDEV_BUILTIN_MAX + 0),
++        UDEV_RELOAD_RULES            = 1u << (_UDEV_BUILTIN_MAX + 1),
++} UdevReloadFlags;
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index 7f7079bcd2..c691b8ebed 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -262,22 +262,25 @@ static void manager_reload(Manager *manager, bool force) {
+         /* Reload SELinux label database, to make the child inherit the up-to-date database. */
+         mac_selinux_maybe_reload();
+ 
+-        /* Nothing changed. It is not necessary to reload. */
+-        if (!udev_rules_should_reload(manager->rules) && !udev_builtin_should_reload()) {
+-
++        UdevReloadFlags flags = udev_builtin_should_reload();
++        if (udev_rules_should_reload(manager->rules))
++                flags |= UDEV_RELOAD_RULES | UDEV_RELOAD_KILL_WORKERS;
++        if (flags == 0) {
++                /* Nothing changed. It is not necessary to reload. */
+                 if (!force)
+                         return;
+ 
+                 /* If we eat this up, then tell our service manager to just continue */
+                 (void) notify_reloading_full("Skipping configuration reloading, nothing changed.");
+-        } else {
++        } else
+                 (void) notify_reloading();
+ 
++        if (FLAGS_SET(flags, UDEV_RELOAD_KILL_WORKERS))
+                 manager_kill_workers(manager, false);
+ 
+-                udev_builtin_exit();
+-                udev_builtin_init();
++        udev_builtin_reload(flags);
+ 
++        if (FLAGS_SET(flags, UDEV_RELOAD_RULES)) {
+                 r = udev_rules_load(&rules, manager->config.resolve_name_timing);
+                 if (r < 0)
+                         log_warning_errno(r, "Failed to read udev rules, using the previously loaded rules, ignoring: %m");

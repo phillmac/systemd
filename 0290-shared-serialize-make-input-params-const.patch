@@ -1,0 +1,68 @@
+From fb16bc1ebc0f6d3747e52be6238ced202ce2bbb5 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Mon, 13 Jan 2025 16:35:13 +0100
+Subject: [PATCH] shared/serialize: make input params const
+
+(cherry picked from commit 3f03d39ca3b2f25f521342f2b0e49f60c51246e1)
+
+Resolves: RHEL-73780
+---
+ src/shared/serialize.c | 9 ++++++---
+ src/shared/serialize.h | 4 ++--
+ 2 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/src/shared/serialize.c b/src/shared/serialize.c
+index 735caf4978..58773e5ddd 100644
+--- a/src/shared/serialize.c
++++ b/src/shared/serialize.c
+@@ -164,11 +164,14 @@ int serialize_dual_timestamp(FILE *f, const char *name, const dual_timestamp *t)
+         return serialize_item_format(f, name, USEC_FMT " " USEC_FMT, t->realtime, t->monotonic);
+ }
+ 
+-int serialize_strv(FILE *f, const char *key, char **l) {
++int serialize_strv(FILE *f, const char *key, char * const *l) {
+         int ret = 0, r;
+ 
+         /* Returns the first error, or positive if anything was serialized, 0 otherwise. */
+ 
++        assert(f);
++        assert(key);
++
+         STRV_FOREACH(i, l) {
+                 r = serialize_item_escaped(f, key, *i);
+                 if ((ret >= 0 && r < 0) ||
+@@ -267,8 +270,7 @@ int serialize_item_base64mem(FILE *f, const char *key, const void *p, size_t l)
+         return 1;
+ }
+ 
+-int serialize_string_set(FILE *f, const char *key, Set *s) {
+-        const char *e;
++int serialize_string_set(FILE *f, const char *key, const Set *s) {
+         int r;
+ 
+         assert(f);
+@@ -279,6 +281,7 @@ int serialize_string_set(FILE *f, const char *key, Set *s) {
+ 
+         /* Serialize as individual items, as each element might contain separators and escapes */
+ 
++        const char *e;
+         SET_FOREACH(e, s) {
+                 r = serialize_item(f, key, e);
+                 if (r < 0)
+diff --git a/src/shared/serialize.h b/src/shared/serialize.h
+index 355eff9b8f..a1350533cf 100644
+--- a/src/shared/serialize.h
++++ b/src/shared/serialize.h
+@@ -21,10 +21,10 @@ int serialize_fd(FILE *f, FDSet *fds, const char *key, int fd);
+ int serialize_fd_many(FILE *f, FDSet *fds, const char *key, const int fd_array[], size_t n_fd_array);
+ int serialize_usec(FILE *f, const char *key, usec_t usec);
+ int serialize_dual_timestamp(FILE *f, const char *key, const dual_timestamp *t);
+-int serialize_strv(FILE *f, const char *key, char **l);
++int serialize_strv(FILE *f, const char *key, char * const *l);
+ int serialize_pidref(FILE *f, FDSet *fds, const char *key, PidRef *pidref);
+ int serialize_ratelimit(FILE *f, const char *key, const RateLimit *rl);
+-int serialize_string_set(FILE *f, const char *key, Set *s);
++int serialize_string_set(FILE *f, const char *key, const Set *s);
+ int serialize_image_policy(FILE *f, const char *key, const ImagePolicy *p);
+ 
+ static inline int serialize_bool(FILE *f, const char *key, bool b) {

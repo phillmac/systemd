@@ -1,0 +1,23 @@
+From 7ce53569dfe00f22d3da397be7b9f0f858cd9f4f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Michal=20Koutn=C3=BD?= <mkoutny@suse.com>
+Date: Wed, 18 Dec 2024 10:36:55 +0100
+Subject: [PATCH] mkosi: Fix tools image package name
+
+(cherry picked from commit 4c9f242a54ced16897857a80867758557829f0c3)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+index 9c56164f32..c065a52cf3 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+@@ -15,7 +15,7 @@ ToolsTreePackages=
+         pkgconfig(libmicrohttpd)
+         pkgconfig(mount)
+         python3-ruff
+-        tss2-devel
++        tpm2-0-tss-devel
+         python3-jinja2
+         python3-pytest
+         ShellCheck

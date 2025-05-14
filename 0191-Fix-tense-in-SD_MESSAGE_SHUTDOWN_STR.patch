@@ -1,0 +1,28 @@
+From 6936658daf139c5d4114a44116905fb469e5a1e2 Mon Sep 17 00:00:00 2001
+From: Andrew Sayers <andrew-github.com@pileofstuff.org>
+Date: Wed, 29 Jan 2025 11:03:00 +0000
+Subject: [PATCH] Fix tense in SD_MESSAGE_SHUTDOWN_STR
+
+This is printed by bus_manager_log_shutdown() in logind-dbus.c,
+near the start of the shutdown process.
+
+Clarify that events *will* happen, long after this message is sent.
+
+(cherry picked from commit 6c45c5a57cac1dd0c35a879bf46d4a42e03e74e1)
+---
+ catalog/systemd.catalog.in | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/catalog/systemd.catalog.in b/catalog/systemd.catalog.in
+index eab4afd0cd..f3ca748862 100644
+--- a/catalog/systemd.catalog.in
++++ b/catalog/systemd.catalog.in
+@@ -189,7 +189,7 @@ Defined-By: systemd
+ Support: %SUPPORT_URL%
+ 
+ System shutdown has been initiated. The shutdown has now begun and
+-all system services are terminated and all file systems unmounted.
++all system services will be terminated and all file systems will be unmounted.
+ 
+ -- c14aaf76ec284a5fa1f105f88dfb061c
+ Subject: System factory reset initiated

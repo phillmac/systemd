@@ -1,0 +1,28 @@
+From fddcb74610ef948369589d470642faa188bc0501 Mon Sep 17 00:00:00 2001
+From: Lukas Nykryn <lnykryn@redhat.com>
+Date: Mon, 8 Jul 2024 13:13:10 +0200
+Subject: [PATCH] presets: remove resolved
+
+We noticed that some people are installing systemd* and then
+have daemons they don't need running. So let's remove resolved
+from presets so its usage is a bit more deliberate
+
+RHEL-only: policy
+
+Resolves: RHEL-46576
+---
+ presets/90-systemd.preset | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/presets/90-systemd.preset b/presets/90-systemd.preset
+index 004ea6fe14..676f14f0d3 100644
+--- a/presets/90-systemd.preset
++++ b/presets/90-systemd.preset
+@@ -27,7 +27,6 @@ enable systemd-networkd.service
+ enable systemd-networkd-wait-online.service
+ enable systemd-nsresourced.socket
+ enable systemd-pstore.service
+-enable systemd-resolved.service
+ enable systemd-sysext.service
+ enable systemd-timesyncd.service
+ enable systemd-userdbd.socket

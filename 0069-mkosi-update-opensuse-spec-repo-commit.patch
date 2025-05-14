@@ -1,0 +1,23 @@
+From 3e998a517ebc4b3fca069ada0f0adb35b3158a75 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <bluca@debian.org>
+Date: Thu, 26 Dec 2024 12:08:34 +0000
+Subject: [PATCH] mkosi: update opensuse spec repo commit
+
+(cherry picked from commit 4db0252c7fd53dc5388db458ad93ce7ef433e704)
+---
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+index 991d610bb8..972b12c56f 100644
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.conf
+@@ -7,7 +7,7 @@ Distribution=opensuse
+ Environment=
+         GIT_URL=https://src.opensuse.org/pool/systemd
+         GIT_BRANCH=devel
+-        GIT_COMMIT=35e7ce86d092dd1f4a85c51b0c6dc07769235f0fafc0b7072cffbbe79976d6ec
++        GIT_COMMIT=34e937066081c33841b53ff69130ac843100b68f2dc5bca5e21b30699385998e
+         PKG_SUBDIR=opensuse
+ 
+ [Content]

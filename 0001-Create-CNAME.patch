@@ -1,0 +1,18 @@
+From 217666530e117eafbed9af56e2e7ab467c02a405 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Tue, 10 Dec 2024 19:39:23 +0000
+Subject: [PATCH] Create CNAME
+
+---
+ docs/CNAME | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 docs/CNAME
+
+diff --git a/docs/CNAME b/docs/CNAME
+new file mode 100644
+index 0000000000..cdcf4d9a52
+--- /dev/null
++++ b/docs/CNAME
+@@ -0,0 +1 @@
++systemd.io
+\ No newline at end of file

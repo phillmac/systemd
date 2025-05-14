@@ -1,0 +1,28 @@
+From 253ee3c07f31c6938dacdca3e1bbfc3dbc17e403 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 7 Jan 2025 16:25:03 +0100
+Subject: [PATCH] Revert "mkosi: Fix opensuse build"
+
+The commit that changes the name from README.testsuite to README.md
+was never backported (and shouldn't as it would break opensuse's spec)
+so revert the corresponding change in the mkosi opensuse build script.
+
+This reverts commit 4162c331dd4fc6657d1f51c90a7a0223e9f4a30d.
+---
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+index 72115c2c5b..d672c31647 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+@@ -60,9 +60,6 @@ fi
+ # TODO: Drop when the spec is fixed (either the patch is adapted or not applied when building for upstream).
+ sed --in-place '/0009-pid1-handle-console-specificities-weirdness-for-s390.patch/d' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+ 
+-# TODO: Drop when the opensuse spec uses README.md instead of README.testsuite.
+-sed --in-place 's/README.testsuite/README.md/' "pkg/$PKG_SUBDIR${GIT_SUBDIR:+/$GIT_SUBDIR}/systemd.spec"
+-
+ build() {
+     IFS=
+     # shellcheck disable=SC2046

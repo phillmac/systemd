@@ -1,0 +1,40 @@
+From 0cddbebfbeedd3f71037d988dc91b6fb9f9b281f Mon Sep 17 00:00:00 2001
+From: Ronan Pigott <ronan@rjp.ie>
+Date: Sat, 14 Dec 2024 14:39:26 -0700
+Subject: [PATCH] network: don't warn with no NSID assigned
+
+This is nothing interesting to warn about. Also use the symbolic
+constant name when testing for this condition.
+
+(cherry picked from commit e803e95760be87588533f9affd76db6ad0b5fac8)
+---
+ src/network/networkd-manager-bus.c | 2 +-
+ src/shared/socket-netlink.c        | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/network/networkd-manager-bus.c b/src/network/networkd-manager-bus.c
+index 04a986a38d..29e5895255 100644
+--- a/src/network/networkd-manager-bus.c
++++ b/src/network/networkd-manager-bus.c
+@@ -304,7 +304,7 @@ static int property_get_namespace_nsid(
+          * number. */
+ 
+         r = netns_get_nsid(/* netnsfd= */ -EBADF, &nsid);
+-        if (r < 0)
++        if (r < 0 && r != -ENODATA)
+                 log_warning_errno(r, "Failed to query network nsid, ignoring: %m");
+ 
+         return sd_bus_message_append(reply, "u", nsid);
+diff --git a/src/shared/socket-netlink.c b/src/shared/socket-netlink.c
+index 09477449b9..b0500abd8b 100644
+--- a/src/shared/socket-netlink.c
++++ b/src/shared/socket-netlink.c
+@@ -475,7 +475,7 @@ int netns_get_nsid(int netnsfd, uint32_t *ret) {
+                 if (r < 0)
+                         return r;
+ 
+-                if (u == UINT32_MAX) /* no NSID assigned yet */
++                if (u == (uint32_t) NETNSA_NSID_NOT_ASSIGNED) /* no NSID assigned yet */
+                         return -ENODATA;
+ 
+                 if (ret)

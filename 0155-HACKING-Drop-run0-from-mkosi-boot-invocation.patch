@@ -1,0 +1,26 @@
+From 4d6c9f2278025f89dcd55861ba79a16f12af0010 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 24 Jan 2025 17:29:58 +0100
+Subject: [PATCH] HACKING: Drop run0 from mkosi boot invocation
+
+mkosi will itself use run0 or sudo when not running as root to invoke
+systemd-nspawn, so no need to do it in HACKING.md.
+
+(cherry picked from commit 1743f0370fd89d95a2fa89e8475f4b82a38f54c3)
+---
+ docs/HACKING.md | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index 15955f5b7a..e534a51335 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -49,7 +49,7 @@ To build and boot an OS image with the latest systemd installed:
+ ```sh
+ $ mkosi -f genkey                               # Generate signing keys once.
+ $ mkosi -f sandbox meson compile -C build mkosi # (re-)build the OS image
+-$ run0 mkosi boot                               # Boot the image with systemd-nspawn.
++$ mkosi boot                                    # Boot the image with systemd-nspawn.
+ $ mkosi vm                                      # Boot the image with qemu.
+ ```
+ 

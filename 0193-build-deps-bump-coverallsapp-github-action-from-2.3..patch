@@ -1,0 +1,36 @@
+From d42315d9c67e919f9403b9c2284bef9c9a8c2f3a Mon Sep 17 00:00:00 2001
+From: "dependabot[bot]" <49699333+dependabot[bot]@users.noreply.github.com>
+Date: Sat, 1 Feb 2025 09:54:27 +0000
+Subject: [PATCH] build(deps): bump coverallsapp/github-action from 2.3.4 to
+ 2.3.6
+
+Bumps [coverallsapp/github-action](https://github.com/coverallsapp/github-action) from 2.3.4 to 2.3.6.
+- [Release notes](https://github.com/coverallsapp/github-action/releases)
+- [Commits](https://github.com/coverallsapp/github-action/compare/cfd0633edbd2411b532b808ba7a8b5e04f76d2c8...648a8eb78e6d50909eff900e4ec85cab4524a45b)
+
+---
+updated-dependencies:
+- dependency-name: coverallsapp/github-action
+  dependency-type: direct:production
+  update-type: version-update:semver-patch
+...
+
+Signed-off-by: dependabot[bot] <support@github.com>
+(cherry picked from commit f82660222063c09522440efa3fa8e02c97dab1d5)
+---
+ .github/workflows/coverage.yml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 78e6e05b2c..6503059ef4 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -142,7 +142,7 @@ jobs:
+         run: sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
+ 
+       - name: Coveralls
+-        uses: coverallsapp/github-action@cfd0633edbd2411b532b808ba7a8b5e04f76d2c8
++        uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b
+         if: github.repository == 'systemd/systemd' || github.repository == 'systemd/systemd-stable'
+         with:
+           file: build/test/coverage/everything.coverage-info

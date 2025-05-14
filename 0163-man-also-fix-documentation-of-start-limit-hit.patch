@@ -1,0 +1,28 @@
+From a3474965b68c1bc4b3e137eee03408f2a577b2a1 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 14 Jan 2025 14:04:52 +0100
+Subject: [PATCH] man: also fix documentation of start-limit-hit
+
+(cherry picked from commit 390dffb862af5791a33abef08011f87818249975)
+---
+ man/org.freedesktop.systemd1.xml | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/man/org.freedesktop.systemd1.xml b/man/org.freedesktop.systemd1.xml
+index 9cd6a69311..ec38613da0 100644
+--- a/man/org.freedesktop.systemd1.xml
++++ b/man/org.freedesktop.systemd1.xml
+@@ -4818,9 +4818,10 @@ node /org/freedesktop/systemd1/unit/avahi_2ddaemon_2eservice {
+       code. <literal>signal</literal> indicates that a service process exited with an uncaught
+       signal. <literal>core-dump</literal> indicates that a service process exited uncleanly and dumped
+       core. <literal>watchdog</literal> indicates that a service did not send out watchdog ping messages
+-      often enough. <literal>start-limit</literal> indicates that a service has been started too frequently
+-      in a specific time frame (as configured in <varname>StartLimitInterval</varname>,
+-      <varname>StartLimitBurst</varname>).</para>
++      often enough. <literal>start-limit-hit</literal> indicates that a service has been started too
++      frequently in a specific time frame (as configured in <varname>StartLimitInterval</varname>,
++      <varname>StartLimitBurst</varname>). <literal>oom-kill</literal> indicates that a service was
++      terminated due to an out-of-memory (OOM) situation.</para>
+ 
+       <para><varname>ControlGroup</varname> indicates the control group path the processes of this service
+       unit are placed in.</para>

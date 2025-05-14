@@ -1,0 +1,41 @@
+From 631e0ca15fd5073199653c6591a65575b9978e0d Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 7 Jan 2025 17:39:12 +0900
+Subject: [PATCH] shell-completion/udevadm: add net_driver
+
+Follow-up for 2b5b25f123ceb89b3ff45b2380db1c8a88b046d9.
+
+(cherry picked from commit c3d526d765ee41905661c034c348c915a2f49625)
+
+Resolves: RHEL-75774
+---
+ shell-completion/bash/udevadm | 2 +-
+ shell-completion/zsh/_udevadm | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/shell-completion/bash/udevadm b/shell-completion/bash/udevadm
+index 76ed04bb7a..496eac5fd7 100644
+--- a/shell-completion/bash/udevadm
++++ b/shell-completion/bash/udevadm
+@@ -78,7 +78,7 @@ _udevadm() {
+     )
+ 
+     local verbs=(info trigger settle control monitor test-builtin test verify wait lock)
+-    local builtins=(blkid btrfs hwdb input_id keyboard kmod net_id net_setup_link path_id usb_id uaccess)
++    local builtins=(blkid btrfs hwdb input_id keyboard kmod net_driver net_id net_setup_link path_id uaccess usb_id)
+ 
+     for ((i=0; i < COMP_CWORD; i++)); do
+         if __contains_word "${COMP_WORDS[i]}" "${verbs[@]}"; then
+diff --git a/shell-completion/zsh/_udevadm b/shell-completion/zsh/_udevadm
+index 792b3e479d..63db11cea9 100644
+--- a/shell-completion/zsh/_udevadm
++++ b/shell-completion/zsh/_udevadm
+@@ -99,7 +99,7 @@ _udevadm_test-builtin(){
+         '(- *)'{-h,--help}'[Print help]' \
+         '(- *)'{-V,--version}'[Print version of the program]' \
+         '--action=[The action string.]:actions:(add change remove move online offline bind unbind)' \
+-        '*::builtins:(blkid btrfs hwdb input_id net_id net_setup_link kmod path_id usb_id uaccess)'
++        '*::builtins:(blkid btrfs hwdb input_id net_driver net_id net_setup_link kmod path_id uaccess usb_id)'
+     elif  (( CURRENT == 3 )); then
+         _arguments \
+             '--action=[The action string.]:actions:(add change remove move online offline bind unbind)' \

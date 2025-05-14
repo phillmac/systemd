@@ -1,0 +1,68 @@
+From 1ffd9f7e201e155e3301445a9db00dffabe1827a Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 4 Jan 2025 21:07:41 +0900
+Subject: [PATCH] udev: introduce udev_property_name_is_valid() and friends
+
+(cherry picked from commit 4c547d216aad4a61d58a6962d0256da3c6ae6a71)
+
+Resolves: RHEL-75774
+---
+ src/udev/net/link-config.c | 7 ++-----
+ src/udev/udev-def.h        | 8 ++++++++
+ 2 files changed, 10 insertions(+), 5 deletions(-)
+
+diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
+index 7d4e334503..5a4b7261bb 100644
+--- a/src/udev/net/link-config.c
++++ b/src/udev/net/link-config.c
+@@ -15,7 +15,6 @@
+ #include "creds-util.h"
+ #include "device-private.h"
+ #include "device-util.h"
+-#include "env-util.h"
+ #include "escape.h"
+ #include "ethtool-util.h"
+ #include "fd-util.h"
+@@ -1111,8 +1110,7 @@ int config_parse_udev_property(
+                         continue;
+                 }
+ 
+-                /* The restriction for udev property is not clear. Let's apply the one for environment variable here. */
+-                if (!env_assignment_is_valid(resolved)) {
++                if (!udev_property_assignment_is_valid(resolved)) {
+                         log_syntax(unit, LOG_WARNING, filename, line, 0,
+                                    "Invalid udev property, ignoring assignment: %s", word);
+                         continue;
+@@ -1181,8 +1179,7 @@ int config_parse_udev_property_name(
+                         continue;
+                 }
+ 
+-                /* The restriction for udev property is not clear. Let's apply the one for environment variable here. */
+-                if (!env_name_is_valid(resolved)) {
++                if (!udev_property_name_is_valid(resolved)) {
+                         log_syntax(unit, LOG_WARNING, filename, line, 0,
+                                    "Invalid udev property name, ignoring assignment: %s", resolved);
+                         continue;
+diff --git a/src/udev/udev-def.h b/src/udev/udev-def.h
+index 9d9fc78247..ed231764bc 100644
+--- a/src/udev/udev-def.h
++++ b/src/udev/udev-def.h
+@@ -3,6 +3,8 @@
+ 
+ #include <errno.h>
+ 
++#include "env-util.h"
++
+ #define UDEV_NAME_SIZE   512
+ #define UDEV_PATH_SIZE  1024
+ #define UDEV_LINE_SIZE 16384
+@@ -78,3 +80,9 @@ typedef enum UdevReloadFlags {
+         UDEV_RELOAD_KILL_WORKERS     = 1u << (_UDEV_BUILTIN_MAX + 0),
+         UDEV_RELOAD_RULES            = 1u << (_UDEV_BUILTIN_MAX + 1),
+ } UdevReloadFlags;
++
++/* udev properties are conceptually close to environment variables. Let's validate names, values, and
++ * assignments in the same way. */
++#define udev_property_name_is_valid(x)       env_name_is_valid(x)
++#define udev_property_value_is_valid(x)      env_value_is_valid(x)
++#define udev_property_assignment_is_valid(x) env_assignment_is_valid(x)

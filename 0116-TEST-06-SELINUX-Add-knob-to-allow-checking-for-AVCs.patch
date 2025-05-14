@@ -1,0 +1,68 @@
+From 27acc152033e3adbc744fbefa842edf28810b663 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 13:31:11 +0100
+Subject: [PATCH] TEST-06-SELINUX: Add knob to allow checking for AVCs
+
+When running the integration tests downstream, it's useful to be
+able to test that a new systemd version doesn't introduce any AVC
+denials, so let's add a knob to make that possible.
+
+(cherry picked from commit de19520ec979902fd457515d1a795210fdaedf93)
+---
+ test/README.testsuite              | 10 ++++++++++
+ test/fmf/integration-tests/test.sh |  7 +++++++
+ test/units/TEST-06-SELINUX.sh      |  4 ++++
+ 3 files changed, 21 insertions(+)
+
+diff --git a/test/README.testsuite b/test/README.testsuite
+index da2d17a6db..6b367aa673 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -151,6 +151,16 @@ that make use of `run_testcases`.
+ 
+ `TEST_SKIP_TESTCASE=testcase`: takes a space separated list of testcases to skip.
+ 
++### SELinux AVCs
++
++To have `TEST-06-SELINUX` check for SELinux denials, write the following to
++mkosi.local.conf:
++
++```conf
++[Runtime]
++KernelCommandLineExtra=systemd.setenv=TEST_SELINUX_CHECK_AVCS=1
++```
++
+ ## Ubuntu CI
+ 
+ New PRs submitted to the project are run through regression tests, and one set
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 4545090c3c..fccfa15c72 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -69,6 +69,13 @@ ToolsTreeDistribution=$ID
+ ToolsTreeRelease=${VERSION_ID:-rawhide}
+ EOF
+ 
++if [[ -n "${TEST_SELINUX_CHECK_AVCS:-}" ]]; then
++    tee --append mkosi.local.conf <<EOF
++[Runtime]
++KernelCommandLineExtra=systemd.setenv=TEST_SELINUX_CHECK_AVCS=$TEST_SELINUX_CHECK_AVCS
++EOF
++fi
++
+ if [[ -n "${TESTING_FARM_REQUEST_ID:-}" ]]; then
+     tee --append mkosi.local.conf <<EOF
+ [Build]
+diff --git a/test/units/TEST-06-SELINUX.sh b/test/units/TEST-06-SELINUX.sh
+index 937a04005a..4ab9224a9e 100755
+--- a/test/units/TEST-06-SELINUX.sh
++++ b/test/units/TEST-06-SELINUX.sh
+@@ -46,4 +46,8 @@ NSPAWN_ARGS=(systemd-nspawn -q --volatile=yes --directory=/ --bind-ro=/etc --ina
+ [[ "$("${NSPAWN_ARGS[@]}" --selinux-apifs-context="$CONTEXT" stat --printf %C /run)" == "$CONTEXT" ]]
+ [[ "$("${NSPAWN_ARGS[@]}" --selinux-apifs-context="$CONTEXT" --tmpfs=/tmp stat --printf %C /tmp)" == "$CONTEXT" ]]
+ 
++if [[ -n "${TEST_SELINUX_CHECK_AVCS:-}" ]] && ((TEST_SELINUX_CHECK_AVCS)); then
++    (! journalctl -t audit -g AVC -o cat)
++fi
++
+ touch /testok

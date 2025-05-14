@@ -1,0 +1,71 @@
+From 1f6e1928488d461d19fd1e4b4d645b0ea5ea8bf5 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Thu, 12 Dec 2024 11:48:52 +0000
+Subject: [PATCH] units: use PrivateTmp=disconnected instead of 'yes' if
+ DefaultDependencies=no
+
+Avoids subtle race conditions such as the one described at
+#35582.
+
+Fixes #35582
+
+(cherry picked from commit 1ca315be0097bccc9ff55e09ac339a48fdb9a040)
+---
+ units/systemd-coredump@.service.in | 2 +-
+ units/systemd-oomd.service.in      | 2 +-
+ units/systemd-resolved.service.in  | 2 +-
+ units/systemd-timesyncd.service.in | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/units/systemd-coredump@.service.in b/units/systemd-coredump@.service.in
+index fa3206d07b..c74dc7a5a1 100644
+--- a/units/systemd-coredump@.service.in
++++ b/units/systemd-coredump@.service.in
+@@ -26,7 +26,7 @@ NoNewPrivileges=yes
+ OOMScoreAdjust=500
+ PrivateDevices=yes
+ PrivateNetwork=yes
+-PrivateTmp=yes
++PrivateTmp=disconnected
+ ProtectControlGroups=yes
+ ProtectHome=read-only
+ ProtectHostname=yes
+diff --git a/units/systemd-oomd.service.in b/units/systemd-oomd.service.in
+index 82bd6245f8..670d5e6140 100644
+--- a/units/systemd-oomd.service.in
++++ b/units/systemd-oomd.service.in
+@@ -37,7 +37,7 @@ MemoryLow=64M
+ NoNewPrivileges=yes
+ OOMScoreAdjust=-900
+ PrivateDevices=yes
+-PrivateTmp=yes
++PrivateTmp=disconnected
+ ProtectClock=yes
+ ProtectHome=yes
+ ProtectHostname=yes
+diff --git a/units/systemd-resolved.service.in b/units/systemd-resolved.service.in
+index 4aa0788ac4..e181b2528a 100644
+--- a/units/systemd-resolved.service.in
++++ b/units/systemd-resolved.service.in
+@@ -29,7 +29,7 @@ LockPersonality=yes
+ MemoryDenyWriteExecute=yes
+ NoNewPrivileges=yes
+ PrivateDevices=yes
+-PrivateTmp=yes
++PrivateTmp=disconnected
+ ProtectClock=yes
+ ProtectControlGroups=yes
+ ProtectHome=yes
+diff --git a/units/systemd-timesyncd.service.in b/units/systemd-timesyncd.service.in
+index cf233fbffd..835d6327e7 100644
+--- a/units/systemd-timesyncd.service.in
++++ b/units/systemd-timesyncd.service.in
+@@ -31,7 +31,7 @@ LockPersonality=yes
+ MemoryDenyWriteExecute=yes
+ NoNewPrivileges=yes
+ PrivateDevices=yes
+-PrivateTmp=yes
++PrivateTmp=disconnected
+ ProtectProc=invisible
+ ProtectControlGroups=yes
+ ProtectHome=yes

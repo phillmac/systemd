@@ -1,0 +1,66 @@
+From e1659133e79d20799a0841f3099f921957743691 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 11 Dec 2024 11:48:09 +0000
+Subject: [PATCH] mkosi: use inetutils package instead of hostname for
+ Archlinux
+
+In Arch the hostname binary is in a different package
+
+Follow-up for cf48bde7aea52b18ac3fa218d3f60fd3d533ef66
+
+(cherry picked from commit 446d737cba3652a9f3dbd07cea9cb4082350b241)
+---
+ mkosi.conf.d/10-arch/mkosi.conf          | 1 +
+ mkosi.conf.d/10-centos-fedora/mkosi.conf | 1 +
+ mkosi.conf.d/10-debian-ubuntu/mkosi.conf | 1 +
+ mkosi.conf.d/10-opensuse/mkosi.conf      | 1 +
+ 4 files changed, 4 insertions(+)
+
+diff --git a/mkosi.conf.d/10-arch/mkosi.conf b/mkosi.conf.d/10-arch/mkosi.conf
+index 5a4015e4d7..9ceb6ea6f8 100644
+--- a/mkosi.conf.d/10-arch/mkosi.conf
++++ b/mkosi.conf.d/10-arch/mkosi.conf
+@@ -25,6 +25,7 @@ Packages=
+         f2fs-tools
+         git
+         gnutls
++        inetutils
+         iproute
+         iputils
+         knot
+diff --git a/mkosi.conf.d/10-centos-fedora/mkosi.conf b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+index 5b1865a253..8004c089ad 100644
+--- a/mkosi.conf.d/10-centos-fedora/mkosi.conf
++++ b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+@@ -32,6 +32,7 @@ Packages=
+         glibc-langpack-de
+         glibc-langpack-en
+         gnutls-utils
++        hostname
+         integritysetup
+         iproute
+         iproute-tc
+diff --git a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
+index 46dd98828f..c898664f83 100644
+--- a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
++++ b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
+@@ -48,6 +48,7 @@ Packages=
+         fdisk
+         git-core
+         gnutls-bin
++        hostname
+         iproute2
+         iputils-ping
+         isc-dhcp-server
+diff --git a/mkosi.conf.d/10-opensuse/mkosi.conf b/mkosi.conf.d/10-opensuse/mkosi.conf
+index 8a08b1f8c7..4ee3894c00 100644
+--- a/mkosi.conf.d/10-opensuse/mkosi.conf
++++ b/mkosi.conf.d/10-opensuse/mkosi.conf
+@@ -47,6 +47,7 @@ Packages=
+         grep
+         group(wheel)
+         gzip
++        hostname
+         iputils
+         kernel-default
+         kmod

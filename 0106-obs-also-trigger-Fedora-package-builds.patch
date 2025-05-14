@@ -1,0 +1,29 @@
+From e3d0ccaa5a3d4eb637966ee581dc522cd51307e8 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Tue, 7 Jan 2025 00:40:02 +0000
+Subject: [PATCH] obs: also trigger Fedora package builds
+
+The package is logistically separated, as the rpm sources conflict from Fedora
+conflict with the rpm sources from SUSE (some files have the same name and
+location but different, incompatible content), so Fedora builds can't be
+triggered from the same package. The result is the same.
+
+(cherry picked from commit 5c4cb68390a4a3b60d2ca733e283c44fcc205df7)
+---
+ .obs/workflows.yml | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/.obs/workflows.yml b/.obs/workflows.yml
+index 5e417f9398..92e0336b99 100644
+--- a/.obs/workflows.yml
++++ b/.obs/workflows.yml
+@@ -3,6 +3,9 @@ rebuild:
+     - trigger_services:
+         project: home:bluca:systemd
+         package: systemd
++    - trigger_services:
++        project: home:bluca:systemd
++        package: systemd-fedora
+   filters:
+     event: push
+     branches:

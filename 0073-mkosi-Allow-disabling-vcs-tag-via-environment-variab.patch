@@ -1,0 +1,65 @@
+From 04dc2fab4c1aa8cc1cf54c61d73f38185f8074f6 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Thu, 2 Jan 2025 13:11:48 +0100
+Subject: [PATCH] mkosi: Allow disabling vcs-tag via environment variable
+
+(cherry picked from commit 76d80cc34331b0cefd354ea9de70e9bbb46550a0)
+---
+ mkosi.images/build/mkosi.conf.d/arch/mkosi.build.chroot         | 2 +-
+ .../build/mkosi.conf.d/centos-fedora/mkosi.build.chroot         | 2 +-
+ .../build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot         | 2 +-
+ mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot     | 2 +-
+ 4 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/mkosi.images/build/mkosi.conf.d/arch/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/arch/mkosi.build.chroot
+index 83c4960ac8..202646f0ad 100755
+--- a/mkosi.images/build/mkosi.conf.d/arch/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/arch/mkosi.build.chroot
+@@ -28,7 +28,7 @@ if ((LLVM)) && [[ -n "$SANITIZERS" ]]; then
+     MKOSI_LDFLAGS="$MKOSI_LDFLAGS -Wl,-rpath=$(realpath "$(clang --print-runtime-dir)")"
+ fi
+ 
+-MKOSI_MESON_OPTIONS="-D mode=developer -D b_sanitize=${SANITIZERS:-none}"
++MKOSI_MESON_OPTIONS="-D mode=developer -D vcs-tag=${VCS_TAG:-true} -D b_sanitize=${SANITIZERS:-none}"
+ if ((WIPE)) && [[ -d "$BUILDDIR/meson-private" ]]; then
+     MKOSI_MESON_OPTIONS="$MKOSI_MESON_OPTIONS --wipe"
+ fi
+diff --git a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
+index 1de1578e20..e41b9b1189 100755
+--- a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
+@@ -48,7 +48,7 @@ if ((LLVM)) && [[ -n "$SANITIZERS" ]]; then
+     MKOSI_LDFLAGS="$MKOSI_LDFLAGS -Wl,-rpath=$(realpath "$(clang --print-runtime-dir)")"
+ fi
+ 
+-MKOSI_MESON_OPTIONS="-D mode=developer -D b_sanitize=${SANITIZERS:-none}"
++MKOSI_MESON_OPTIONS="-D mode=developer -D vcs-tag=${VCS_TAG:-true} -D b_sanitize=${SANITIZERS:-none}"
+ if ((WIPE)) && [[ -d "$BUILDDIR/meson-private" ]]; then
+     MKOSI_MESON_OPTIONS="$MKOSI_MESON_OPTIONS --wipe"
+ fi
+diff --git a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
+index 5f3e53ff53..b17483a03f 100755
+--- a/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/debian-ubuntu/mkosi.build.chroot
+@@ -44,7 +44,7 @@ if ((LLVM)) && [[ -n "$SANITIZERS" ]]; then
+     MKOSI_LDFLAGS="$MKOSI_LDFLAGS -Wl,-rpath=$(realpath "$(clang --print-runtime-dir)")"
+ fi
+ 
+-MKOSI_MESON_OPTIONS="-D mode=developer -D b_sanitize=${SANITIZERS:-none}"
++MKOSI_MESON_OPTIONS="-D mode=developer -D vcs-tag=${VCS_TAG:-true} -D b_sanitize=${SANITIZERS:-none}"
+ if ((WIPE)) && [[ -d "$BUILDDIR/meson-private" ]]; then
+     MKOSI_MESON_OPTIONS="$MKOSI_MESON_OPTIONS --wipe"
+ fi
+diff --git a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+index 8c4fb9bd6f..72115c2c5b 100755
+--- a/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/opensuse/mkosi.build.chroot
+@@ -48,7 +48,7 @@ if [[ -z "${MKOSI_LDFLAGS// }" ]]; then
+     MKOSI_LDFLAGS="%{nil}"
+ fi
+ 
+-MKOSI_MESON_OPTIONS="-D mode=developer -D b_sanitize=${SANITIZERS:-none}"
++MKOSI_MESON_OPTIONS="-D mode=developer -D vcs-tag=${VCS_TAG:-true} -D b_sanitize=${SANITIZERS:-none}"
+ if ((WIPE)) && [[ -d "$BUILDDIR/meson-private" ]]; then
+     MKOSI_MESON_OPTIONS="$MKOSI_MESON_OPTIONS --wipe"
+ fi

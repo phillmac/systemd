@@ -1,0 +1,54 @@
+From 0c1daafe41889f272c9e9d37f62614505a50f1d3 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 6 Jan 2025 17:26:52 +0900
+Subject: [PATCH] core/device: do not drop backslashes in
+ SYSTEMD_WANTS=/SYSTEMD_USER_WANTS=
+
+Let consider the following udev rules:
+===
+PROGRAM="/usr/bin/systemd-escape foo-bar-baz", ENV{SYSTEMD_WANTS}+="test1@$result.service"
+PROGRAM="/usr/bin/systemd-escape aaa-bbb-ccc", ENV{SYSTEMD_WANTS}+="test2@$result.service"
+===
+Then, a device expectedly gains a property:
+===
+SYSTEMD_WANTS=test1@foo\x2dbar\x2dbaz.service test2@aaa\x2dbbb\x2dccc.service
+===
+After the event being processed by udevd, PID1 processes the device, the
+property previously was parsed with extract_first_word(EXTRACT_UNQUOTE),
+then the device unit gained the following dependencies:
+===
+Wants=test1@foox2dbarx2dbaz.service test2@aaax2dbbbx2dccc.service
+===
+So both '%i' and '%I' for the template services did not match with the original
+data, and it was hard to use systemd-escape in PROGRAM= udev rule token.
+
+This makes the property parsed with extract_first_word(EXTRACT_UNQUOTE|EXTRACT_RETAIN_ESCAPE),
+hence the device unit now gains the following dependencies:
+===
+Wants=test1@foo\x2dbar\x2dbaz.service test2@aaa\x2dbbb\x2dccc.service
+===
+and '%I' for the template services match with the original data.
+
+Fixes a bug caused by ceed8f0c8b9a46300eccd1afa2dd8d3c2cb6b47c (v233).
+
+Fixes #16735.
+Replaces #16737 and #35768.
+
+(cherry picked from commit a467358b2a18b611e48e62ed89167a04e0f7634e)
+---
+ src/core/device.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/device.c b/src/core/device.c
+index a8921e91c3..196117daba 100644
+--- a/src/core/device.c
++++ b/src/core/device.c
+@@ -542,7 +542,7 @@ static int device_add_udev_wants(Unit *u, sd_device *dev) {
+         for (;;) {
+                 _cleanup_free_ char *word = NULL, *k = NULL;
+ 
+-                r = extract_first_word(&wants, &word, NULL, EXTRACT_UNQUOTE);
++                r = extract_first_word(&wants, &word, NULL, EXTRACT_UNQUOTE | EXTRACT_RETAIN_ESCAPE);
+                 if (r == 0)
+                         break;
+                 if (r == -ENOMEM)

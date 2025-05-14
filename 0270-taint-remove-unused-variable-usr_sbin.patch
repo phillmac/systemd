@@ -1,0 +1,27 @@
+From 6b3e22ba2834f02d8513d44c65bf95b186deeb40 Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Tue, 16 Jul 2024 10:09:23 +0200
+Subject: [PATCH] taint: remove unused variable `usr_sbin`
+
+follow-up to https://github.com/redhat-plumbers/systemd-rhel10/commit/13a07024f674e770844de29cd3d01cb7117f56d9
+
+rhel-only: policy
+
+Related: RHEL-40924
+---
+ src/core/taint.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/taint.c b/src/core/taint.c
+index f9b3b3d69a..676cb4d5e7 100644
+--- a/src/core/taint.c
++++ b/src/core/taint.c
+@@ -39,7 +39,7 @@ char** taint_strv(void) {
+          * runtime should be tagged here. For stuff that is known during compilation, emit a warning in the
+          * configuration phase. */
+ 
+-        _cleanup_free_ char *bin = NULL, *usr_sbin = NULL, *var_run = NULL;
++        _cleanup_free_ char *bin = NULL, *var_run = NULL;
+ 
+         if (readlink_malloc("/bin", &bin) < 0 || !PATH_IN_SET(bin, "usr/bin", "/usr/bin"))
+                 stage[n++] = "unmerged-usr";

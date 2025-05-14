@@ -1,0 +1,28 @@
+From ed729eca0cc82abce7966eba5ab786a7a3cbce4c Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 8 Jan 2025 10:25:05 +0100
+Subject: [PATCH] fmf: Don't fail if we can't put selinux in permissive mode
+
+The tests might be running unprivileged or in an environment without
+selinux so let's not fail if we can't put it in permissive mode.
+
+(cherry picked from commit 0250db0139b159cb9e6c1a87ad91ffdd03e80236)
+---
+ test/fmf/integration-tests/test.sh | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/test/fmf/integration-tests/test.sh b/test/fmf/integration-tests/test.sh
+index 4984fb119b..fe139567bd 100755
+--- a/test/fmf/integration-tests/test.sh
++++ b/test/fmf/integration-tests/test.sh
+@@ -4,8 +4,8 @@
+ set -eux
+ set -o pipefail
+ 
+-# Switch SELinux to permissive, since the tests don't set proper contexts
+-setenforce 0
++# Switch SELinux to permissive if possible, since the tests don't set proper contexts
++setenforce 0 || true
+ 
+ # Allow running the integration tests downstream in dist-git with something like
+ # the following snippet which makes the dist-git sources available in $TMT_SOURCE_DIR:

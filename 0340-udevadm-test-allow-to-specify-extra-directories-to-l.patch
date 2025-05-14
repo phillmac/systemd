@@ -1,0 +1,255 @@
+From 5921b074c97620053b63d37adcb665b17ace5238 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 11 Jan 2025 17:54:43 +0900
+Subject: [PATCH] udevadm-test: allow to specify extra directories to load udev
+ rules files
+
+This adds -D/--extra-rules-dir=DIR switch for 'udevadm test' command.
+When specified, udev rules files in the specified directory will be also
+loaded. This may be useful for debugging udev rules by copying some udev
+rules files to a temporary directory.
+
+(cherry picked from commit c1b7db56e583dbe98e9c605df45a7f7b09c9751f)
+
+Resolves: RHEL-75774
+---
+ man/udevadm.xml                  | 15 ++++++++++++++
+ shell-completion/bash/udevadm    |  5 ++++-
+ shell-completion/zsh/_udevadm    |  1 +
+ src/udev/test-udev-rule-runner.c |  2 +-
+ src/udev/udev-manager.c          |  4 ++--
+ src/udev/udev-rules.c            | 16 ++++++++++++---
+ src/udev/udev-rules.h            |  2 +-
+ src/udev/udevadm-test.c          | 34 +++++++++++++++++++++++++-------
+ 8 files changed, 64 insertions(+), 15 deletions(-)
+
+diff --git a/man/udevadm.xml b/man/udevadm.xml
+index caa41bd204..79907b30c3 100644
+--- a/man/udevadm.xml
++++ b/man/udevadm.xml
+@@ -869,6 +869,21 @@
+             <xi:include href="version-info.xml" xpointer="v209"/>
+           </listitem>
+         </varlistentry>
++        <varlistentry>
++          <term><option>-D <replaceable>DIR</replaceable></option></term>
++          <term><option>--extra-rules-dir=<replaceable>DIR</replaceable></option></term>
++          <listitem>
++            <para>Also load udev rules files from the specified directory. This option can be specified
++            multiple times. It may be useful for debugging udev rules by copying some udev rules files to a
++            temporary directory, editing them, and specifying the directory with this option. Files found in
++            the specified directories have a higher priority than rules files in the default
++            <filename>udev/rules.d</filename> directories used by <command>systemd-udevd</command>. See
++            <citerefentry><refentrytitle>udev</refentrytitle><manvolnum>7</manvolnum></citerefentry> for more
++            details about the search paths.</para>
++
++            <xi:include href="version-info.xml" xpointer="v258"/>
++          </listitem>
++        </varlistentry>
+         <varlistentry>
+           <term><option>-v</option></term>
+           <term><option>--verbose</option></term>
+diff --git a/shell-completion/bash/udevadm b/shell-completion/bash/udevadm
+index af3a0b9058..76ed04bb7a 100644
+--- a/shell-completion/bash/udevadm
++++ b/shell-completion/bash/udevadm
+@@ -70,7 +70,7 @@ _udevadm() {
+         [MONITOR_STANDALONE]='-k --kernel -u --udev -p --property'
+         [MONITOR_ARG]='-s --subsystem-match -t --tag-match'
+         [TEST_STANDALONE]='-v --verbose'
+-        [TEST_ARG]='-a --action -N --resolve-names'
++        [TEST_ARG]='-a --action -N --resolve-names -D --extra-rules-dir'
+         [TEST_BUILTIN]='-a --action'
+         [VERIFY]='-N --resolve-names --root --no-summary --no-style'
+         [WAIT]='-t --timeout --initialized=no --removed --settle'
+@@ -225,6 +225,9 @@ _udevadm() {
+                     -N|--resolve-names)
+                         comps='early late never'
+                         ;;
++                    -D|--extra-rules-dir)
++                        comps=''
++                        compopt -o dirnames
+                 esac
+             elif [[ $cur = -* ]]; then
+                 comps="${OPTS[COMMON]} ${OPTS[TEST_ARG]} ${OPTS[TEST_STANDALONE]}"
+diff --git a/shell-completion/zsh/_udevadm b/shell-completion/zsh/_udevadm
+index 5c3d3c93ef..792b3e479d 100644
+--- a/shell-completion/zsh/_udevadm
++++ b/shell-completion/zsh/_udevadm
+@@ -87,6 +87,7 @@ _udevadm_test(){
+         '(-)'{-V,--version}'[Show package version]' \
+         '--action=[The action string.]:actions:(add change remove move online offline bind unbind)' \
+         '--subsystem=[The subsystem string.]' \
++        '(-D --extra-rules-dir=)'{-D,--extra-rules-dir=}'[Also load rules from the directory.]' \
+         '(-v --verbose)'{-v,--verbose}'[Show verbose logs.]' \
+         '*::devpath:_files -P /sys/ -W /sys'
+ }
+diff --git a/src/udev/test-udev-rule-runner.c b/src/udev/test-udev-rule-runner.c
+index 9a04abf590..9ad446aa2d 100644
+--- a/src/udev/test-udev-rule-runner.c
++++ b/src/udev/test-udev-rule-runner.c
+@@ -136,7 +136,7 @@ static int run(int argc, char *argv[]) {
+                 usleep_safe(us);
+         }
+ 
+-        assert_se(udev_rules_load(&rules, RESOLVE_NAME_EARLY) == 0);
++        assert_se(udev_rules_load(&rules, RESOLVE_NAME_EARLY, /* extra = */ NULL) == 0);
+ 
+         const char *syspath = strjoina("/sys", devpath);
+         r = device_new_from_synthetic_event(&dev, syspath, action);
+diff --git a/src/udev/udev-manager.c b/src/udev/udev-manager.c
+index 1768da5a38..2c71698bf6 100644
+--- a/src/udev/udev-manager.c
++++ b/src/udev/udev-manager.c
+@@ -281,7 +281,7 @@ static void manager_reload(Manager *manager, bool force) {
+         udev_builtin_reload(flags);
+ 
+         if (FLAGS_SET(flags, UDEV_RELOAD_RULES)) {
+-                r = udev_rules_load(&rules, manager->config.resolve_name_timing);
++                r = udev_rules_load(&rules, manager->config.resolve_name_timing, /* extra = */ NULL);
+                 if (r < 0)
+                         log_warning_errno(r, "Failed to read udev rules, using the previously loaded rules, ignoring: %m");
+                 else
+@@ -1433,7 +1433,7 @@ int manager_main(Manager *manager) {
+ 
+         udev_builtin_init();
+ 
+-        r = udev_rules_load(&manager->rules, manager->config.resolve_name_timing);
++        r = udev_rules_load(&manager->rules, manager->config.resolve_name_timing, /* extra = */ NULL);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to read udev rules: %m");
+ 
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index dfe521378f..ec4660968c 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -1778,16 +1778,26 @@ UdevRules* udev_rules_new(ResolveNameTiming resolve_name_timing) {
+         return rules;
+ }
+ 
+-int udev_rules_load(UdevRules **ret_rules, ResolveNameTiming resolve_name_timing) {
++int udev_rules_load(UdevRules **ret_rules, ResolveNameTiming resolve_name_timing, char * const *extra) {
+         _cleanup_(udev_rules_freep) UdevRules *rules = NULL;
+-        _cleanup_strv_free_ char **files = NULL;
++        _cleanup_strv_free_ char **files = NULL, **directories = NULL;
+         int r;
+ 
+         rules = udev_rules_new(resolve_name_timing);
+         if (!rules)
+                 return -ENOMEM;
+ 
+-        r = conf_files_list_strv(&files, ".rules", NULL, 0, RULES_DIRS);
++        if (!strv_isempty(extra)) {
++                directories = strv_copy(extra);
++                if (!directories)
++                        return -ENOMEM;
++        }
++
++        r = strv_extend_strv(&directories, CONF_PATHS_STRV("udev/rules.d"), /* filter_duplicates = */ false);
++        if (r < 0)
++                return r;
++
++        r = conf_files_list_strv(&files, ".rules", NULL, 0, (const char* const*) directories);
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to enumerate rules files: %m");
+ 
+diff --git a/src/udev/udev-rules.h b/src/udev/udev-rules.h
+index 67d7e5b178..62dac5ba73 100644
+--- a/src/udev/udev-rules.h
++++ b/src/udev/udev-rules.h
+@@ -14,7 +14,7 @@ int udev_rule_parse_value(char *str, char **ret_value, char **ret_endpos, bool *
+ int udev_rules_parse_file(UdevRules *rules, const char *filename, bool extra_checks, UdevRuleFile **ret);
+ unsigned udev_rule_file_get_issues(UdevRuleFile *rule_file);
+ UdevRules* udev_rules_new(ResolveNameTiming resolve_name_timing);
+-int udev_rules_load(UdevRules **ret_rules, ResolveNameTiming resolve_name_timing);
++int udev_rules_load(UdevRules **ret_rules, ResolveNameTiming resolve_name_timing, char * const *extra);
+ UdevRules* udev_rules_free(UdevRules *rules);
+ DEFINE_TRIVIAL_CLEANUP_FUNC(UdevRules*, udev_rules_free);
+ #define udev_rules_free_and_replace(a, b) free_and_replace_full(a, b, udev_rules_free)
+diff --git a/src/udev/udevadm-test.c b/src/udev/udevadm-test.c
+index 5ceb6a5f28..c3f56d2d81 100644
+--- a/src/udev/udevadm-test.c
++++ b/src/udev/udevadm-test.c
+@@ -10,6 +10,9 @@
+ #include "sd-device.h"
+ 
+ #include "device-private.h"
++#include "parse-argument.h"
++#include "static-destruct.h"
++#include "strv.h"
+ #include "udev-builtin.h"
+ #include "udev-dump.h"
+ #include "udev-event.h"
+@@ -20,8 +23,11 @@
+ static sd_device_action_t arg_action = SD_DEVICE_ADD;
+ static ResolveNameTiming arg_resolve_name_timing = RESOLVE_NAME_EARLY;
+ static const char *arg_syspath = NULL;
++static char **arg_extra_rules_dir = NULL;
+ static bool arg_verbose = false;
+ 
++STATIC_DESTRUCTOR_REGISTER(arg_extra_rules_dir, strv_freep);
++
+ static int help(void) {
+ 
+         printf("%s test [OPTIONS] DEVPATH\n\n"
+@@ -30,6 +36,7 @@ static int help(void) {
+                "  -V --version                         Show package version\n"
+                "  -a --action=ACTION|help              Set action string\n"
+                "  -N --resolve-names=early|late|never  When to resolve names\n"
++               "  -D --extra-rules-dir=DIR             Also load rules from the directory\n"
+                "  -v --verbose                         Show verbose logs\n",
+                program_invocation_short_name);
+ 
+@@ -38,17 +45,18 @@ static int help(void) {
+ 
+ static int parse_argv(int argc, char *argv[]) {
+         static const struct option options[] = {
+-                { "action",        required_argument, NULL, 'a' },
+-                { "resolve-names", required_argument, NULL, 'N' },
+-                { "verbose",       no_argument,       NULL, 'v' },
+-                { "version",       no_argument,       NULL, 'V' },
+-                { "help",          no_argument,       NULL, 'h' },
++                { "action",          required_argument, NULL, 'a' },
++                { "resolve-names",   required_argument, NULL, 'N' },
++                { "extra-rules-dir", required_argument, NULL, 'D' },
++                { "verbose",         no_argument,       NULL, 'v' },
++                { "version",         no_argument,       NULL, 'V' },
++                { "help",            no_argument,       NULL, 'h' },
+                 {}
+         };
+ 
+         int r, c;
+ 
+-        while ((c = getopt_long(argc, argv, "a:N:vVh", options, NULL)) >= 0)
++        while ((c = getopt_long(argc, argv, "a:N:D:vVh", options, NULL)) >= 0)
+                 switch (c) {
+                 case 'a':
+                         r = parse_device_action(optarg, &arg_action);
+@@ -63,6 +71,18 @@ static int parse_argv(int argc, char *argv[]) {
+                                 return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+                                                        "--resolve-names= must be early, late or never");
+                         break;
++                case 'D': {
++                        _cleanup_free_ char *p = NULL;
++
++                        r = parse_path_argument(optarg, /* suppress_root = */ false, &p);
++                        if (r < 0)
++                                return r;
++
++                        r = strv_consume(&arg_extra_rules_dir, TAKE_PTR(p));
++                        if (r < 0)
++                                return log_oom();
++                        break;
++                }
+                 case 'v':
+                         arg_verbose = true;
+                         break;
+@@ -108,7 +128,7 @@ int test_main(int argc, char *argv[], void *userdata) {
+         puts("Loading builtins done.");
+ 
+         puts("\nLoading udev rules files...");
+-        r = udev_rules_load(&rules, arg_resolve_name_timing);
++        r = udev_rules_load(&rules, arg_resolve_name_timing, arg_extra_rules_dir);
+         if (r < 0) {
+                 log_error_errno(r, "Failed to read udev rules: %m");
+                 goto out;

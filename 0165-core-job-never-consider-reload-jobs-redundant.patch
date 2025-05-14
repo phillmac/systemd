@@ -1,0 +1,34 @@
+From 1e7b1ce928f2fd62ac63299851124aaf977f48d4 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Wed, 22 Jan 2025 19:36:27 +0100
+Subject: [PATCH] core/job: never consider reload jobs redundant
+
+Follow-up for 656bbffc6c45bdd8d5c28a96ca948ba16c546547
+
+The commit reworked job merging logic so that reload jobs
+won't get merged. However, they might get dropped from
+transaction due to being deemed redundant, i.e. way before
+it even hits job_install(). Let's make sure reload jobs
+are always kept during transaction construction stage, too.
+
+(cherry picked from commit 7b940d8de91aeba6fa171eb42b690fa95641f29e)
+---
+ src/core/job.c | 5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/src/core/job.c b/src/core/job.c
+index 8fbbe757fe..c6c736cc6f 100644
+--- a/src/core/job.c
++++ b/src/core/job.c
+@@ -448,9 +448,8 @@ bool job_type_is_redundant(JobType a, UnitActiveState b) {
+                 return IN_SET(b, UNIT_ACTIVE, UNIT_RELOADING, UNIT_REFRESHING);
+ 
+         case JOB_RELOAD:
+-                return
+-                        b == UNIT_RELOADING;
+-
++                /* Reload jobs are never consider redundant/duplicate. Refer jobs_may_late_merge() for
++                 * a detailed justification. */
+         case JOB_RESTART:
+                 /* Restart jobs must always be kept.
+                  *

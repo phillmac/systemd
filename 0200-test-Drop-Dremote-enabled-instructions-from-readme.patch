@@ -1,0 +1,31 @@
+From 4e32ce3005b905309849322e373742d419f26803 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Tue, 4 Feb 2025 20:21:36 +0100
+Subject: [PATCH] test: Drop -Dremote=enabled instructions from readme
+
+The test commands now use mkosi sandbox which always makes sure the
+required dependencies for systemd-journal-remote are enabled so no
+need to reconfigure meson explicitly anymore.
+
+(cherry picked from commit 284a56ff60bc8ff90c7f0e0614b1c30edd875288)
+---
+ test/README.testsuite | 6 ------
+ 1 file changed, 6 deletions(-)
+
+diff --git a/test/README.testsuite b/test/README.testsuite
+index e33c08f33a..17f430eeff 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -8,12 +8,6 @@ latest version of mkosi. See
+ for more specific details. Make sure `mkosi` is available in `$PATH` when
+ reconfiguring meson to make sure it is picked up properly.
+ 
+-We also need to make sure the required meson options are enabled:
+-
+-```shell
+-$ mkosi -f sandbox meson setup --reconfigure build -Dremote=enabled
+-```
+-
+ To make sure `mkosi` doesn't try to build systemd from source during the image build
+ process, you can add the following to `mkosi.local.conf`:
+ 

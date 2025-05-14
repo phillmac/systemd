@@ -1,0 +1,28 @@
+From ddda27b8c449150ad2d6c07bc569d85a88809d06 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 16 Dec 2024 02:02:30 +0900
+Subject: [PATCH] test/README: Environment= setting for mkosi should be in
+ [Build] section
+
+Otherwise, we get the following warning:
+
+mkosi.local.conf: Setting Environment should be configured in [Build], not [Content].
+
+(cherry picked from commit 78ef3959474a760679e50eb57b52563cb6f9b66d)
+---
+ test/README.testsuite | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/README.testsuite b/test/README.testsuite
+index 5546fcf8b1..fc1c9f136d 100644
+--- a/test/README.testsuite
++++ b/test/README.testsuite
+@@ -18,7 +18,7 @@ To make sure `mkosi` doesn't try to build systemd from source during the image b
+ process, you can add the following to `mkosi.local.conf`:
+ 
+ ```
+-[Content]
++[Build]
+ Environment=NO_BUILD=1
+ ```
+ 

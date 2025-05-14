@@ -1,0 +1,38 @@
+From 5573ac7d9c52bed8d38480788b02639ede3881fc Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 11 Dec 2024 12:01:18 +0000
+Subject: [PATCH] test-fd-util: skip test when lacking privileges to create a
+ new namespace
+
+To reproduce, as an unprivileged user start a docker container and build
+and run the unit tests inside it:
+
+$ docker run --rm -ti debian:bookworm bash
+...
+/* test_close_all_fds */
+Successfully forked off '(caf-plain)' as PID 10496.
+Skipping PR_SET_MM, as we don't have privileges.
+(caf-plain) succeeded.
+Failed to fork off '(caf-noproc)': Operation not permitted
+Assertion 'r >= 0' failed at src/test/test-fd-util.c:392, function test_close_all_fds(). Aborting.
+
+Partially fixes #35552
+
+(cherry picked from commit 630a2e7ee195ca96e102acac8df67a278a879124)
+---
+ src/test/test-fd-util.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/src/test/test-fd-util.c b/src/test/test-fd-util.c
+index 20cf7b7627..5817d92725 100644
+--- a/src/test/test-fd-util.c
++++ b/src/test/test-fd-util.c
+@@ -389,6 +389,8 @@ TEST(close_all_fds) {
+                         test_close_all_fds_inner();
+                 _exit(EXIT_SUCCESS);
+         }
++        if (ERRNO_IS_NEG_PRIVILEGE(r))
++                return (void) log_tests_skipped("Lacking privileges for test in namespace with /proc/ overmounted");
+         assert_se(r >= 0);
+ 
+         if (!is_seccomp_available())

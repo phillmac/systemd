@@ -1,0 +1,205 @@
+From 3484ab94b94216de0db23ad1f1567641d21a8ad7 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Fri, 3 Jan 2025 23:25:23 +0100
+Subject: [PATCH] mkosi: Update to latest
+
+(cherry picked from commit c008b703701e676a88e16de4c867b9fc4818070d)
+---
+ .github/workflows/coverage.yml                                  | 2 +-
+ .github/workflows/mkosi.yml                                     | 2 +-
+ test/TEST-64-UDEV-STORAGE/btrfs_basic.configure                 | 2 +-
+ test/TEST-64-UDEV-STORAGE/iscsi_lvm.configure                   | 2 +-
+ test/TEST-64-UDEV-STORAGE/long_sysfs_path.configure             | 2 +-
+ test/TEST-64-UDEV-STORAGE/lvm_basic.configure                   | 2 +-
+ test/TEST-64-UDEV-STORAGE/mdadm_basic.configure                 | 2 +-
+ test/TEST-64-UDEV-STORAGE/mdadm_lvm.configure                   | 2 +-
+ test/TEST-64-UDEV-STORAGE/multipath_basic_failover.configure    | 2 +-
+ test/TEST-64-UDEV-STORAGE/nvme_basic.configure                  | 2 +-
+ test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure              | 2 +-
+ test/TEST-64-UDEV-STORAGE/simultaneous_events.configure         | 2 +-
+ test/TEST-64-UDEV-STORAGE/virtio_scsi_basic.configure           | 2 +-
+ .../virtio_scsi_identically_named_partitions.configure          | 2 +-
+ 14 files changed, 14 insertions(+), 14 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index a1587e62e9..cea1e84af2 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@ba07d53000b6c560ad0b9f07550aca93c0284e88
++      - uses: systemd/mkosi@7051715d8541d4d077a218f7445976225ec74d78
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 4d128822fb..873ed589b6 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -113,7 +113,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@ba07d53000b6c560ad0b9f07550aca93c0284e88
++      - uses: systemd/mkosi@7051715d8541d4d077a218f7445976225ec74d78
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+diff --git a/test/TEST-64-UDEV-STORAGE/btrfs_basic.configure b/test/TEST-64-UDEV-STORAGE/btrfs_basic.configure
+index 8ef58a9fdd..85ec983fc3 100755
+--- a/test/TEST-64-UDEV-STORAGE/btrfs_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/btrfs_basic.configure
+@@ -11,7 +11,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0"]
+ 
+ for i in range(4):
+     id = f"drivebtrfsbasic{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "350M" if i == 0 else "128M",
+diff --git a/test/TEST-64-UDEV-STORAGE/iscsi_lvm.configure b/test/TEST-64-UDEV-STORAGE/iscsi_lvm.configure
+index ca23e33858..1d7a0c5b9a 100755
+--- a/test/TEST-64-UDEV-STORAGE/iscsi_lvm.configure
++++ b/test/TEST-64-UDEV-STORAGE/iscsi_lvm.configure
+@@ -11,7 +11,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0"]
+ 
+ for i in range(4):
+     id = f"driveiscsibasic{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "150M" if i == 0 else "70M",
+diff --git a/test/TEST-64-UDEV-STORAGE/long_sysfs_path.configure b/test/TEST-64-UDEV-STORAGE/long_sysfs_path.configure
+index 02e2ac4daa..a920171add 100755
+--- a/test/TEST-64-UDEV-STORAGE/long_sysfs_path.configure
++++ b/test/TEST-64-UDEV-STORAGE/long_sysfs_path.configure
+@@ -7,7 +7,7 @@ import sys
+ 
+ config = json.load(sys.stdin)
+ 
+-config["QemuDrives"] += [
++config["Drives"] += [
+     {
+         "Id": "drive0",
+         "Size": "64M",
+diff --git a/test/TEST-64-UDEV-STORAGE/lvm_basic.configure b/test/TEST-64-UDEV-STORAGE/lvm_basic.configure
+index 9387b8377c..c4074becb4 100755
+--- a/test/TEST-64-UDEV-STORAGE/lvm_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/lvm_basic.configure
+@@ -11,7 +11,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0"]
+ 
+ for i in range(4):
+     id = f"drivelvmbasic{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "32M",
+diff --git a/test/TEST-64-UDEV-STORAGE/mdadm_basic.configure b/test/TEST-64-UDEV-STORAGE/mdadm_basic.configure
+index 3f00afa955..d722e081e2 100755
+--- a/test/TEST-64-UDEV-STORAGE/mdadm_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/mdadm_basic.configure
+@@ -11,7 +11,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0"]
+ 
+ for i in range(5):
+     id = f"drivemdadmbasic{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "64M",
+diff --git a/test/TEST-64-UDEV-STORAGE/mdadm_lvm.configure b/test/TEST-64-UDEV-STORAGE/mdadm_lvm.configure
+index b7661d9e81..d669895925 100755
+--- a/test/TEST-64-UDEV-STORAGE/mdadm_lvm.configure
++++ b/test/TEST-64-UDEV-STORAGE/mdadm_lvm.configure
+@@ -11,7 +11,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0"]
+ 
+ for i in range(5):
+     id = f"drivemdadmlvm{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "64M",
+diff --git a/test/TEST-64-UDEV-STORAGE/multipath_basic_failover.configure b/test/TEST-64-UDEV-STORAGE/multipath_basic_failover.configure
+index 5f323b8a8b..a59927c3b7 100755
+--- a/test/TEST-64-UDEV-STORAGE/multipath_basic_failover.configure
++++ b/test/TEST-64-UDEV-STORAGE/multipath_basic_failover.configure
+@@ -18,7 +18,7 @@ for ndisk in range(16):
+ 
+     for nback in range(4):
+         id = f"drive{ndisk}x{nback}"
+-        config["QemuDrives"] += [
++        config["Drives"] += [
+             {
+                 "Id": id,
+                 "Size": size,
+diff --git a/test/TEST-64-UDEV-STORAGE/nvme_basic.configure b/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
+index b740c096c4..948003e4de 100755
+--- a/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/nvme_basic.configure
+@@ -18,7 +18,7 @@ if 'name "nvme"' not in result.stdout:
+ def add_drive(i: int, serial: str) -> None:
+     global config
+     id = f"nvme{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "1M",
+diff --git a/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure b/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
+index 3d7900773c..029d4360ba 100755
+--- a/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
++++ b/test/TEST-64-UDEV-STORAGE/nvme_subsystem.configure
+@@ -16,7 +16,7 @@ if 'name "nvme"' not in result.stdout:
+     exit(77)
+ 
+ for id in ("nvme0", "nvme1"):
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "1M",
+diff --git a/test/TEST-64-UDEV-STORAGE/simultaneous_events.configure b/test/TEST-64-UDEV-STORAGE/simultaneous_events.configure
+index a0edb01cc1..668f3e2aa0 100755
+--- a/test/TEST-64-UDEV-STORAGE/simultaneous_events.configure
++++ b/test/TEST-64-UDEV-STORAGE/simultaneous_events.configure
+@@ -9,7 +9,7 @@ config = json.load(sys.stdin)
+ 
+ for i in range(10):
+     id = f"drivesimultaneousevents{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "128M",
+diff --git a/test/TEST-64-UDEV-STORAGE/virtio_scsi_basic.configure b/test/TEST-64-UDEV-STORAGE/virtio_scsi_basic.configure
+index ab8d530a3e..91e1fe14e5 100755
+--- a/test/TEST-64-UDEV-STORAGE/virtio_scsi_basic.configure
++++ b/test/TEST-64-UDEV-STORAGE/virtio_scsi_basic.configure
+@@ -12,7 +12,7 @@ for i in range(4):
+ 
+ for i in range(128):
+     id = f"drive{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "1M",
+diff --git a/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure b/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
+index edc5138ce8..dce6b1503f 100755
+--- a/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
++++ b/test/TEST-64-UDEV-STORAGE/virtio_scsi_identically_named_partitions.configure
+@@ -21,7 +21,7 @@ config["QemuArgs"] += ["-device", "virtio-scsi-pci,id=scsi0,num_queues=4"]
+ 
+ for i in range(0, num_disk):
+     id = f"drive{i}"
+-    config["QemuDrives"] += [
++    config["Drives"] += [
+         {
+             "Id": id,
+             "Size": "40M",

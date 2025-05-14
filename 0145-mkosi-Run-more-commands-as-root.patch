@@ -1,0 +1,90 @@
+From 181dface152b0596de35cd753f2f67420d52b5f1 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 20 Jan 2025 13:57:02 +0100
+Subject: [PATCH] mkosi: Run more commands as root
+
+zypper has some new rather questionable userspace level permission
+checking that blows ups completely when operating as root on an
+cache directory owned by a non-root user, so let's build the tools
+tree and set up meson as root to avoid the issue.
+
+(https://github.com/openSUSE/libzypp/issues/603)
+
+Also drop a leftover debug message from coverage.yml while we're at
+it.
+
+(cherry picked from commit cb13d6b44f7952fdfd1fbab99293403a107c75c0)
+---
+ .github/workflows/coverage.yml | 20 ++++++++++++--------
+ .github/workflows/mkosi.yml    | 10 ++++++++--
+ 2 files changed, 20 insertions(+), 10 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 2bb9be7d7a..c98ec27385 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -74,21 +74,25 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: mkosi -f sandbox true
+-
+-      - name: PATH
+-        run: echo "$PATH"
++        run: sudo --preserve-env mkosi -f sandbox true
+ 
+       - name: Configure meson
+-        run: mkosi sandbox meson setup --buildtype=debugoptimized -Dintegration-tests=true build
++        run: |
++          sudo --preserve-env --preserve-env=PATH \
++            mkosi sandbox \
++            meson setup \
++            --buildtype=debugoptimized \
++            -Dintegration-tests=true \
++            build
+ 
+       - name: Build image
+         run: sudo --preserve-env mkosi sandbox meson compile -C build mkosi
+ 
+       - name: Initial coverage report
+         run: |
+-          mkdir -p build/test/coverage
+-          mkosi sandbox \
++          sudo --preserve-env mkdir -p build/test/coverage
++          sudo --preserve-env \
++            mkosi sandbox \
+             lcov \
+             --directory build/mkosi.builddir/arch~rolling~x86-64 \
+             --capture \
+@@ -132,7 +136,7 @@ jobs:
+               lcov_args+=(--add-tracefile "${file}")
+           done < <(find build/test/coverage -name "TEST-*.coverage-info")
+ 
+-          mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
++          sudo --preserve-env mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
+ 
+       - name: List coverage report
+         run: mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 3a90bd6680..47a43c689f 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -188,10 +188,16 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: mkosi -f sandbox true
++        run: sudo --preserve-env mkosi -f sandbox true
+ 
+       - name: Configure meson
+-        run: mkosi sandbox meson setup --buildtype=debugoptimized -Dintegration-tests=true build
++        run: |
++          sudo --preserve-env --preserve-env=PATH \
++            mkosi sandbox \
++            meson setup \
++            --buildtype=debugoptimized \
++            -Dintegration-tests=true \
++            build
+ 
+       - name: Build image
+         run: sudo --preserve-env mkosi sandbox meson compile -C build mkosi

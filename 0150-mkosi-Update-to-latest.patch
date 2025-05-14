@@ -1,0 +1,148 @@
+From e71c0f76014147fbc7db58b3df260ffc455151a0 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Wed, 22 Jan 2025 15:58:13 +0100
+Subject: [PATCH] mkosi: Update to latest
+
+With the latest mkosi, mkosi takes care of making sure it is
+available within mkosi sandbox so we get rid of all the --preserve-env=
+options when we invoke mkosi sandbox with sudo as these are not
+required anymore. It also doesn't matter anymore if mkosi is installed
+in /usr on the host so we get rid of the documentation around that as
+well.
+
+(cherry picked from commit 94558e6fc70b53bfa36707afd7e90ff1737194cf)
+---
+ .github/workflows/coverage.yml | 19 ++++++++-----------
+ .github/workflows/mkosi.yml    | 12 +++++-------
+ docs/HACKING.md                |  9 ++++-----
+ 3 files changed, 17 insertions(+), 23 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index e337cc55d1..034c228828 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@00db6f1a12fb04ed9f837b40ff34f82fab4d4a03
++      - uses: systemd/mkosi@0df7ef3f404b211fbc8d856214929de10311ee22
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+@@ -74,25 +74,23 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: sudo --preserve-env mkosi -f sandbox true
++        run: sudo mkosi -f sandbox true
+ 
+       - name: Configure meson
+         run: |
+-          sudo --preserve-env --preserve-env=PATH \
+-            mkosi sandbox \
++          sudo mkosi sandbox \
+             meson setup \
+             --buildtype=debugoptimized \
+             -Dintegration-tests=true \
+             build
+ 
+       - name: Build image
+-        run: sudo --preserve-env mkosi sandbox meson compile -C build mkosi
++        run: sudo mkosi sandbox meson compile -C build mkosi
+ 
+       - name: Initial coverage report
+         run: |
+-          sudo --preserve-env mkdir -p build/test/coverage
+-          sudo --preserve-env \
+-            mkosi sandbox \
++          sudo mkdir -p build/test/coverage
++          sudo mkosi sandbox \
+             lcov \
+             --directory build/mkosi.builddir/arch~rolling~x86-64 \
+             --capture \
+@@ -106,8 +104,7 @@ jobs:
+ 
+       - name: Run integration tests
+         run: |
+-          sudo --preserve-env \
+-            mkosi sandbox \
++          sudo mkosi sandbox \
+             meson test \
+             -C build \
+             --no-rebuild \
+@@ -136,7 +133,7 @@ jobs:
+               lcov_args+=(--add-tracefile "${file}")
+           done < <(find build/test/coverage -name "TEST-*.coverage-info")
+ 
+-          sudo --preserve-env mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
++          sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent "${lcov_args[@]}" --output-file build/test/coverage/everything.coverage-info
+ 
+       - name: List coverage report
+         run: sudo mkosi sandbox lcov --ignore-errors inconsistent,inconsistent --list build/test/coverage/everything.coverage-info
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index c589a0c1fa..7a4c7b6d16 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -120,7 +120,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@00db6f1a12fb04ed9f837b40ff34f82fab4d4a03
++      - uses: systemd/mkosi@0df7ef3f404b211fbc8d856214929de10311ee22
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+@@ -188,19 +188,18 @@ jobs:
+         run: mkosi summary
+ 
+       - name: Build tools tree
+-        run: sudo --preserve-env mkosi -f sandbox true
++        run: sudo mkosi -f sandbox true
+ 
+       - name: Configure meson
+         run: |
+-          sudo --preserve-env --preserve-env=PATH \
+-            mkosi sandbox \
++          sudo mkosi sandbox \
+             meson setup \
+             --buildtype=debugoptimized \
+             -Dintegration-tests=true \
+             build
+ 
+       - name: Build image
+-        run: sudo --preserve-env mkosi sandbox meson compile -C build mkosi
++        run: sudo mkosi sandbox meson compile -C build mkosi
+ 
+       - name: Run integration tests
+         run: |
+@@ -210,8 +209,7 @@ jobs:
+               MAX_LINES=()
+           fi
+ 
+-          sudo --preserve-env \
+-            mkosi sandbox \
++          sudo mkosi sandbox \
+             env \
+             TEST_PREFER_QEMU=${{ matrix.vm }} \
+             TEST_SKIP=${{ matrix.skip }} \
+diff --git a/docs/HACKING.md b/docs/HACKING.md
+index fb9eea47f0..b13280f28d 100644
+--- a/docs/HACKING.md
++++ b/docs/HACKING.md
+@@ -31,11 +31,10 @@ and allows building and booting an OS image with the latest systemd installed
+ for testing purposes.
+ 
+ First, install `mkosi` from the
+-[GitHub repository](https://github.com/systemd/mkosi#running-mkosi-from-the-repository).
+-Note that it's not possible to use your distribution's packaged version of mkosi
+-as mkosi has to be installed outside of `/usr` for the following steps to work. When
+-installing mkosi from the github repository, make sure to symlink it to `~/.local/bin`
+-instead of `/usr/local/bin` if you want to add it to your `$PATH`.
++[GitHub repository](https://github.com/systemd/mkosi#running-mkosi-from-the-repository)
++or via your distribution's package manager. Note that systemd regularly adopts
++newer mkosi features that are not in an official release yet so there's a good
++chance that your distribution's packaged version of mkosi will be too old.
+ 
+ Then, you can build and run systemd executables as follows:
+ 

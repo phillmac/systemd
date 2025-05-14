@@ -1,0 +1,23 @@
+From c6bab8d765bd6349393aa2cca73ed7b351182e73 Mon Sep 17 00:00:00 2001
+From: Matthieu LAURENT <matthieu.laurent69@proton.me>
+Date: Wed, 5 Feb 2025 17:28:37 +0100
+Subject: [PATCH] homectl: fix typo in help text
+
+(cherry picked from commit e8e778e8abbe119754026929b3c9453404822c70)
+---
+ src/home/homectl.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/home/homectl.c b/src/home/homectl.c
+index 2163469a50..47ca015813 100644
+--- a/src/home/homectl.c
++++ b/src/home/homectl.c
+@@ -2804,7 +2804,7 @@ static int help(int argc, char *argv[], void *userdata) {
+                "     --enforce-password-policy=BOOL\n"
+                "                               Control whether to enforce system's password\n"
+                "                               policy for this user\n"
+-               "  -P                           Same as --enforce-password-password=no\n"
++               "  -P                           Same as --enforce-password-policy=no\n"
+                "     --password-change-now=BOOL\n"
+                "                               Require the password to be changed on next login\n"
+                "     --password-change-min=TIME\n"

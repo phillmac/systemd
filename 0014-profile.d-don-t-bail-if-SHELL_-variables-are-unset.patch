@@ -1,0 +1,56 @@
+From 6b90a137892e18bd3c2cacb4aba2759da7ff3081 Mon Sep 17 00:00:00 2001
+From: Tobias Klauser <tklauser@distanz.ch>
+Date: Wed, 11 Dec 2024 15:10:39 +0100
+Subject: [PATCH] profile.d: don't bail if $SHELL_* variables are unset
+
+If - for whatever reason - a script uses set -u (nounset) and includes
+/etc/profile.d/70-systemd-shell-extra.sh (e.g. transitively via
+/etc/profile) the script would fail with:
+
+    /etc/profile.d/70-systemd-shell-extra.sh: line 15: SHELL_PROMPT_PREFIX: unbound variable
+
+For example:
+
+    $ cat > foo.sh <<EOF
+    #!/bin/sh
+    set -u
+
+    source /etc/profile
+    EOF
+    $ chmod 700 foo.sh
+    $ ./foo.sh
+    /etc/profile.d/70-systemd-shell-extra.sh: line 15: SHELL_PROMPT_PREFIX: unbound variable
+
+Fix this by using shell parameter substitution[^1] (which is a POSIX
+shell concept) to set the $SHELL_* variables to the empty string if
+undefined.
+
+[^1]: https://pubs.opengroup.org/onlinepubs/9699919799.2018edition/utilities/V3_chap02.html
+
+(cherry picked from commit 12e33d332b3f8754f4d5d0d21d5d3f0de8adc54c)
+---
+ profile.d/70-systemd-shell-extra.sh | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/profile.d/70-systemd-shell-extra.sh b/profile.d/70-systemd-shell-extra.sh
+index 70be3341b9..dae77e4bc7 100644
+--- a/profile.d/70-systemd-shell-extra.sh
++++ b/profile.d/70-systemd-shell-extra.sh
+@@ -12,14 +12,14 @@
+ # credentials shell.prompt.prefix, shell.prompt.suffix and shell.welcome, and
+ # are propagated into these environment variables by pam_systemd(8).
+ 
+-if [ -n "$SHELL_PROMPT_PREFIX" ]; then
++if [ -n "${SHELL_PROMPT_PREFIX-}" ]; then
+     PS1="$SHELL_PROMPT_PREFIX$PS1"
+ fi
+ 
+-if [ -n "$SHELL_PROMPT_SUFFIX" ]; then
++if [ -n "${SHELL_PROMPT_SUFFIX-}" ]; then
+     PS1="$PS1$SHELL_PROMPT_SUFFIX"
+ fi
+ 
+-if [ -n "$SHELL_WELCOME" ]; then
++if [ -n "${SHELL_WELCOME-}" ]; then
+    printf '%b\n' "$SHELL_WELCOME"
+ fi

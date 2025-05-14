@@ -1,0 +1,59 @@
+From e81e90faf12aaaa0ea2b7002cced4752226fdc15 Mon Sep 17 00:00:00 2001
+From: rpm-build <rpm-build>
+Date: Wed, 1 Aug 2018 13:19:39 +0200
+Subject: [PATCH] pid1: bump DefaultTasksMax to 80% of the kernel pid.max value
+
+This should be hopefully high enough even for the very big deployments.
+
+RHEL-only: feature
+
+Related: RHEL-40924
+---
+ man/systemd-system.conf.xml | 4 ++--
+ src/core/manager.c          | 2 +-
+ src/core/system.conf.in     | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/man/systemd-system.conf.xml b/man/systemd-system.conf.xml
+index 580da9d75f..297838eaa4 100644
+--- a/man/systemd-system.conf.xml
++++ b/man/systemd-system.conf.xml
+@@ -230,10 +230,10 @@
+         <listitem><para>Configure the default value for the per-unit <varname>TasksMax=</varname> setting. See
+         <citerefentry><refentrytitle>systemd.resource-control</refentrytitle><manvolnum>5</manvolnum></citerefentry>
+         for details. This setting applies to all unit types that support resource control settings, with the exception
+-        of slice units. Defaults to 15% of the minimum of <varname>kernel.pid_max=</varname>, <varname>kernel.threads-max=</varname>
++        of slice units. Defaults to 80% of the minimum of <varname>kernel.pid_max=</varname>, <varname>kernel.threads-max=</varname>
+         and root cgroup <varname>pids.max</varname>.
+         Kernel has a default value for <varname>kernel.pid_max=</varname> and an algorithm of counting in case of more than 32 cores.
+-        For example, with the default <varname>kernel.pid_max=</varname>, <varname>DefaultTasksMax=</varname> defaults to 4915,
++        For example, with the default <varname>kernel.pid_max=</varname>, <varname>DefaultTasksMax=</varname> defaults to 26214,
+         but might be greater in other systems or smaller in OS containers.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v228"/></listitem>
+diff --git a/src/core/manager.c b/src/core/manager.c
+index f21a4f7ceb..485fdd1a66 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -117,7 +117,7 @@
+ /* How many units and jobs to process of the bus queue before returning to the event loop. */
+ #define MANAGER_BUS_MESSAGE_BUDGET 100U
+ 
+-#define DEFAULT_TASKS_MAX ((CGroupTasksMax) { 15U, 100U }) /* 15% */
++#define DEFAULT_TASKS_MAX ((CGroupTasksMax) { 80U, 100U }) /* 80% */
+ 
+ static int manager_dispatch_notify_fd(sd_event_source *source, int fd, uint32_t revents, void *userdata);
+ static int manager_dispatch_cgroups_agent_fd(sd_event_source *source, int fd, uint32_t revents, void *userdata);
+diff --git a/src/core/system.conf.in b/src/core/system.conf.in
+index 1c08aa4d22..4fe420c344 100644
+--- a/src/core/system.conf.in
++++ b/src/core/system.conf.in
+@@ -59,7 +59,7 @@
+ #DefaultIPAccounting=no
+ #DefaultMemoryAccounting={{ 'yes' if MEMORY_ACCOUNTING_DEFAULT else 'no' }}
+ #DefaultTasksAccounting=yes
+-#DefaultTasksMax=15%
++#DefaultTasksMax=80%
+ #DefaultLimitCPU=
+ #DefaultLimitFSIZE=
+ #DefaultLimitDATA=

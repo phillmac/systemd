@@ -1,0 +1,38 @@
+From 0240c4ac435ed8db413d83474dd8524e655dfb94 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 27 Jan 2025 04:17:27 +0900
+Subject: [PATCH] systemctl: fix memleak
+
+Fixes a bug introduced by adb6cd9be2b7e9e614d2b5835c7b70cf8eacc852.
+
+Fixes #36178.
+
+(cherry picked from commit 08570f284140752b9f0aad4dbcdff32c090a3661)
+---
+ src/systemctl/systemctl-is-system-running.c | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/src/systemctl/systemctl-is-system-running.c b/src/systemctl/systemctl-is-system-running.c
+index 59be6a7a7e..8d5303c2d8 100644
+--- a/src/systemctl/systemctl-is-system-running.c
++++ b/src/systemctl/systemctl-is-system-running.c
+@@ -66,6 +66,10 @@ int verb_is_system_running(int argc, char *argv[], void *userdata) {
+         }
+ 
+         if (arg_wait && STR_IN_SET(state, "initializing", "starting")) {
++                /* The signal handler will allocate memory and assign to 'state', hence need to free previous
++                 * one before entering the event loop. */
++                state = mfree(state);
++
+                 r = sd_event_loop(event);
+                 if (r < 0) {
+                         log_warning_errno(r, "Failed to get property from event loop: %m");
+@@ -73,6 +77,8 @@ int verb_is_system_running(int argc, char *argv[], void *userdata) {
+                                 puts("unknown");
+                         return EXIT_FAILURE;
+                 }
++
++                assert(state);
+         }
+ 
+         if (!arg_quiet)

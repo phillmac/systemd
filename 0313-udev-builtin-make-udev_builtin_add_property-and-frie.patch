@@ -1,0 +1,1259 @@
+From fc5978e7c5913187fba87ae5d71da5de3064f10c Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 5 Dec 2024 01:17:40 +0900
+Subject: [PATCH] udev-builtin: make udev_builtin_add_property() and friends
+ take UdevEvent*
+
+No functional change, just refactoring.
+
+(cherry picked from commit 036c75ded366bc2e8ae5ef3bf230f20982633d15)
+
+Resolves: RHEL-75774
+---
+ src/udev/net/link-config.c             |  29 +++---
+ src/udev/net/link-config.h             |   4 +-
+ src/udev/udev-builtin-blkid.c          |  70 +++++++-------
+ src/udev/udev-builtin-btrfs.c          |   4 +-
+ src/udev/udev-builtin-hwdb.c           |  21 ++---
+ src/udev/udev-builtin-input_id.c       |  58 ++++++------
+ src/udev/udev-builtin-net_driver.c     |   2 +-
+ src/udev/udev-builtin-net_id.c         | 123 ++++++++++++-------------
+ src/udev/udev-builtin-net_setup_link.c |   8 +-
+ src/udev/udev-builtin-path_id.c        |  18 ++--
+ src/udev/udev-builtin-usb_id.c         |  52 +++++------
+ src/udev/udev-builtin.c                |  26 +++---
+ src/udev/udev-builtin.h                |   9 +-
+ 13 files changed, 211 insertions(+), 213 deletions(-)
+
+diff --git a/src/udev/net/link-config.c b/src/udev/net/link-config.c
+index c2bec61347..55eeb9de81 100644
+--- a/src/udev/net/link-config.c
++++ b/src/udev/net/link-config.c
+@@ -1001,18 +1001,16 @@ static int link_apply_rps_cpu_mask(Link *link, EventMode mode) {
+         return 0;
+ }
+ 
+-static int link_apply_udev_properties(Link *link, EventMode mode) {
++static int link_apply_udev_properties(Link *link, UdevEvent *event) {
+         LinkConfig *config;
+-        sd_device *device;
+ 
+         assert(link);
+ 
+         config = ASSERT_PTR(link->config);
+-        device = ASSERT_PTR(link->device);
+ 
+         /* 1. apply ImportProperty=. */
+         STRV_FOREACH(p, config->import_properties)
+-                (void) udev_builtin_import_property(device, link->device_db_clone, mode, *p);
++                (void) udev_builtin_import_property(event, *p);
+ 
+         /* 2. apply Property=. */
+         STRV_FOREACH(p, config->properties) {
+@@ -1027,15 +1025,15 @@ static int link_apply_udev_properties(Link *link, EventMode mode) {
+                 if (!key)
+                         return log_oom();
+ 
+-                (void) udev_builtin_add_property(device, mode, key, eq + 1);
++                (void) udev_builtin_add_property(event, key, eq + 1);
+         }
+ 
+         /* 3. apply UnsetProperty=. */
+         STRV_FOREACH(p, config->unset_properties)
+-                (void) udev_builtin_add_property(device, mode, *p, NULL);
++                (void) udev_builtin_add_property(event, *p, NULL);
+ 
+         /* 4. set the default properties. */
+-        (void) udev_builtin_add_property(device, mode, "ID_NET_LINK_FILE", config->filename);
++        (void) udev_builtin_add_property(event, "ID_NET_LINK_FILE", config->filename);
+ 
+         _cleanup_free_ char *joined = NULL;
+         STRV_FOREACH(d, config->dropins) {
+@@ -1049,26 +1047,27 @@ static int link_apply_udev_properties(Link *link, EventMode mode) {
+                         return log_oom();
+         }
+ 
+-        (void) udev_builtin_add_property(device, mode, "ID_NET_LINK_FILE_DROPINS", joined);
++        (void) udev_builtin_add_property(event, "ID_NET_LINK_FILE_DROPINS", joined);
+ 
+         if (link->new_name)
+-                (void) udev_builtin_add_property(device, mode, "ID_NET_NAME", link->new_name);
++                (void) udev_builtin_add_property(event, "ID_NET_NAME", link->new_name);
+ 
+         return 0;
+ }
+ 
+-int link_apply_config(LinkConfigContext *ctx, sd_netlink **rtnl, Link *link, EventMode mode) {
++int link_apply_config(LinkConfigContext *ctx, sd_netlink **rtnl, Link *link, UdevEvent *event) {
+         int r;
+ 
+         assert(ctx);
+         assert(rtnl);
+         assert(link);
++        assert(event);
+ 
+-        r = link_apply_ethtool_settings(link, &ctx->ethtool_fd, mode);
++        r = link_apply_ethtool_settings(link, &ctx->ethtool_fd, event->event_mode);
+         if (r < 0)
+                 return r;
+ 
+-        r = link_apply_rtnl_settings(link, rtnl, mode);
++        r = link_apply_rtnl_settings(link, rtnl, event->event_mode);
+         if (r < 0)
+                 return r;
+ 
+@@ -1080,15 +1079,15 @@ int link_apply_config(LinkConfigContext *ctx, sd_netlink **rtnl, Link *link, Eve
+         if (r < 0)
+                 return r;
+ 
+-        r = link_apply_sr_iov_config(link, rtnl, mode);
++        r = link_apply_sr_iov_config(link, rtnl, event->event_mode);
+         if (r < 0)
+                 return r;
+ 
+-        r = link_apply_rps_cpu_mask(link, mode);
++        r = link_apply_rps_cpu_mask(link, event->event_mode);
+         if (r < 0)
+                 return r;
+ 
+-        return link_apply_udev_properties(link, mode);
++        return link_apply_udev_properties(link, event);
+ }
+ 
+ int config_parse_udev_property(
+diff --git a/src/udev/net/link-config.h b/src/udev/net/link-config.h
+index 5aaa7c51a0..a60e183e4b 100644
+--- a/src/udev/net/link-config.h
++++ b/src/udev/net/link-config.h
+@@ -12,10 +12,10 @@
+ #include "list.h"
+ #include "net-condition.h"
+ #include "netif-naming-scheme.h"
+-#include "udev-event.h"
+ 
+ typedef struct LinkConfigContext LinkConfigContext;
+ typedef struct LinkConfig LinkConfig;
++typedef struct UdevEvent UdevEvent;
+ 
+ typedef enum MACAddressPolicy {
+         MAC_ADDRESS_POLICY_PERSISTENT,
+@@ -107,7 +107,7 @@ Link* link_free(Link *link);
+ DEFINE_TRIVIAL_CLEANUP_FUNC(Link*, link_free);
+ 
+ int link_get_config(LinkConfigContext *ctx, Link *link);
+-int link_apply_config(LinkConfigContext *ctx, sd_netlink **rtnl, Link *link, EventMode mode);
++int link_apply_config(LinkConfigContext *ctx, sd_netlink **rtnl, Link *link, UdevEvent *event);
+ 
+ const char* mac_address_policy_to_string(MACAddressPolicy p) _const_;
+ MACAddressPolicy mac_address_policy_from_string(const char *p) _pure_;
+diff --git a/src/udev/udev-builtin-blkid.c b/src/udev/udev-builtin-blkid.c
+index ae9a11f45d..73417338f5 100644
+--- a/src/udev/udev-builtin-blkid.c
++++ b/src/udev/udev-builtin-blkid.c
+@@ -34,95 +34,98 @@
+ #include "strxcpyx.h"
+ #include "udev-builtin.h"
+ 
+-static void print_property(sd_device *dev, EventMode mode, const char *name, const char *value) {
++static void print_property(UdevEvent *event, const char *name, const char *value) {
+         char s[256];
+ 
++        assert(event);
++        assert(name);
++
+         s[0] = '\0';
+ 
+         if (streq(name, "TYPE")) {
+-                udev_builtin_add_property(dev, mode, "ID_FS_TYPE", value);
++                udev_builtin_add_property(event, "ID_FS_TYPE", value);
+ 
+         } else if (streq(name, "USAGE")) {
+-                udev_builtin_add_property(dev, mode, "ID_FS_USAGE", value);
++                udev_builtin_add_property(event, "ID_FS_USAGE", value);
+ 
+         } else if (streq(name, "VERSION")) {
+-                udev_builtin_add_property(dev, mode, "ID_FS_VERSION", value);
++                udev_builtin_add_property(event, "ID_FS_VERSION", value);
+ 
+         } else if (streq(name, "UUID")) {
+                 blkid_safe_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_UUID", s);
++                udev_builtin_add_property(event, "ID_FS_UUID", s);
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_ENC", s);
++                udev_builtin_add_property(event, "ID_FS_UUID_ENC", s);
+ 
+         } else if (streq(name, "UUID_SUB")) {
+                 blkid_safe_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_SUB", s);
++                udev_builtin_add_property(event, "ID_FS_UUID_SUB", s);
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_UUID_SUB_ENC", s);
++                udev_builtin_add_property(event, "ID_FS_UUID_SUB_ENC", s);
+ 
+         } else if (streq(name, "LABEL")) {
+                 blkid_safe_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_LABEL", s);
++                udev_builtin_add_property(event, "ID_FS_LABEL", s);
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_LABEL_ENC", s);
++                udev_builtin_add_property(event, "ID_FS_LABEL_ENC", s);
+ 
+         } else if (STR_IN_SET(name, "FSSIZE", "FSLASTBLOCK", "FSBLOCKSIZE")) {
+                 strscpyl(s, sizeof(s), "ID_FS_", name + 2, NULL);
+-                udev_builtin_add_property(dev, mode, s, value);
++                udev_builtin_add_property(event, s, value);
+ 
+         } else if (streq(name, "PTTYPE")) {
+-                udev_builtin_add_property(dev, mode, "ID_PART_TABLE_TYPE", value);
++                udev_builtin_add_property(event, "ID_PART_TABLE_TYPE", value);
+ 
+         } else if (streq(name, "PTUUID")) {
+-                udev_builtin_add_property(dev, mode, "ID_PART_TABLE_UUID", value);
++                udev_builtin_add_property(event, "ID_PART_TABLE_UUID", value);
+ 
+         } else if (streq(name, "PART_ENTRY_NAME")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_PART_ENTRY_NAME", s);
++                udev_builtin_add_property(event, "ID_PART_ENTRY_NAME", s);
+ 
+         } else if (streq(name, "PART_ENTRY_TYPE")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_PART_ENTRY_TYPE", s);
++                udev_builtin_add_property(event, "ID_PART_ENTRY_TYPE", s);
+ 
+         } else if (startswith(name, "PART_ENTRY_")) {
+                 strscpyl(s, sizeof(s), "ID_", name, NULL);
+-                udev_builtin_add_property(dev, mode, s, value);
++                udev_builtin_add_property(event, s, value);
+ 
+         } else if (streq(name, "SYSTEM_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_SYSTEM_ID", s);
++                udev_builtin_add_property(event, "ID_FS_SYSTEM_ID", s);
+ 
+         } else if (streq(name, "PUBLISHER_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_PUBLISHER_ID", s);
++                udev_builtin_add_property(event, "ID_FS_PUBLISHER_ID", s);
+ 
+         } else if (streq(name, "APPLICATION_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_APPLICATION_ID", s);
++                udev_builtin_add_property(event, "ID_FS_APPLICATION_ID", s);
+ 
+         } else if (streq(name, "BOOT_SYSTEM_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_BOOT_SYSTEM_ID", s);
++                udev_builtin_add_property(event, "ID_FS_BOOT_SYSTEM_ID", s);
+ 
+         } else if (streq(name, "VOLUME_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_VOLUME_ID", s);
++                udev_builtin_add_property(event, "ID_FS_VOLUME_ID", s);
+ 
+         } else if (streq(name, "LOGICAL_VOLUME_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_LOGICAL_VOLUME_ID", s);
++                udev_builtin_add_property(event, "ID_FS_LOGICAL_VOLUME_ID", s);
+ 
+         } else if (streq(name, "VOLUME_SET_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_VOLUME_SET_ID", s);
++                udev_builtin_add_property(event, "ID_FS_VOLUME_SET_ID", s);
+ 
+         } else if (streq(name, "DATA_PREPARER_ID")) {
+                 blkid_encode_string(value, s, sizeof(s));
+-                udev_builtin_add_property(dev, mode, "ID_FS_DATA_PREPARER_ID", s);
++                udev_builtin_add_property(event, "ID_FS_DATA_PREPARER_ID", s);
+         }
+ }
+ 
+-static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
++static int find_gpt_root(UdevEvent *event, blkid_probe pr) {
+ 
+ #if defined(SD_GPT_ROOT_NATIVE) && ENABLE_EFI
+ 
+@@ -131,6 +134,7 @@ static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
+         sd_id128_t root_id = SD_ID128_NULL;
+         int r;
+ 
++        assert(event);
+         assert(pr);
+ 
+         /* Iterate through the partitions on this disk, and see if the UEFI ESP or XBOOTLDR partition we
+@@ -201,7 +205,7 @@ static int find_gpt_root(sd_device *dev, blkid_probe pr, EventMode mode) {
+         /* We found the ESP/XBOOTLDR on this disk, and also found a root partition, nice! Let's export its
+          * UUID */
+         if (found_esp_or_xbootldr && !sd_id128_is_null(root_id))
+-                udev_builtin_add_property(dev, mode, "ID_PART_GPT_AUTO_ROOT_UUID", SD_ID128_TO_UUID_STRING(root_id));
++                udev_builtin_add_property(event, "ID_PART_GPT_AUTO_ROOT_UUID", SD_ID128_TO_UUID_STRING(root_id));
+ #endif
+ 
+         return 0;
+@@ -421,7 +425,7 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
+                 if (blkid_probe_get_value(pr, i, &name, &data, NULL) < 0)
+                         continue;
+ 
+-                print_property(dev, event->event_mode, name, data);
++                print_property(event, name, data);
+ 
+                 /* Is this a disk with GPT partition table? */
+                 if (streq(name, "PTTYPE") && streq(data, "gpt"))
+@@ -430,11 +434,11 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
+                 /* Is this a partition that matches the root partition
+                  * property inherited from the parent? */
+                 if (root_partition && streq(name, "PART_ENTRY_UUID") && streq(data, root_partition))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_PART_GPT_AUTO_ROOT", "1");
++                        udev_builtin_add_property(event, "ID_PART_GPT_AUTO_ROOT", "1");
+         }
+ 
+         if (is_gpt)
+-                find_gpt_root(dev, pr, event->event_mode);
++                find_gpt_root(event, pr);
+ 
+         r = read_loopback_backing_inode(
+                         dev,
+@@ -445,8 +449,8 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
+         if (r < 0)
+                 log_device_debug_errno(dev, r, "Failed to read loopback backing inode, ignoring: %m");
+         else if (r > 0) {
+-                udev_builtin_add_propertyf(dev, event->event_mode, "ID_LOOP_BACKING_DEVICE", DEVNUM_FORMAT_STR, DEVNUM_FORMAT_VAL(backing_devno));
+-                udev_builtin_add_propertyf(dev, event->event_mode, "ID_LOOP_BACKING_INODE", "%" PRIu64, (uint64_t) backing_inode);
++                udev_builtin_add_propertyf(event, "ID_LOOP_BACKING_DEVICE", DEVNUM_FORMAT_STR, DEVNUM_FORMAT_VAL(backing_devno));
++                udev_builtin_add_propertyf(event, "ID_LOOP_BACKING_INODE", "%" PRIu64, (uint64_t) backing_inode);
+ 
+                 if (backing_fname) {
+                         /* In the worst case blkid_encode_string() will blow up to 4x the string
+@@ -457,8 +461,8 @@ static int builtin_blkid(UdevEvent *event, int argc, char *argv[]) {
+                         assert(strlen(backing_fname) < ELEMENTSOF(encoded) / 4);
+                         blkid_encode_string(backing_fname, encoded, ELEMENTSOF(encoded));
+ 
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_LOOP_BACKING_FILENAME", backing_fname);
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_LOOP_BACKING_FILENAME_ENC", encoded);
++                        udev_builtin_add_property(event, "ID_LOOP_BACKING_FILENAME", backing_fname);
++                        udev_builtin_add_property(event, "ID_LOOP_BACKING_FILENAME_ENC", encoded);
+                 }
+         }
+ 
+diff --git a/src/udev/udev-builtin-btrfs.c b/src/udev/udev-builtin-btrfs.c
+index fe030d05b9..f7d42c1ed0 100644
+--- a/src/udev/udev-builtin-btrfs.c
++++ b/src/udev/udev-builtin-btrfs.c
+@@ -27,7 +27,7 @@ static int builtin_btrfs(UdevEvent *event, int argc, char *argv[]) {
+                         /* Driver not installed? Then we aren't ready. This is useful in initrds that lack
+                          * btrfs.ko. After the host transition (where btrfs.ko will hopefully become
+                          * available) the device can be retriggered and will then be considered ready. */
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_BTRFS_READY", "0");
++                        udev_builtin_add_property(event, "ID_BTRFS_READY", "0");
+                         return 0;
+                 }
+ 
+@@ -39,7 +39,7 @@ static int builtin_btrfs(UdevEvent *event, int argc, char *argv[]) {
+         if (r < 0)
+                 return log_device_debug_errno(dev, errno, "Failed to call BTRFS_IOC_DEVICES_READY: %m");
+ 
+-        udev_builtin_add_property(dev, event->event_mode, "ID_BTRFS_READY", one_zero(r == 0));
++        udev_builtin_add_property(event, "ID_BTRFS_READY", one_zero(r == 0));
+         return 0;
+ }
+ 
+diff --git a/src/udev/udev-builtin-hwdb.c b/src/udev/udev-builtin-hwdb.c
+index fbee04b4a8..b499d92479 100644
+--- a/src/udev/udev-builtin-hwdb.c
++++ b/src/udev/udev-builtin-hwdb.c
+@@ -18,11 +18,10 @@
+ static sd_hwdb *hwdb;
+ 
+ int udev_builtin_hwdb_lookup(
+-                sd_device *dev,
++                UdevEvent *event,
+                 const char *prefix,
+                 const char *modalias,
+-                const char *filter,
+-                EventMode mode) {
++                const char *filter) {
+ 
+         _cleanup_free_ char *lookup = NULL;
+         const char *key, *value;
+@@ -42,7 +41,7 @@ int udev_builtin_hwdb_lookup(
+                 if (filter && fnmatch(filter, key, FNM_NOESCAPE) != 0)
+                         continue;
+ 
+-                r = udev_builtin_add_property(dev, mode, key, value);
++                r = udev_builtin_add_property(event, key, value);
+                 if (r < 0)
+                         return r;
+                 n++;
+@@ -69,18 +68,18 @@ static const char* modalias_usb(sd_device *dev, char *s, size_t size) {
+ }
+ 
+ static int udev_builtin_hwdb_search(
+-                sd_device *dev,
++                UdevEvent *event,
+                 sd_device *srcdev,
+                 const char *subsystem,
+                 const char *prefix,
+-                const char *filter,
+-                EventMode mode) {
++                const char *filter) {
+ 
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         char s[LINE_MAX];
+         bool last = false;
+         int r = 0;
+ 
+-        assert(dev);
++        assert(event);
+ 
+         if (!srcdev)
+                 srcdev = dev;
+@@ -108,7 +107,7 @@ static int udev_builtin_hwdb_search(
+ 
+                 log_device_debug(dev, "hwdb modalias key: \"%s\"", modalias);
+ 
+-                r = udev_builtin_hwdb_lookup(dev, prefix, modalias, filter, mode);
++                r = udev_builtin_hwdb_lookup(event, prefix, modalias, filter);
+                 if (r > 0)
+                         break;
+ 
+@@ -166,7 +165,7 @@ static int builtin_hwdb(UdevEvent *event, int argc, char *argv[]) {
+ 
+         /* query a specific key given as argument */
+         if (argv[optind]) {
+-                r = udev_builtin_hwdb_lookup(dev, prefix, argv[optind], filter, event->event_mode);
++                r = udev_builtin_hwdb_lookup(event, prefix, argv[optind], filter);
+                 if (r < 0)
+                         return log_device_debug_errno(dev, r, "Failed to look up hwdb: %m");
+                 if (r == 0)
+@@ -181,7 +180,7 @@ static int builtin_hwdb(UdevEvent *event, int argc, char *argv[]) {
+                         return log_device_debug_errno(dev, r, "Failed to create sd_device object '%s': %m", device);
+         }
+ 
+-        r = udev_builtin_hwdb_search(dev, srcdev, subsystem, prefix, filter, event->event_mode);
++        r = udev_builtin_hwdb_search(event, srcdev, subsystem, prefix, filter);
+         if (r < 0)
+                 return log_device_debug_errno(dev, r, "Failed to look up hwdb: %m");
+         if (r == 0)
+diff --git a/src/udev/udev-builtin-input_id.c b/src/udev/udev-builtin-input_id.c
+index c204d656f0..509edee8aa 100644
+--- a/src/udev/udev-builtin-input_id.c
++++ b/src/udev/udev-builtin-input_id.c
+@@ -44,12 +44,15 @@ static int abs_size_mm(const struct input_absinfo *absinfo) {
+         return (absinfo->maximum - absinfo->minimum) / absinfo->resolution;
+ }
+ 
+-static void extract_info(sd_device *dev, EventMode mode) {
++static void extract_info(UdevEvent *event) {
+         char width[DECIMAL_STR_MAX(int)], height[DECIMAL_STR_MAX(int)];
+         struct input_absinfo xabsinfo = {}, yabsinfo = {};
+         _cleanup_close_ int fd = -EBADF;
+ 
+-        fd = sd_device_open(dev, O_RDONLY|O_CLOEXEC|O_NONBLOCK|O_NOCTTY);
++        assert(event);
++        assert(event->dev);
++
++        fd = sd_device_open(event->dev, O_RDONLY|O_CLOEXEC|O_NONBLOCK|O_NOCTTY);
+         if (fd < 0)
+                 return;
+ 
+@@ -63,8 +66,8 @@ static void extract_info(sd_device *dev, EventMode mode) {
+         xsprintf(width, "%d", abs_size_mm(&xabsinfo));
+         xsprintf(height, "%d", abs_size_mm(&yabsinfo));
+ 
+-        udev_builtin_add_property(dev, mode, "ID_INPUT_WIDTH_MM", width);
+-        udev_builtin_add_property(dev, mode, "ID_INPUT_HEIGHT_MM", height);
++        udev_builtin_add_property(event, "ID_INPUT_WIDTH_MM", width);
++        udev_builtin_add_property(event, "ID_INPUT_HEIGHT_MM", height);
+ }
+ 
+ /*
+@@ -148,15 +151,15 @@ static struct input_id get_input_id(sd_device *dev) {
+ 
+ /* pointer devices */
+ static bool test_pointers(
+-                sd_device *dev,
++                UdevEvent *event,
+                 const struct input_id *id,
+                 const unsigned long *bitmask_ev,
+                 const unsigned long *bitmask_abs,
+                 const unsigned long *bitmask_key,
+                 const unsigned long *bitmask_rel,
+-                const unsigned long *bitmask_props,
+-                EventMode mode) {
++                const unsigned long *bitmask_props) {
+ 
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         size_t num_joystick_axes = 0, num_joystick_buttons = 0;
+         bool has_abs_coordinates = false,
+                 has_rel_coordinates = false,
+@@ -190,7 +193,7 @@ static bool test_pointers(
+                 is_accelerometer = true;
+ 
+         if (is_accelerometer) {
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_ACCELEROMETER", "1");
++                udev_builtin_add_property(event, "ID_INPUT_ACCELEROMETER", "1");
+                 return true;
+         }
+ 
+@@ -313,30 +316,30 @@ static bool test_pointers(
+         }
+ 
+         if (is_pointing_stick)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_POINTINGSTICK", "1");
++                udev_builtin_add_property(event, "ID_INPUT_POINTINGSTICK", "1");
+         if (is_mouse || is_abs_mouse)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_MOUSE", "1");
++                udev_builtin_add_property(event, "ID_INPUT_MOUSE", "1");
+         if (is_touchpad)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_TOUCHPAD", "1");
++                udev_builtin_add_property(event, "ID_INPUT_TOUCHPAD", "1");
+         if (is_touchscreen)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_TOUCHSCREEN", "1");
++                udev_builtin_add_property(event, "ID_INPUT_TOUCHSCREEN", "1");
+         if (is_joystick)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_JOYSTICK", "1");
++                udev_builtin_add_property(event, "ID_INPUT_JOYSTICK", "1");
+         if (is_tablet)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_TABLET", "1");
++                udev_builtin_add_property(event, "ID_INPUT_TABLET", "1");
+         if (is_tablet_pad)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_TABLET_PAD", "1");
++                udev_builtin_add_property(event, "ID_INPUT_TABLET_PAD", "1");
+ 
+         return is_tablet || is_mouse || is_abs_mouse || is_touchpad || is_touchscreen || is_joystick || is_pointing_stick;
+ }
+ 
+ /* key like devices */
+ static bool test_key(
+-                sd_device *dev,
++                UdevEvent *event,
+                 const unsigned long *bitmask_ev,
+-                const unsigned long *bitmask_key,
+-                EventMode mode) {
++                const unsigned long *bitmask_key) {
+ 
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         bool found = false;
+ 
+         /* do we have any KEY_* capability? */
+@@ -362,12 +365,12 @@ static bool test_key(
+                         }
+ 
+         if (found)
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_KEY", "1");
++                udev_builtin_add_property(event, "ID_INPUT_KEY", "1");
+ 
+         /* the first 32 bits are ESC, numbers, and Q to D; if we have all of
+          * those, consider it a full keyboard; do not test KEY_RESERVED, though */
+         if (FLAGS_SET(bitmask_key[0], 0xFFFFFFFE)) {
+-                udev_builtin_add_property(dev, mode, "ID_INPUT_KEYBOARD", "1");
++                udev_builtin_add_property(event, "ID_INPUT_KEYBOARD", "1");
+                 return true;
+         }
+ 
+@@ -404,28 +407,27 @@ static int builtin_input_id(UdevEvent *event, int argc, char *argv[]) {
+ 
+                 /* Use this as a flag that input devices were detected, so that this
+                  * program doesn't need to be called more than once per device */
+-                udev_builtin_add_property(dev, event->event_mode, "ID_INPUT", "1");
++                udev_builtin_add_property(event, "ID_INPUT", "1");
+                 get_cap_mask(pdev, "capabilities/ev", bitmask_ev, sizeof(bitmask_ev), event->event_mode);
+                 get_cap_mask(pdev, "capabilities/abs", bitmask_abs, sizeof(bitmask_abs), event->event_mode);
+                 get_cap_mask(pdev, "capabilities/rel", bitmask_rel, sizeof(bitmask_rel), event->event_mode);
+                 get_cap_mask(pdev, "capabilities/key", bitmask_key, sizeof(bitmask_key), event->event_mode);
+                 get_cap_mask(pdev, "properties", bitmask_props, sizeof(bitmask_props), event->event_mode);
+-                is_pointer = test_pointers(dev, &id, bitmask_ev, bitmask_abs,
++                is_pointer = test_pointers(event, &id, bitmask_ev, bitmask_abs,
+                                            bitmask_key, bitmask_rel,
+-                                           bitmask_props, event->event_mode);
+-                is_key = test_key(dev, bitmask_ev, bitmask_key, event->event_mode);
++                                           bitmask_props);
++                is_key = test_key(event, bitmask_ev, bitmask_key);
+                 /* Some evdev nodes have only a scrollwheel */
+                 if (!is_pointer && !is_key && test_bit(EV_REL, bitmask_ev) &&
+                     (test_bit(REL_WHEEL, bitmask_rel) || test_bit(REL_HWHEEL, bitmask_rel)))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_INPUT_KEY", "1");
++                        udev_builtin_add_property(event, "ID_INPUT_KEY", "1");
+                 if (test_bit(EV_SW, bitmask_ev))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_INPUT_SWITCH", "1");
+-
++                        udev_builtin_add_property(event, "ID_INPUT_SWITCH", "1");
+         }
+ 
+         if (sd_device_get_sysname(dev, &sysname) >= 0 &&
+             startswith(sysname, "event"))
+-                extract_info(dev, event->event_mode);
++                extract_info(event);
+ 
+         return 0;
+ }
+diff --git a/src/udev/udev-builtin-net_driver.c b/src/udev/udev-builtin-net_driver.c
+index 90a9e8d22f..5e35b39ee4 100644
+--- a/src/udev/udev-builtin-net_driver.c
++++ b/src/udev/udev-builtin-net_driver.c
+@@ -32,7 +32,7 @@ static int builtin_net_driver_set_driver(UdevEvent *event, int argc, char **argv
+         if (r < 0)
+                 return log_device_warning_errno(dev, r, "Failed to get driver for '%s': %m", sysname);
+ 
+-        return udev_builtin_add_property(event->dev, event->event_mode, "ID_NET_DRIVER", driver);
++        return udev_builtin_add_property(event, "ID_NET_DRIVER", driver);
+ }
+ 
+ const UdevBuiltin udev_builtin_net_driver = {
+diff --git a/src/udev/udev-builtin-net_id.c b/src/udev/udev-builtin-net_id.c
+index 09c04b9a7f..96e792bcde 100644
+--- a/src/udev/udev-builtin-net_id.c
++++ b/src/udev/udev-builtin-net_id.c
+@@ -299,12 +299,12 @@ static int pci_get_onboard_index(sd_device *dev, unsigned *ret) {
+         return 0;
+ }
+ 
+-static int names_pci_onboard(sd_device *dev, sd_device *pci_dev, const char *prefix, const char *suffix, EventMode mode) {
++static int names_pci_onboard(UdevEvent *event, sd_device *pci_dev, const char *prefix, const char *suffix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *port = NULL;
+         unsigned idx = 0;  /* avoid false maybe-uninitialized warning */
+         int r;
+ 
+-        assert(dev);
+         assert(pci_dev);
+         assert(prefix);
+ 
+@@ -319,7 +319,7 @@ static int names_pci_onboard(sd_device *dev, sd_device *pci_dev, const char *pre
+ 
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%so%u%s%s", prefix, idx, strempty(port), strempty(suffix)))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_ONBOARD", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_ONBOARD", str);
+ 
+         log_device_debug(dev, "PCI onboard index identifier: index=%u port=%s %s %s",
+                          idx, strna(port),
+@@ -328,11 +328,11 @@ static int names_pci_onboard(sd_device *dev, sd_device *pci_dev, const char *pre
+         return 0;
+ }
+ 
+-static int names_pci_onboard_label(sd_device *dev, sd_device *pci_dev, const char *prefix, EventMode mode) {
++static int names_pci_onboard_label(UdevEvent *event, sd_device *pci_dev, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         const char *label;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* retrieve on-board label from firmware */
+@@ -344,7 +344,7 @@ static int names_pci_onboard_label(sd_device *dev, sd_device *pci_dev, const cha
+         if (snprintf_ok(str, sizeof str, "%s%s",
+                         naming_scheme_has(NAMING_LABEL_NOPREFIX) ? "" : prefix,
+                         label))
+-                udev_builtin_add_property(dev, mode, "ID_NET_LABEL_ONBOARD", str);
++                udev_builtin_add_property(event, "ID_NET_LABEL_ONBOARD", str);
+ 
+         log_device_debug(dev, "Onboard label from PCI device: %s", label);
+         return 0;
+@@ -666,13 +666,13 @@ static int get_pci_slot_specifiers(
+         return 0;
+ }
+ 
+-static int names_pci_slot(sd_device *dev, sd_device *pci_dev, const char *prefix, const char *suffix, EventMode mode) {
++static int names_pci_slot(UdevEvent *event, sd_device *pci_dev, const char *prefix, const char *suffix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *domain = NULL, *bus_and_slot = NULL, *func = NULL, *port = NULL;
+         uint32_t slot = 0;  /* avoid false maybe-uninitialized warning */
+         char str[ALTIFNAMSIZ];
+         int r;
+ 
+-        assert(dev);
+         assert(pci_dev);
+         assert(prefix);
+ 
+@@ -687,7 +687,7 @@ static int names_pci_slot(sd_device *dev, sd_device *pci_dev, const char *prefix
+         /* compose a name based on the raw kernel's PCI bus, slot numbers */
+         if (snprintf_ok(str, sizeof str, "%s%s%s%s%s%s",
+                         prefix, strempty(domain), bus_and_slot, strempty(func), strempty(port), strempty(suffix)))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_PATH", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_PATH", str);
+ 
+         log_device_debug(dev, "PCI path identifier: domain=%s bus_and_slot=%s func=%s port=%s %s %s",
+                          strna(domain), bus_and_slot, strna(func), strna(port),
+@@ -706,7 +706,7 @@ static int names_pci_slot(sd_device *dev, sd_device *pci_dev, const char *prefix
+ 
+         if (snprintf_ok(str, sizeof str, "%s%ss%"PRIu32"%s%s%s",
+                         prefix, strempty(domain), slot, strempty(func), strempty(port), strempty(suffix)))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_SLOT", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_SLOT", str);
+ 
+         log_device_debug(dev, "PCI slot identifier: domain=%s slot=%"PRIu32" func=%s port=%s %s %s",
+                          strna(domain), slot, strna(func), strna(port),
+@@ -715,12 +715,12 @@ static int names_pci_slot(sd_device *dev, sd_device *pci_dev, const char *prefix
+         return 0;
+ }
+ 
+-static int names_vio(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_vio(UdevEvent *event, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *s = NULL;
+         unsigned slotid;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* get ibmveth/ibmvnic slot-based names. */
+@@ -754,20 +754,20 @@ static int names_vio(sd_device *dev, const char *prefix, EventMode mode) {
+ 
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%sv%u", prefix, slotid))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_SLOT", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_SLOT", str);
+         log_device_debug(dev, "Vio slot identifier: slotid=%u %s %s",
+                          slotid, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+         return 0;
+ }
+ 
+-static int names_platform(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_platform(UdevEvent *event, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *p = NULL;
+         const char *validchars;
+         char *vendor, *model_str, *instance_str;
+         unsigned model, instance;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* get ACPI path names for ARM64 platform devices */
+@@ -816,18 +816,18 @@ static int names_platform(sd_device *dev, const char *prefix, EventMode mode) {
+ 
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%sa%s%xi%u", prefix, vendor, model, instance))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_PATH", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_PATH", str);
+         log_device_debug(dev, "Platform identifier: vendor=%s model=%x instance=%u %s %s",
+                          vendor, model, instance, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+         return 0;
+ }
+ 
+-static int names_devicetree(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_devicetree(UdevEvent *event, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_(sd_device_unrefp) sd_device *aliases_dev = NULL, *ofnode_dev = NULL, *devicetree_dev = NULL;
+         const char *ofnode_path, *ofnode_syspath, *devicetree_syspath;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         if (!naming_scheme_has(NAMING_DEVICETREE_ALIASES))
+@@ -923,7 +923,7 @@ static int names_devicetree(sd_device *dev, const char *prefix, EventMode mode)
+ 
+                 char str[ALTIFNAMSIZ];
+                 if (snprintf_ok(str, sizeof str, "%sd%u", prefix, i))
+-                        udev_builtin_add_property(dev, mode, "ID_NET_NAME_ONBOARD", str);
++                        udev_builtin_add_property(event, "ID_NET_NAME_ONBOARD", str);
+                 log_device_debug(dev, "DeviceTree identifier: alias_index=%u %s \"%s\"",
+                                  i, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+                 return 0;
+@@ -932,12 +932,11 @@ static int names_devicetree(sd_device *dev, const char *prefix, EventMode mode)
+         return -ENOENT;
+ }
+ 
+-static int names_pci(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_pci(UdevEvent *event, const char *prefix) {
++        sd_device *parent, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_(sd_device_unrefp) sd_device *physfn_pcidev = NULL;
+         _cleanup_free_ char *virtfn_suffix = NULL;
+-        sd_device *parent;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* check if our direct parent is a PCI device with no other bus in-between */
+@@ -949,10 +948,10 @@ static int names_pci(sd_device *dev, const char *prefix, EventMode mode) {
+             get_virtfn_info(parent, &physfn_pcidev, &virtfn_suffix) >= 0)
+                 parent = physfn_pcidev;
+         else
+-                (void) names_pci_onboard_label(dev, parent, prefix, mode);
++                (void) names_pci_onboard_label(event, parent, prefix);
+ 
+-        (void) names_pci_onboard(dev, parent, prefix, virtfn_suffix, mode);
+-        (void) names_pci_slot(dev, parent, prefix, virtfn_suffix, mode);
++        (void) names_pci_onboard(event, parent, prefix, virtfn_suffix);
++        (void) names_pci_slot(event, parent, prefix, virtfn_suffix);
+         return 0;
+ }
+ 
+@@ -1015,12 +1014,11 @@ static int get_usb_specifier(sd_device *dev, char **ret) {
+         return 0;
+ }
+ 
+-static int names_usb(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_usb(UdevEvent *event, const char *prefix) {
++        sd_device *usbdev, *pcidev, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *suffix = NULL;
+-        sd_device *usbdev, *pcidev;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* USB device */
+@@ -1036,7 +1034,7 @@ static int names_usb(sd_device *dev, const char *prefix, EventMode mode) {
+         /* If the USB bus is on PCI bus, then suffix the USB specifier to the name based on the PCI bus. */
+         r = sd_device_get_parent_with_subsystem_devtype(usbdev, "pci", NULL, &pcidev);
+         if (r >= 0)
+-                return names_pci_slot(dev, pcidev, prefix, suffix, mode);
++                return names_pci_slot(event, pcidev, prefix, suffix);
+ 
+         if (r != -ENOENT || !naming_scheme_has(NAMING_USB_HOST))
+                 return log_device_debug_errno(usbdev, r, "Failed to get parent PCI bus: %m");
+@@ -1044,7 +1042,7 @@ static int names_usb(sd_device *dev, const char *prefix, EventMode mode) {
+         /* Otherwise, e.g. on-chip asics that have USB ports, use the USB specifier as is. */
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%s%s", prefix, suffix))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_PATH", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_PATH", str);
+ 
+         return 0;
+ }
+@@ -1079,12 +1077,11 @@ static int get_bcma_specifier(sd_device *dev, char **ret) {
+         return 0;
+ }
+ 
+-static int names_bcma(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_bcma(UdevEvent *event, const char *prefix) {
++        sd_device *bcmadev, *pcidev, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *suffix = NULL;
+-        sd_device *bcmadev, *pcidev;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         r = sd_device_get_parent_with_subsystem_devtype(dev, "bcma", NULL, &bcmadev);
+@@ -1099,16 +1096,15 @@ static int names_bcma(sd_device *dev, const char *prefix, EventMode mode) {
+         if (r < 0)
+                 return r;
+ 
+-        return names_pci_slot(dev, pcidev, prefix, suffix, mode);
++        return names_pci_slot(event, pcidev, prefix, suffix);
+ }
+ 
+-static int names_ccw(sd_device *dev, const char *prefix, EventMode mode) {
+-        sd_device *cdev;
++static int names_ccw(UdevEvent *event, const char *prefix) {
++        sd_device *cdev, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         const char *bus_id;
+         size_t bus_id_start, bus_id_len;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* get path names for Linux on System z network devices */
+@@ -1144,17 +1140,17 @@ static int names_ccw(sd_device *dev, const char *prefix, EventMode mode) {
+         /* Use the CCW bus-ID as network device name */
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%sc%s", prefix, bus_id))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_PATH", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_PATH", str);
+         log_device_debug(dev, "CCW identifier: ccw_busid=%s %s \"%s\"",
+                          bus_id, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+         return 0;
+ }
+ 
+ /* IEEE Organizationally Unique Identifier vendor string */
+-static int ieee_oui(sd_device *dev, const struct hw_addr_data *hw_addr, EventMode mode) {
++static int ieee_oui(UdevEvent *event, const struct hw_addr_data *hw_addr) {
+         char str[32];
+ 
+-        assert(dev);
++        assert(event);
+         assert(hw_addr);
+ 
+         if (hw_addr->length != 6)
+@@ -1174,16 +1170,16 @@ static int ieee_oui(sd_device *dev, const struct hw_addr_data *hw_addr, EventMod
+                  hw_addr->bytes[4],
+                  hw_addr->bytes[5]);
+ 
+-        return udev_builtin_hwdb_lookup(dev, NULL, str, NULL, mode);
++        return udev_builtin_hwdb_lookup(event, NULL, str, NULL);
+ }
+ 
+-static int names_mac(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_mac(UdevEvent *event, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         unsigned iftype, assign_type;
+         struct hw_addr_data hw_addr;
+         const char *s;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         r = device_get_sysattr_unsigned_filtered(dev, "type", &iftype);
+@@ -1221,22 +1217,21 @@ static int names_mac(sd_device *dev, const char *prefix, EventMode mode) {
+ 
+         char str[ALTIFNAMSIZ];
+         xsprintf(str, "%sx%s", prefix, HW_ADDR_TO_STR_FULL(&hw_addr, HW_ADDR_TO_STRING_NO_COLON));
+-        udev_builtin_add_property(dev, mode, "ID_NET_NAME_MAC", str);
++        udev_builtin_add_property(event, "ID_NET_NAME_MAC", str);
+         log_device_debug(dev, "MAC address identifier: hw_addr=%s %s %s",
+                          HW_ADDR_TO_STR(&hw_addr),
+                          special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+ 
+-        (void) ieee_oui(dev, &hw_addr, mode);
++        (void) ieee_oui(event, &hw_addr);
+         return 0;
+ }
+ 
+-static int names_netdevsim(sd_device *dev, const char *prefix, EventMode mode) {
+-        sd_device *netdevsimdev;
++static int names_netdevsim(UdevEvent *event, const char *prefix) {
++        sd_device *netdevsimdev, *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         const char *sysnum, *phys_port_name;
+         unsigned addr;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* get netdevsim path names */
+@@ -1265,19 +1260,19 @@ static int names_netdevsim(sd_device *dev, const char *prefix, EventMode mode) {
+ 
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%si%un%s", prefix, addr, phys_port_name))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_PATH", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_PATH", str);
+         log_device_debug(dev, "Netdevsim identifier: address=%u, port_name=%s %s %s",
+                          addr, phys_port_name, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+         return 0;
+ }
+ 
+-static int names_xen(sd_device *dev, const char *prefix, EventMode mode) {
++static int names_xen(UdevEvent *event, const char *prefix) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         _cleanup_free_ char *vif = NULL;
+         const char *p;
+         unsigned id;
+         int r;
+ 
+-        assert(dev);
+         assert(prefix);
+ 
+         /* get xen vif "slot" based names. */
+@@ -1305,7 +1300,7 @@ static int names_xen(sd_device *dev, const char *prefix, EventMode mode) {
+ 
+         char str[ALTIFNAMSIZ];
+         if (snprintf_ok(str, sizeof str, "%sX%u", prefix, id))
+-                udev_builtin_add_property(dev, mode, "ID_NET_NAME_SLOT", str);
++                udev_builtin_add_property(event, "ID_NET_NAME_SLOT", str);
+         log_device_debug(dev, "Xen identifier: id=%u %s %s",
+                          id, special_glyph(SPECIAL_GLYPH_ARROW_RIGHT), str + strlen(prefix));
+         return 0;
+@@ -1383,18 +1378,18 @@ static int builtin_net_id(UdevEvent *event, int argc, char *argv[]) {
+                 return 0;
+         }
+ 
+-        udev_builtin_add_property(dev, event->event_mode, "ID_NET_NAMING_SCHEME", naming_scheme()->name);
+-
+-        (void) names_mac(dev, prefix, event->event_mode);
+-        (void) names_devicetree(dev, prefix, event->event_mode);
+-        (void) names_ccw(dev, prefix, event->event_mode);
+-        (void) names_vio(dev, prefix, event->event_mode);
+-        (void) names_platform(dev, prefix, event->event_mode);
+-        (void) names_netdevsim(dev, prefix, event->event_mode);
+-        (void) names_xen(dev, prefix, event->event_mode);
+-        (void) names_pci(dev, prefix, event->event_mode);
+-        (void) names_usb(dev, prefix, event->event_mode);
+-        (void) names_bcma(dev, prefix, event->event_mode);
++        udev_builtin_add_property(event, "ID_NET_NAMING_SCHEME", naming_scheme()->name);
++
++        (void) names_mac(event, prefix);
++        (void) names_devicetree(event, prefix);
++        (void) names_ccw(event, prefix);
++        (void) names_vio(event, prefix);
++        (void) names_platform(event, prefix);
++        (void) names_netdevsim(event, prefix);
++        (void) names_xen(event, prefix);
++        (void) names_pci(event, prefix);
++        (void) names_usb(event, prefix);
++        (void) names_bcma(event, prefix);
+ 
+         return 0;
+ }
+diff --git a/src/udev/udev-builtin-net_setup_link.c b/src/udev/udev-builtin-net_setup_link.c
+index 8cfcaa932f..4500a69c68 100644
+--- a/src/udev/udev-builtin-net_setup_link.c
++++ b/src/udev/udev-builtin-net_setup_link.c
+@@ -30,13 +30,13 @@ static int builtin_net_setup_link(UdevEvent *event, int argc, char **argv) {
+                                  device_action_to_string(action));
+ 
+                 /* Import previously assigned .link file name. */
+-                (void) udev_builtin_import_property(dev, event->dev_db_clone, event->event_mode, "ID_NET_LINK_FILE");
+-                (void) udev_builtin_import_property(dev, event->dev_db_clone, event->event_mode, "ID_NET_LINK_FILE_DROPINS");
++                (void) udev_builtin_import_property(event, "ID_NET_LINK_FILE");
++                (void) udev_builtin_import_property(event, "ID_NET_LINK_FILE_DROPINS");
+ 
+                 /* Set ID_NET_NAME= with the current interface name. */
+                 const char *value;
+                 if (sd_device_get_sysname(dev, &value) >= 0)
+-                        (void) udev_builtin_add_property(dev, event->event_mode, "ID_NET_NAME", value);
++                        (void) udev_builtin_add_property(event, "ID_NET_NAME", value);
+ 
+                 return 0;
+         }
+@@ -59,7 +59,7 @@ static int builtin_net_setup_link(UdevEvent *event, int argc, char **argv) {
+                 return log_device_error_errno(dev, r, "Failed to get link config: %m");
+         }
+ 
+-        r = link_apply_config(ctx, &event->rtnl, link, event->event_mode);
++        r = link_apply_config(ctx, &event->rtnl, link, event);
+         if (r == -ENODEV)
+                 log_device_debug_errno(dev, r, "Link vanished while applying configuration, ignoring.");
+         else if (r < 0)
+diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
+index 8ba5f2e358..d6ea471482 100644
+--- a/src/udev/udev-builtin-path_id.c
++++ b/src/udev/udev-builtin-path_id.c
+@@ -639,10 +639,10 @@ static int find_real_nvme_parent(sd_device *dev, sd_device **ret) {
+         return 0;
+ }
+ 
+-static void add_id_with_usb_revision(sd_device *dev, EventMode mode, char *path) {
++static void add_id_with_usb_revision(UdevEvent *event, char *path) {
+         char *p;
+ 
+-        assert(dev);
++        assert(event);
+         assert(path);
+ 
+         /* When the path contains the USB revision, let's adds ID_PATH_WITH_USB_REVISION property and
+@@ -656,13 +656,13 @@ static void add_id_with_usb_revision(sd_device *dev, EventMode mode, char *path)
+         if (p[1] != '-')
+                 return;
+ 
+-        (void) udev_builtin_add_property(dev, mode, "ID_PATH_WITH_USB_REVISION", path);
++        (void) udev_builtin_add_property(event, "ID_PATH_WITH_USB_REVISION", path);
+ 
+         /* Drop the USB revision specifier for backward compatibility. */
+         memmove(p - 1, p + 1, strlen(p + 1) + 1);
+ }
+ 
+-static void add_id_tag(sd_device *dev, EventMode mode, const char *path) {
++static void add_id_tag(UdevEvent *event, const char *path) {
+         char tag[UDEV_NAME_SIZE];
+         size_t i = 0;
+ 
+@@ -690,7 +690,7 @@ static void add_id_tag(sd_device *dev, EventMode mode, const char *path) {
+                 i--;
+         tag[i] = '\0';
+ 
+-        (void) udev_builtin_add_property(dev, mode, "ID_PATH_TAG", tag);
++        (void) udev_builtin_add_property(event, "ID_PATH_TAG", tag);
+ }
+ 
+ static int builtin_path_id(UdevEvent *event, int argc, char *argv[]) {
+@@ -848,11 +848,11 @@ static int builtin_path_id(UdevEvent *event, int argc, char *argv[]) {
+         if (device_in_subsystem(dev, "block") && !supported_transport)
+                 return -ENOENT;
+ 
+-        add_id_with_usb_revision(dev, event->event_mode, path);
++        add_id_with_usb_revision(event, path);
+ 
+-        (void) udev_builtin_add_property(dev, event->event_mode, "ID_PATH", path);
++        (void) udev_builtin_add_property(event, "ID_PATH", path);
+ 
+-        add_id_tag(dev, event->event_mode, path);
++        add_id_tag(event, path);
+ 
+         /*
+          * Compatible link generation for ATA devices
+@@ -860,7 +860,7 @@ static int builtin_path_id(UdevEvent *event, int argc, char *argv[]) {
+          * ID_PATH_ATA_COMPAT
+          */
+         if (compat_path)
+-                (void) udev_builtin_add_property(dev, event->event_mode, "ID_PATH_ATA_COMPAT", compat_path);
++                (void) udev_builtin_add_property(event, "ID_PATH_ATA_COMPAT", compat_path);
+ 
+         return 0;
+ }
+diff --git a/src/udev/udev-builtin-usb_id.c b/src/udev/udev-builtin-usb_id.c
+index 9abdec3591..7148c80194 100644
+--- a/src/udev/udev-builtin-usb_id.c
++++ b/src/udev/udev-builtin-usb_id.c
+@@ -413,55 +413,55 @@ fallback:
+         if (sd_device_get_property_value(dev, "ID_BUS", NULL) >= 0)
+                 log_device_debug(dev, "ID_BUS property is already set, setting only properties prefixed with \"ID_USB_\".");
+         else {
+-                udev_builtin_add_property(dev, event->event_mode, "ID_BUS", "usb");
++                udev_builtin_add_property(event, "ID_BUS", "usb");
+ 
+-                udev_builtin_add_property(dev, event->event_mode, "ID_MODEL", model_str);
+-                udev_builtin_add_property(dev, event->event_mode, "ID_MODEL_ENC", model_str_enc);
+-                udev_builtin_add_property(dev, event->event_mode, "ID_MODEL_ID", product_id);
++                udev_builtin_add_property(event, "ID_MODEL", model_str);
++                udev_builtin_add_property(event, "ID_MODEL_ENC", model_str_enc);
++                udev_builtin_add_property(event, "ID_MODEL_ID", product_id);
+ 
+-                udev_builtin_add_property(dev, event->event_mode, "ID_SERIAL", serial);
++                udev_builtin_add_property(event, "ID_SERIAL", serial);
+                 if (!isempty(serial_str))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_SERIAL_SHORT", serial_str);
++                        udev_builtin_add_property(event, "ID_SERIAL_SHORT", serial_str);
+ 
+-                udev_builtin_add_property(dev, event->event_mode, "ID_VENDOR", vendor_str);
+-                udev_builtin_add_property(dev, event->event_mode, "ID_VENDOR_ENC", vendor_str_enc);
+-                udev_builtin_add_property(dev, event->event_mode, "ID_VENDOR_ID", vendor_id);
++                udev_builtin_add_property(event, "ID_VENDOR", vendor_str);
++                udev_builtin_add_property(event, "ID_VENDOR_ENC", vendor_str_enc);
++                udev_builtin_add_property(event, "ID_VENDOR_ID", vendor_id);
+ 
+-                udev_builtin_add_property(dev, event->event_mode, "ID_REVISION", revision_str);
++                udev_builtin_add_property(event, "ID_REVISION", revision_str);
+ 
+                 if (!isempty(type_str))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_TYPE", type_str);
++                        udev_builtin_add_property(event, "ID_TYPE", type_str);
+ 
+                 if (!isempty(instance_str))
+-                        udev_builtin_add_property(dev, event->event_mode, "ID_INSTANCE", instance_str);
++                        udev_builtin_add_property(event, "ID_INSTANCE", instance_str);
+         }
+ 
+         /* Also export the same values in the above by prefixing ID_USB_. */
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_MODEL", model_str);
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_MODEL_ENC", model_str_enc);
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_MODEL_ID", product_id);
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_SERIAL", serial);
++        udev_builtin_add_property(event, "ID_USB_MODEL", model_str);
++        udev_builtin_add_property(event, "ID_USB_MODEL_ENC", model_str_enc);
++        udev_builtin_add_property(event, "ID_USB_MODEL_ID", product_id);
++        udev_builtin_add_property(event, "ID_USB_SERIAL", serial);
+         if (!isempty(serial_str))
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_SERIAL_SHORT", serial_str);
++                udev_builtin_add_property(event, "ID_USB_SERIAL_SHORT", serial_str);
+ 
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_VENDOR", vendor_str);
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_VENDOR_ENC", vendor_str_enc);
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_VENDOR_ID", vendor_id);
++        udev_builtin_add_property(event, "ID_USB_VENDOR", vendor_str);
++        udev_builtin_add_property(event, "ID_USB_VENDOR_ENC", vendor_str_enc);
++        udev_builtin_add_property(event, "ID_USB_VENDOR_ID", vendor_id);
+ 
+-        udev_builtin_add_property(dev, event->event_mode, "ID_USB_REVISION", revision_str);
++        udev_builtin_add_property(event, "ID_USB_REVISION", revision_str);
+ 
+         if (!isempty(type_str))
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_TYPE", type_str);
++                udev_builtin_add_property(event, "ID_USB_TYPE", type_str);
+ 
+         if (!isempty(instance_str))
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_INSTANCE", instance_str);
++                udev_builtin_add_property(event, "ID_USB_INSTANCE", instance_str);
+ 
+         if (!isempty(packed_if_str))
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_INTERFACES", packed_if_str);
++                udev_builtin_add_property(event, "ID_USB_INTERFACES", packed_if_str);
+         if (ifnum)
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_INTERFACE_NUM", ifnum);
++                udev_builtin_add_property(event, "ID_USB_INTERFACE_NUM", ifnum);
+         if (driver)
+-                udev_builtin_add_property(dev, event->event_mode, "ID_USB_DRIVER", driver);
++                udev_builtin_add_property(event, "ID_USB_DRIVER", driver);
+         return 0;
+ }
+ 
+diff --git a/src/udev/udev-builtin.c b/src/udev/udev-builtin.c
+index 69401aa2e0..2118c2f3df 100644
+--- a/src/udev/udev-builtin.c
++++ b/src/udev/udev-builtin.c
+@@ -120,10 +120,10 @@ int udev_builtin_run(UdevEvent *event, UdevBuiltinCommand cmd, const char *comma
+         return builtins[cmd]->cmd(event, strv_length(argv), argv);
+ }
+ 
+-int udev_builtin_add_property(sd_device *dev, EventMode mode, const char *key, const char *val) {
++int udev_builtin_add_property(UdevEvent *event, const char *key, const char *val) {
++        sd_device *dev = ASSERT_PTR(ASSERT_PTR(event)->dev);
+         int r;
+ 
+-        assert(dev);
+         assert(key);
+ 
+         r = device_add_property(dev, key, val);
+@@ -131,18 +131,18 @@ int udev_builtin_add_property(sd_device *dev, EventMode mode, const char *key, c
+                 return log_device_debug_errno(dev, r, "Failed to add property '%s%s%s'",
+                                               key, val ? "=" : "", strempty(val));
+ 
+-        if (mode == EVENT_UDEVADM_TEST_BUILTIN)
++        if (event->event_mode == EVENT_UDEVADM_TEST_BUILTIN)
+                 printf("%s=%s\n", key, strempty(val));
+ 
+         return 0;
+ }
+ 
+-int udev_builtin_add_propertyf(sd_device *dev, EventMode mode, const char *key, const char *valf, ...) {
++int udev_builtin_add_propertyf(UdevEvent *event, const char *key, const char *valf, ...) {
+         _cleanup_free_ char *val = NULL;
+         va_list ap;
+         int r;
+ 
+-        assert(dev);
++        assert(event);
+         assert(key);
+         assert(valf);
+ 
+@@ -152,26 +152,26 @@ int udev_builtin_add_propertyf(sd_device *dev, EventMode mode, const char *key,
+         if (r < 0)
+                 return log_oom_debug();
+ 
+-        return udev_builtin_add_property(dev, mode, key, val);
++        return udev_builtin_add_property(event, key, val);
+ }
+ 
+-int udev_builtin_import_property(sd_device *dev, sd_device *src, EventMode mode, const char *key) {
++int udev_builtin_import_property(UdevEvent *event, const char *key) {
+         const char *val;
+         int r;
+ 
+-        assert(dev);
+-        assert(key);
++        assert(event);
++        assert(event->dev);
+ 
+-        if (!src)
++        if (!event->dev_db_clone)
+                 return 0;
+ 
+-        r = sd_device_get_property_value(src, key, &val);
++        r = sd_device_get_property_value(event->dev_db_clone, key, &val);
+         if (r == -ENOENT)
+                 return 0;
+         if (r < 0)
+-                return log_device_debug_errno(src, r, "Failed to get property \"%s\", ignoring: %m", key);
++                return log_device_debug_errno(event->dev_db_clone, r, "Failed to get property \"%s\", ignoring: %m", key);
+ 
+-        r = udev_builtin_add_property(dev, mode, key, val);
++        r = udev_builtin_add_property(event, key, val);
+         if (r < 0)
+                 return r;
+ 
+diff --git a/src/udev/udev-builtin.h b/src/udev/udev-builtin.h
+index 2433dfa4d4..8c2016e5f0 100644
+--- a/src/udev/udev-builtin.h
++++ b/src/udev/udev-builtin.h
+@@ -60,8 +60,7 @@ bool udev_builtin_run_once(UdevBuiltinCommand cmd);
+ int udev_builtin_run(UdevEvent *event, UdevBuiltinCommand cmd, const char *command);
+ void udev_builtin_list(void);
+ bool udev_builtin_should_reload(void);
+-int udev_builtin_add_property(sd_device *dev, EventMode mode, const char *key, const char *val);
+-int udev_builtin_add_propertyf(sd_device *dev, EventMode mode, const char *key, const char *valf, ...) _printf_(4, 5);
+-int udev_builtin_import_property(sd_device *dev, sd_device *src, EventMode mode, const char *key);
+-int udev_builtin_hwdb_lookup(sd_device *dev, const char *prefix, const char *modalias,
+-                             const char *filter, EventMode mode);
++int udev_builtin_add_property(UdevEvent *event, const char *key, const char *val);
++int udev_builtin_add_propertyf(UdevEvent *event, const char *key, const char *valf, ...) _printf_(3, 4);
++int udev_builtin_import_property(UdevEvent *event, const char *key);
++int udev_builtin_hwdb_lookup(UdevEvent *event, const char *prefix, const char *modalias, const char *filter);

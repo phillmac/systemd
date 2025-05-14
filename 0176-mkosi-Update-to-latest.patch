@@ -1,0 +1,37 @@
+From 0f380605eb6f292c21af10f6688170a3508682f5 Mon Sep 17 00:00:00 2001
+From: Daan De Meyer <daan.j.demeyer@gmail.com>
+Date: Mon, 27 Jan 2025 11:26:13 +0100
+Subject: [PATCH] mkosi: Update to latest
+
+(cherry picked from commit b10a0a4ad69541a2cbae9df643c67c3292930a25)
+---
+ .github/workflows/coverage.yml | 2 +-
+ .github/workflows/mkosi.yml    | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 7fc7518dcc..78e6e05b2c 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -16,7 +16,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@0df7ef3f404b211fbc8d856214929de10311ee22
++      - uses: systemd/mkosi@0de0aa905625317ff10cc4b44ec9379a7aa65aa6
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 6f6df0ddf9..d662d65dad 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -120,7 +120,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+-      - uses: systemd/mkosi@0df7ef3f404b211fbc8d856214929de10311ee22
++      - uses: systemd/mkosi@0de0aa905625317ff10cc4b44ec9379a7aa65aa6
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+       # immediately, we remove the files in the background. However, we first move them to a different location

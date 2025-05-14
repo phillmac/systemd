@@ -1,0 +1,36 @@
+From 29cdad871ea5febb64336b43f08aab5ac15ab4cb Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 8 Nov 2024 12:23:37 +0000
+Subject: [PATCH] battery-check: parse options before checking for kernel
+ command line
+
+Otherwise --help/--version/etc which exit immediately will do pointless work
+
+(cherry picked from commit 60d23b7f4ae26d934e5748d30bb7ae956f3ad83d)
+---
+ src/battery-check/battery-check.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/battery-check/battery-check.c b/src/battery-check/battery-check.c
+index 1563147b7b..a2ed5cbafd 100644
+--- a/src/battery-check/battery-check.c
++++ b/src/battery-check/battery-check.c
+@@ -123,14 +123,14 @@ static int run(int argc, char *argv[]) {
+ 
+         log_setup();
+ 
+-        r = proc_cmdline_get_bool("systemd.battery_check", PROC_CMDLINE_STRIP_RD_PREFIX|PROC_CMDLINE_TRUE_WHEN_MISSING, &arg_doit);
+-        if (r < 0)
+-                log_warning_errno(r, "Failed to parse systemd.battery_check= kernel command line option, ignoring: %m");
+-
+         r = parse_argv(argc, argv);
+         if (r <= 0)
+                 return r;
+ 
++        r = proc_cmdline_get_bool("systemd.battery_check", PROC_CMDLINE_STRIP_RD_PREFIX|PROC_CMDLINE_TRUE_WHEN_MISSING, &arg_doit);
++        if (r < 0)
++                log_warning_errno(r, "Failed to parse systemd.battery_check= kernel command line option, ignoring: %m");
++
+         if (!arg_doit) {
+                 log_info("Checking battery status and AC power existence is disabled by the kernel command line, skipping execution.");
+                 return 0;

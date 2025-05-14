@@ -1,0 +1,33 @@
+From 32882ddc3e34baeeb1fd65c2ed783f10463ccc8f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 14 Dec 2022 22:24:53 +0100
+Subject: [PATCH] fedora: use system-auth in pam systemd-user
+
+Adjust upstream config to use our shared stack
+
+rhel-only: feature
+
+Related: RHEL-40924
+---
+ src/login/systemd-user.in | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/login/systemd-user.in b/src/login/systemd-user.in
+index 8a3c9e0165..74ef5f2552 100644
+--- a/src/login/systemd-user.in
++++ b/src/login/systemd-user.in
+@@ -7,7 +7,7 @@
+ -account sufficient pam_systemd_home.so
+ {% endif %}
+ account  sufficient pam_unix.so no_pass_expiry
+-account  required   pam_permit.so
++account  include    system-auth
+ 
+ {% if HAVE_SELINUX %}
+ session  required   pam_selinux.so close
+@@ -20,4 +20,4 @@ session  required   pam_namespace.so
+ -session optional   pam_systemd_home.so
+ {% endif %}
+ session  optional   pam_umask.so silent
+-session  optional   pam_systemd.so
++session  include    system-auth

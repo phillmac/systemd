@@ -1,0 +1,64 @@
+From 2dc019179c1b401af2c2956ccc0b96e81a80fca7 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 5 Feb 2025 09:40:31 +0900
+Subject: [PATCH] test-network: add test case for issue #35874
+
+(cherry picked from commit a10172b0355f3ff5c301010d81aea1f2fba986e7)
+---
+ .../conf/25-routing-policy-rule-test1.network  | 18 ++++++++++++++++++
+ test/test-network/systemd-networkd-tests.py    | 16 ++++++++++++++++
+ 2 files changed, 34 insertions(+)
+
+diff --git a/test/test-network/conf/25-routing-policy-rule-test1.network b/test/test-network/conf/25-routing-policy-rule-test1.network
+index 2cec4334fd..6e67f3f105 100644
+--- a/test/test-network/conf/25-routing-policy-rule-test1.network
++++ b/test/test-network/conf/25-routing-policy-rule-test1.network
+@@ -47,3 +47,21 @@ IncomingInterface=test1
+ From=10.1.0.0/16
+ Priority=104
+ Table=12
++
++# The four routing policy rules below intentionally have the same config
++# excepts for their To= addresses. See issue #35874.
++[RoutingPolicyRule]
++To=192.0.2.0/26
++Table=1001
++
++[RoutingPolicyRule]
++To=192.0.2.64/26
++Table=1001
++
++[RoutingPolicyRule]
++To=192.0.2.128/26
++Table=1001
++
++[RoutingPolicyRule]
++To=192.0.2.192/26
++Table=1001
+diff --git a/test/test-network/systemd-networkd-tests.py b/test/test-network/systemd-networkd-tests.py
+index 000645c916..bb721521a5 100755
+--- a/test/test-network/systemd-networkd-tests.py
++++ b/test/test-network/systemd-networkd-tests.py
+@@ -3722,6 +3722,22 @@ class NetworkdNetworkTests(unittest.TestCase, Utilities):
+         print(output)
+         self.assertIn('104:	from 10.1.0.0/16 iif test1 lookup 12 nop', output)
+ 
++        output = check_output('ip rule list to 192.0.2.0/26')
++        print(output)
++        self.assertIn('to 192.0.2.0/26 lookup 1001', output)
++
++        output = check_output('ip rule list to 192.0.2.64/26')
++        print(output)
++        self.assertIn('to 192.0.2.64/26 lookup 1001', output)
++
++        output = check_output('ip rule list to 192.0.2.128/26')
++        print(output)
++        self.assertIn('to 192.0.2.128/26 lookup 1001', output)
++
++        output = check_output('ip rule list to 192.0.2.192/26')
++        print(output)
++        self.assertIn('to 192.0.2.192/26 lookup 1001', output)
++
+     def check_routing_policy_rule_dummy98(self):
+         print('### Checking routing policy rules requested by dummy98')
+ 

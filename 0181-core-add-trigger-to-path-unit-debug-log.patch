@@ -1,0 +1,35 @@
+From b6b287854aa622083ec25e19e2fac26bd332e693 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Mon, 27 Jan 2025 20:30:16 +0000
+Subject: [PATCH] core: add trigger to path unit debug log
+
+Useful for debugging, given it's already logging and the trigger
+is known, add it
+
+(cherry picked from commit 6566b4306a65bc7af6ade0cb6887217212925202)
+---
+ src/core/path.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/core/path.c b/src/core/path.c
+index e0dc93aabd..c9ea31a74e 100644
+--- a/src/core/path.c
++++ b/src/core/path.c
+@@ -591,7 +591,7 @@ static void path_enter_waiting(Path *p, bool initial, bool from_trigger_notify)
+         }
+ 
+         if (path_check_good(p, initial, from_trigger_notify, &trigger_path)) {
+-                log_unit_debug(UNIT(p), "Got triggered.");
++                log_unit_debug(UNIT(p), "Got triggered by '%s'.", trigger_path);
+                 path_enter_running(p, trigger_path);
+                 return;
+         }
+@@ -608,7 +608,7 @@ static void path_enter_waiting(Path *p, bool initial, bool from_trigger_notify)
+          * recheck */
+ 
+         if (path_check_good(p, false, from_trigger_notify, &trigger_path)) {
+-                log_unit_debug(UNIT(p), "Got triggered.");
++                log_unit_debug(UNIT(p), "Got triggered by '%s'.", trigger_path);
+                 path_enter_running(p, trigger_path);
+                 return;
+         }

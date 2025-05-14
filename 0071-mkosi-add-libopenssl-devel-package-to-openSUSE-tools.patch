@@ -1,0 +1,53 @@
+From e28aa452ce82ff34d2bf29d1f00ee7aa3df780ae Mon Sep 17 00:00:00 2001
+From: Antonio Alvarez Feijoo <antonio.feijoo@suse.com>
+Date: Mon, 30 Dec 2024 17:38:36 +0100
+Subject: [PATCH] mkosi: add libopenssl devel package to openSUSE tools tree
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Otherwise, the build fails with:
+
+```
+INFO: autodetecting backend as ninja
+INFO: calculating backend command to run: /usr/bin/ninja -C /mnt/work/src/systemd/upstream-fork/main/build-mkosi
+ninja: Entering directory `/mnt/work/src/systemd/upstream-fork/main/build-mkosi'
+[463/2561] Compiling C object src/shared/libsystemd-shared-258.a.p/openssl-util.c.o
+FAILED: src/shared/libsystemd-shared-258.a.p/openssl-util.c.o
+cc -Isrc/shared/libsystemd-shared-258.a.p -Isrc/shared -I../src/shared -Isrc/basic -I../src/basic -Isrc/fundamental -I../src/fundamental -Isrc/systemd -I../src/systemd -I. -I.. -I../src/libsystemd/sd-bus -I../src/libsystemd/sd-device -I../src/libsystemd/sd-event -I../src/libsystemd/sd-hwdb -I../src/libsystemd/sd-id128 -I../src/libsystemd/sd-journal -I../src/libsystemd/sd-json -I../src/libsystemd/sd-netlink -I../src/libsystemd/sd-network -I../src/libsystemd/sd-path -I../src/libsystemd/sd-resolve -I../src/libsystemd/sd-varlink -I/usr/include/blkid -I/usr/include/libmount -I/usr/include/p11-kit-1 -fdiagnostics-color=always -D_FILE_OFFSET_BITS=64 -Wall -Winvalid-pch -Wextra -std=gnu11 -O0 -g -Wno-missing-field-initializers -Wno-unused-parameter -Wno-nonnull-compare -Warray-bounds -Warray-bounds=2 -Wdate-time -Wendif-labels -Werror=format=2 -Werror=format-signedness -Werror=implicit-function-declaration -Werror=implicit-int -Werror=incompatible-pointer-types -Werror=int-conversion -Werror=missing-declarations -Werror=missing-prototypes -Werror=overflow -Werror=override-init -Werror=return-type -Werror=shift-count-overflow -Werror=shift-overflow=2 -Werror=strict-flex-arrays -Werror=undef -Wfloat-equal -Wimplicit-fallthrough=5 -Winit-self -Wlogical-op -Wmissing-include-dirs -Wmissing-noreturn -Wnested-externs -Wold-style-definition -Wpointer-arith -Wredundant-decls -Wshadow -Wstrict-aliasing=2 -Wstrict-prototypes -Wsuggest-attribute=noreturn -Wunused-function -Wwrite-strings -Wzero-length-bounds -fdiagnostics-show-option -fno-common -fstack-protector -fstack-protector-strong -fstrict-flex-arrays=3 --param=ssp-buffer-size=4 -Wno-unused-result -Werror=shadow -fPIC -fno-strict-aliasing -fstrict-flex-arrays=1 -fvisibility=hidden -fno-omit-frame-pointer -include config.h -pthread -fvisibility=default -MD -MQ src/shared/libsystemd-shared-258.a.p/openssl-util.c.o -MF src/shared/libsystemd-shared-258.a.p/openssl-util.c.o.d -o src/shared/libsystemd-shared-258.a.p/openssl-util.c.o -c ../src/shared/openssl-util.c
+../src/shared/openssl-util.c: In function ‘openssl_ask_password_ui_read’:
+../src/shared/openssl-util.c:1395:65: error: implicit declaration of function ‘UI_method_get_ex_data’; did you mean ‘UI_method_get_reader’? [-Wimplicit-function-declaration]
+ 1395 |                 AskPasswordRequest *req = (AskPasswordRequest*) UI_method_get_ex_data(UI_get_method(ui), 0);
+      |                                                                 ^~~~~~~~~~~~~~~~~~~~~
+      |                                                                 UI_method_get_reader
+../src/shared/openssl-util.c:1395:65: warning: nested extern declaration of ‘UI_method_get_ex_data’ [-Wnested-externs]
+../src/shared/openssl-util.c:1395:43: warning: cast to pointer from integer of different size [-Wint-to-pointer-cast]
+ 1395 |                 AskPasswordRequest *req = (AskPasswordRequest*) UI_method_get_ex_data(UI_get_method(ui), 0);
+      |                                           ^
+../src/shared/openssl-util.c: In function ‘openssl_ask_password_ui_new’:
+../src/shared/openssl-util.c:1479:13: error: implicit declaration of function ‘UI_method_set_ex_data’; did you mean ‘UI_method_set_reader’? [-Wimplicit-function-declaration]
+ 1479 |         if (UI_method_set_ex_data(ui->method, 0, &ui->request) == 0)
+      |             ^~~~~~~~~~~~~~~~~~~~~
+      |             UI_method_set_reader
+../src/shared/openssl-util.c:1479:13: warning: nested extern declaration of ‘UI_method_set_ex_data’ [-Wnested-externs]
+[480/2561] Compiling C object src/shared/libsystemd-shared-258.a.p/pkcs11-util.c.o
+ninja: build stopped: subcommand failed.
+```
+
+(cherry picked from commit 8a6ad7c8376b5dab1d3502a39cead9c63152293d)
+---
+ mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+index 468f56856f..d486875fab 100644
+--- a/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
++++ b/mkosi.conf.d/05-tools/mkosi.conf.d/opensuse.conf
+@@ -15,6 +15,7 @@ ToolsTreePackages=
+         pkgconfig(fdisk)
+         pkgconfig(libmicrohttpd)
+         pkgconfig(mount)
++        pkgconfig(libopenssl)
+         python3-ruff
+         tpm2-0-tss-devel
+         python3-jinja2

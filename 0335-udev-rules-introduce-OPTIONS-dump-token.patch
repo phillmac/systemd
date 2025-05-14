@@ -1,0 +1,107 @@
+From 3c4bb5e072ce6fa02976bd43d038c1b5b4c392c3 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 11 Jan 2025 17:00:17 +0900
+Subject: [PATCH] udev-rules: introduce OPTIONS="dump" token
+
+Should be useful for debugging.
+
+(cherry picked from commit b4ffb776696bdd3a7345f73956ce7551f6b449ff)
+
+Resolves: RHEL-75774
+---
+ man/udev.xml          |  9 +++++++++
+ src/udev/udev-rules.c | 33 ++++++++++++++++++++++++++++++++-
+ 2 files changed, 41 insertions(+), 1 deletion(-)
+
+diff --git a/man/udev.xml b/man/udev.xml
+index e6c0e23ed4..27ebdfc114 100644
+--- a/man/udev.xml
++++ b/man/udev.xml
+@@ -720,6 +720,15 @@ SUBSYSTEM=="net", OPTIONS="log_level=debug"</programlisting></para>
+                     <xi:include href="version-info.xml" xpointer="v248"/>
+                   </listitem>
+                 </varlistentry>
++                <varlistentry>
++                  <term><option>dump</option></term>
++                  <listitem>
++                    <para>Dump the status of the event currently processing. It may be useful for debugging
++                    udev rules by inserting this option.</para>
++
++                    <xi:include href="version-info.xml" xpointer="v258"/>
++                  </listitem>
++                </varlistentry>
+               </variablelist>
+             </listitem>
+           </varlistentry>
+diff --git a/src/udev/udev-rules.c b/src/udev/udev-rules.c
+index 041c642aa9..d94fc6fdbd 100644
+--- a/src/udev/udev-rules.c
++++ b/src/udev/udev-rules.c
+@@ -18,6 +18,7 @@
+ #include "fs-util.h"
+ #include "glob-util.h"
+ #include "list.h"
++#include "memstream-util.h"
+ #include "mkdir.h"
+ #include "netif-naming-scheme.h"
+ #include "nulstr-util.h"
+@@ -32,6 +33,7 @@
+ #include "sysctl-util.h"
+ #include "syslog-util.h"
+ #include "udev-builtin.h"
++#include "udev-dump.h"
+ #include "udev-event.h"
+ #include "udev-format.h"
+ #include "udev-node.h"
+@@ -117,6 +119,7 @@ typedef enum {
+ #define _TK_A_MIN _TK_M_MAX
+ 
+         /* lvalues which take one of assign operators */
++        TK_A_OPTIONS_DUMP,                  /* no argument */
+         TK_A_OPTIONS_STRING_ESCAPE_NONE,    /* no argument */
+         TK_A_OPTIONS_STRING_ESCAPE_REPLACE, /* no argument */
+         TK_A_OPTIONS_DB_PERSIST,            /* no argument */
+@@ -991,7 +994,9 @@ static int parse_token(
+                 if (op == OP_ADD)
+                         op = OP_ASSIGN;
+ 
+-                if (streq(value, "string_escape=none"))
++                if (streq(value, "dump"))
++                        r = rule_line_add_token(rule_line, TK_A_OPTIONS_DUMP, op, NULL, NULL, /* is_case_insensitive = */ false, token_str);
++                else if (streq(value, "string_escape=none"))
+                         r = rule_line_add_token(rule_line, TK_A_OPTIONS_STRING_ESCAPE_NONE, op, NULL, NULL, /* is_case_insensitive = */ false, token_str);
+                 else if (streq(value, "string_escape=replace"))
+                         r = rule_line_add_token(rule_line, TK_A_OPTIONS_STRING_ESCAPE_REPLACE, op, NULL, NULL, /* is_case_insensitive = */ false, token_str);
+@@ -2551,6 +2556,32 @@ static int udev_rule_apply_token_to_event(
+         case TK_M_RESULT:
+                 return token_match_string(event, token, event->program_result, /* log_result = */ true);
+ 
++        case TK_A_OPTIONS_DUMP: {
++                log_event_info(event, token, "Dumping current state:");
++
++                if (event->event_mode == EVENT_UDEV_WORKER) {
++                        _cleanup_(memstream_done) MemStream m = {};
++                        FILE *f = memstream_init(&m);
++                        if (!f)
++                                return log_oom();
++
++                        dump_event(event, f);
++
++                        _cleanup_free_ char *buf = NULL;
++                        r = memstream_finalize(&m, &buf, NULL);
++                        if (r < 0)
++                                log_event_warning_errno(event, token, r, "Failed to finalize memory stream, ignoring: %m");
++                        else
++                                log_info("%s", buf);
++                } else {
++                        puts("============================");
++                        dump_event(event, NULL);
++                        puts("============================");
++                }
++
++                log_event_info(event, token, "DONE");
++                return true;
++        }
+         case TK_A_OPTIONS_STRING_ESCAPE_NONE:
+                 event->esc = ESCAPE_NONE;
+                 return log_event_done(event, token);
