@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        9%{?dist}.1
+Release:        9%{?dist}.1.alma.1
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -1015,12 +1015,12 @@ CONFIGURE_OPTS=(
         -Ddefault-llmnr=no
         -Ddns-over-tls=openssl
         -Dntp-servers=
-        -Dsupport-url=https://access.redhat.com/support
+        -Dsupport-url=https://wiki.almalinux.org/Help-and-Support
         -Dlibidn=disabled
         -Dgnutls=disabled
         -Ddefault-compression=zstd
         # https://issues.redhat.com/browse/RHEL-16810
-        -Dsbat-distro-url=mailto:secalert@redhat.com
+        -Dsbat-distro-url=mailto:security@almalinux.org
         -Dsshconfdir=no
         -Dsshdconfdir=no
         -Duserdb=true
@@ -1387,6 +1387,9 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
+* Wed May 14 2025 Andrew Lukoshko <alukoshko@almalinux.org> - 257-9.1.alma.1
+- Debrand for AlmaLinux
+
 * Mon Mar 10 2025 systemd team <systemd-maint@redhat.com> - 257-9.1
 - bump the NIC naming policy to RHEL-10.0 (RHEL-82568)
 
