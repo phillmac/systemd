@@ -1387,7 +1387,7 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
-* Wed May 14 2025 Andrew Lukoshko <alukoshko@almalinux.org> - 257-9.1.alma.1
+* Thu May 15 2025 Andrew Lukoshko <alukoshko@almalinux.org> - 257-9.1.alma.1
 - Debrand for AlmaLinux
 
 * Mon Mar 10 2025 systemd team <systemd-maint@redhat.com> - 257-9.1
