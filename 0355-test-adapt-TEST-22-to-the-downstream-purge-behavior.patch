@@ -1,0 +1,41 @@
+From 6cbfae911cc151ed9fef41b6625ab90ac6971521 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Fri, 11 Apr 2025 15:24:56 +0200
+Subject: [PATCH] test: adapt TEST-22 to the downstream --purge behavior
+
+Follow-up for bbd480dc658d26fdd35c9635a08b5380aaccdcad.
+
+rhel-only: ci
+Related: RHEL-79976
+---
+ test/units/TEST-22-TMPFILES.18.sh | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/test/units/TEST-22-TMPFILES.18.sh b/test/units/TEST-22-TMPFILES.18.sh
+index c81f6bd0ef..1eb264a279 100755
+--- a/test/units/TEST-22-TMPFILES.18.sh
++++ b/test/units/TEST-22-TMPFILES.18.sh
+@@ -24,7 +24,7 @@ test -f /tmp/somedir/somefile
+ grep -q baz /tmp/somedir/somefile
+ grep -q qux /tmp/someotherfile
+ 
+-systemd-tmpfiles --purge - <<<"$c"
++systemd-tmpfiles --purge --destroy-data - <<<"$c"
+ test ! -f /tmp/somedir/somefile
+ test ! -d /tmp/somedir/
+ grep -q qux /tmp/someotherfile
+@@ -34,12 +34,12 @@ test ! -f /tmp/somedir/somefile
+ test ! -d /tmp/somedir/
+ grep -q qux /tmp/someotherfile
+ 
+-systemd-tmpfiles --create --purge - <<<"$c"
++systemd-tmpfiles --create --destroy-data --purge - <<<"$c"
+ test -f /tmp/somedir/somefile
+ grep -q baz /tmp/somedir/somefile
+ grep -q qux /tmp/someotherfile
+ 
+-systemd-tmpfiles --purge - <<<"$c"
++systemd-tmpfiles --purge --destroy-data - <<<"$c"
+ test ! -f /tmp/somedir/somefile
+ test ! -d /tmp/somedir/
+ grep -q qux /tmp/someotherfile

@@ -1,0 +1,87 @@
+From 7219f966aa968984b27a5f497de04f4bc9e5be85 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Fri, 11 Apr 2025 15:33:24 +0200
+Subject: [PATCH] mkosi: reconfigure the CI for CentOS Stream 10
+
+Skip TEST-60 in a VM, since it's currently very flaky there.
+
+rhel-only: ci
+Related: RHEL-79976
+---
+ .github/workflows/mkosi.yml | 28 ++++++++++------------------
+ 1 file changed, 10 insertions(+), 18 deletions(-)
+
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 7a764e82a7..02a8e82c6e 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -48,43 +48,35 @@ jobs:
+   ci:
+     runs-on: ubuntu-24.04
+     concurrency:
+-      group: ${{ github.workflow }}-${{ matrix.distro }}-${{ matrix.release }}-${{ github.ref }}
++      group: ${{ github.workflow }}-${{ toJSON(matrix) }}-${{ github.ref }}
+       cancel-in-progress: true
+     strategy:
+       fail-fast: false
+       matrix:
+         include:
+-          - distro: fedora
+-            release: "41"
++          - distro: centos
++            release: "10"
+             sanitizers: ""
+             llvm: 0
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
+             skip: TEST-21-DFUZZER
+-          - distro: fedora
+-            release: rawhide
+-            sanitizers: address,undefined
+-            llvm: 1
+-            cflags: "-Og"
+-            relabel: yes
+-            vm: 0
+           - distro: centos
+-            release: "9"
++            release: "10"
+             sanitizers: ""
+             llvm: 0
+             cflags: "-Og"
+             relabel: yes
+-            vm: 0
+-            skip: TEST-21-DFUZZER
++            vm: 1
++            skip: "TEST-21-DFUZZER TEST-60-MOUNT-RATELIMIT"
+           - distro: centos
+             release: "10"
+-            sanitizers: ""
+-            llvm: 0
++            sanitizers: address,undefined
++            llvm: 1
+             cflags: "-Og"
+             relabel: yes
+             vm: 0
+-            skip: TEST-21-DFUZZER
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+@@ -183,7 +175,7 @@ jobs:
+           sudo --preserve-env mkosi sandbox -- \
+             env \
+             TEST_PREFER_QEMU=${{ matrix.vm }} \
+-            TEST_SKIP=${{ matrix.skip }} \
++            TEST_SKIP="${{ matrix.skip }}" \
+             meson test \
+             -C build \
+             --no-rebuild \
+@@ -195,7 +187,7 @@ jobs:
+ 
+       - name: Archive failed test journals
+         uses: actions/upload-artifact@v4
+-        if: failure() && (github.repository == 'systemd/systemd' || github.repository == 'systemd/systemd-stable')
++        if: failure() && (github.repository == 'systemd/systemd' || github.repository == 'redhat-plumbers/systemd-rhel10')
+         with:
+           name: ci-mkosi-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.distro }}-${{ matrix.release }}-failed-test-journals
+           path: |

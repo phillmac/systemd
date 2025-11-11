@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        9%{?dist}.1
+Release:        13%{?dist}
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -102,6 +102,7 @@ i=1; for j in 00*patch; do printf "Patch%04d:      %s\n" $i $j; i=$((i+1));done|
 GIT_DIR=../../src/systemd/.git git diffab -M v233..master@{2017-06-15} -- hwdb/[67]* hwdb/parse_hwdb.py >hwdb.patch
 %endif
 
+%if %{without upstream}
 # Backports of patches from upstream (0000–0499)
 #
 # Any patches which are "in preparation" upstream should be listed here, rather
@@ -109,355 +110,447 @@ GIT_DIR=../../src/systemd/.git git diffab -M v233..master@{2017-06-15} -- hwdb/[
 # applying upstream pull requests.
 
 # RHEL-specific
-Patch0001:  0001-Create-CNAME.patch
-Patch0002:  0002-sd-json-sd-varlink-drop-unexported-functions-from-pu.patch
-Patch0003:  0003-test-modernize-generate-sym-test.py.patch
-Patch0004:  0004-test-also-generate-list-of-symbols-from-header-files.patch
-Patch0005:  0005-man-systemd-cryptenroll-sort-fido2-credential-algori.patch
-Patch0006:  0006-analyze-tab-fix.patch
-Patch0007:  0007-analyze-add-missing-mask-option-to-help-text.patch
-Patch0008:  0008-test-set-nsec3-salt-length-8-in-knot.conf.patch
-Patch0009:  0009-test-capability-CAP_LINUX_IMMUTABLE-is-not-available.patch
-Patch0010:  0010-test-fd-util-skip-test-when-lacking-privileges-to-cr.patch
-Patch0011:  0011-test-fd-util-compare-FDs-to-bin-sh-instead-of-dev-nu.patch
-Patch0012:  0012-mkosi-use-inetutils-package-instead-of-hostname-for-.patch
-Patch0013:  0013-man-document-unprivileged-is-not-for-reading-propert.patch
-Patch0014:  0014-profile.d-don-t-bail-if-SHELL_-variables-are-unset.patch
-Patch0015:  0015-Fixing-VLAN-ranges-in-man-systemd.network.patch
-Patch0016:  0016-test-bpf-restrict-fs-Migrate-to-new-assertion-macros.patch
-Patch0017:  0017-man-update-example-in-systemd-measure.xml-35506.patch
-Patch0018:  0018-systemd-cryptenroll.xml-fix-typo.patch
-Patch0019:  0019-semaphore-skip-some-tests.patch
-Patch0020:  0020-shell-completion-add-systemd-creds.patch
-Patch0021:  0021-core-fix-loading-verity-settings-for-MountImages.patch
-Patch0022:  0022-test-add-more-coverage-for-extensions-and-verity.patch
-Patch0023:  0023-README-drop-CentOS-CI-badges.patch
-Patch0024:  0024-meson.version-change-to-257.1.patch
-Patch0025:  0025-journalctl-honor-quiet-with-setup-keys.patch
-Patch0026:  0026-dbus-log-disconnect-on-api-and-system-busses.patch
-Patch0027:  0027-manager-add-list-of-subscribers-to-dump-info.patch
-Patch0028:  0028-exec-util-allow-to-invoke-polkit-ask-password-agent-.patch
-Patch0029:  0029-mkosi-Fix-opensuse-build.patch
-Patch0030:  0030-units-use-PrivateTmp-disconnected-instead-of-yes-if-.patch
-Patch0031:  0031-battery-check-parse-options-before-checking-for-kern.patch
-Patch0032:  0032-test-loop-block-return-77-on-skip-in-more-places.patch
-Patch0033:  0033-mkosi-update-debian-commit-reference.patch
-Patch0034:  0034-shell-completion-add-smbios11-verb-to-systemd-analyz.patch
-Patch0035:  0035-logind-let-system-wide-idle-begin-at-the-time-logind.patch
-Patch0036:  0036-tmpfiles-reduce-quoting-in-warning-message.patch
-Patch0037:  0037-semaphore-bump-timeout.patch
-Patch0038:  0038-Revert-semaphore-skip-some-tests.patch
-Patch0039:  0039-mkosi-fix-section-for-WithNetwork.patch
-Patch0040:  0040-test-time-util-fix-truncation-of-usec-to-sec.patch
-Patch0041:  0041-network-don-t-warn-with-no-NSID-assigned.patch
-Patch0042:  0042-TEST-35-LOGIN-check-only-tty-session.patch
-Patch0043:  0043-test-README-Environment-setting-for-mkosi-should-be-.patch
-Patch0044:  0044-mkosi-temporarily-disable-panic_on_warn.patch
-Patch0045:  0045-networkd-show-wireguard-private-key-read-error-numbe.patch
-Patch0046:  0046-systemctl-edit-ignore-ENOENT-from-unit_is_masked.patch
-Patch0047:  0047-test-skip-TEST-69-SHUTDOWN-on-ubuntu-too.patch
-Patch0048:  0048-mkosi-Fix-tools-image-package-name.patch
-Patch0049:  0049-tpm2-util-Also-retry-unsealing-after-policy_pcr-retu.patch
-Patch0050:  0050-resolved-if-one-transaction-completes-expect-other-t.patch
-Patch0051:  0051-man-Document-generator-sandbox-environment.patch
-Patch0052:  0052-ukify-Fix-regression-in-no-sign-kernel-flag.patch
-Patch0053:  0053-mkosi-switch-debian-ubuntu-to-ci-v257-stable-branch.patch
-Patch0054:  0054-semaphore-switch-debian-ubuntu-to-ci-v257-stable-bra.patch
-Patch0055:  0055-Revert-terminal-util-unify-code-that-resets-dev-cons.patch
-Patch0056:  0056-mkosi-move-config-options.patch
-Patch0057:  0057-mkosi-Update-to-latest.patch
-Patch0058:  0058-mkosi-Add-gdb-to-tools-tree.patch
-Patch0059:  0059-mkosi-Add-libz1-to-opensuse-tools-tree.patch
-Patch0060:  0060-mkosi-Enable-EPEL-for-CentOS-Stream-tools-tree.patch
-Patch0061:  0061-mkosi-Use-tools-tree-by-default.patch
-Patch0062:  0062-mkosi-Use-build-as-extra-search-path-by-default.patch
-Patch0063:  0063-mkosi.clangd-Don-t-pass-host-if-we-re-not-using-flat.patch
-Patch0064:  0064-mkosi.clangd-Fail-on-command-errors.patch
-Patch0065:  0065-docs-Simplify-hacking-documentation.patch
-Patch0066:  0066-mkosi-Fix-authselect-systemd-homed-feature-name.patch
-Patch0067:  0067-docs-Use-meson-compile-instead-of-ninja.patch
-Patch0068:  0068-docs-Explicitly-mention-.local-bin-in-section-on-ins.patch
-Patch0069:  0069-mkosi-update-opensuse-spec-repo-commit.patch
-Patch0070:  0070-mkosi-update-openSUSE-commit-reference.patch
-Patch0071:  0071-mkosi-add-libopenssl-devel-package-to-openSUSE-tools.patch
-Patch0072:  0072-mkosi-switch-to-github-mirror-of-openSUSE-sources-fr.patch
-Patch0073:  0073-mkosi-Allow-disabling-vcs-tag-via-environment-variab.patch
-Patch0074:  0074-docs-Use-mkosi-sandbox-in-test-documentation-as-well.patch
-Patch0075:  0075-test-update-README-s-Ubuntu-CI-section-for-mkosi-cha.patch
-Patch0076:  0076-mkosi-Add-docbook-tools.patch
-Patch0077:  0077-mkosi-Handle-directories-in-debian-not-installed-cor.patch
-Patch0078:  0078-mkosi-Warn-on-unpackaged-files-in-the-debian-package.patch
-Patch0079:  0079-mkosi-Update-to-latest.patch
-Patch0080:  0080-mkosi-Make-path-exclude-more-generic.patch
-Patch0081:  0081-packit-Move-fmf-metadata-into-upstream.patch
-Patch0082:  0082-mkosi-replace-deprecated-settings-and-command-with-n.patch
-Patch0083:  0083-mkosi-Migrate-more-deprecated-options.patch
-Patch0084:  0084-ci-Rename-qemu-variable-to-vm.patch
-Patch0085:  0085-fmf-Insist-on-mkosi-sha-being-available.patch
-Patch0086:  0086-fmf-Support-being-used-downstream-in-dist-git-tests.patch
-Patch0087:  0087-core-fix-assert-when-AddDependencyUnitFiles-is-calle.patch
-Patch0088:  0088-repart-Use-streq_ptr.patch
-Patch0089:  0089-sd-device-add-missing-debugging-log.patch
-Patch0090:  0090-sd-device-fix-validation-for-devices-under-sys-firmw.patch
-Patch0091:  0091-resolved-stop-mdns-lnrr-when-config-changes-to-disab.patch
-Patch0092:  0092-shared-hibernate-util-don-t-attempt-to-fiemap-fd-if-.patch
-Patch0093:  0093-shared-hibernate-util-handle-the-case-where-no-swap-.patch
-Patch0094:  0094-locale-setup-do-not-load-locale-from-environemnt-whe.patch
-Patch0095:  0095-machine-GC-machine-when-no-leader-PID-is-set.patch
-Patch0096:  0096-creds-fix-use-after-free-in-varlink-interface.patch
-Patch0097:  0097-core-unit-serialize-fix-serialization-of-markers.patch
-Patch0098:  0098-test-answer-2nd-mdadm-create-question-for-compat-wit.patch
-Patch0099:  0099-hwdb-comment-out-the-entry-for-Logitech-MX-Keys-for-.patch
-Patch0100:  0100-mkosi-Install-which-in-build-image.patch
-Patch0101:  0101-packit-Simplify-configuration.patch
-Patch0102:  0102-fmf-Check-out-target-branch-in-packit.patch
-Patch0103:  0103-stdio-bridge-fix-polled-fds.patch
-Patch0104:  0104-Revert-mkosi-Fix-opensuse-build.patch
-Patch0105:  0105-CI-add-OBS-workflow-integration-to-build-packages-on.patch
-Patch0106:  0106-obs-also-trigger-Fedora-package-builds.patch
-Patch0107:  0107-systemctl-also-ignore-ENOENT-in-checking-inhibitors.patch
-Patch0108:  0108-systemctl-certainly-ignore-ENOENT-in-checking-inhibi.patch
-Patch0109:  0109-journalctl-make-invocation-and-list-invocations-acce.patch
-Patch0110:  0110-meson-bump-version-to-257.2.patch
-Patch0111:  0111-fmf-Don-t-fail-if-we-can-t-put-selinux-in-permissive.patch
-Patch0112:  0112-fmf-Fix-dist-git-example.patch
-Patch0113:  0113-fmf-Fix-glob.patch
-Patch0114:  0114-fmf-Only-mess-with-etc-yum.repos.d-when-running-with.patch
-Patch0115:  0115-fmf-Dump-CPU-and-memory-information.patch
-Patch0116:  0116-TEST-06-SELINUX-Add-knob-to-allow-checking-for-AVCs.patch
-Patch0117:  0117-fmf-Force-SELinux-relabel-when-running-within-testin.patch
-Patch0118:  0118-test-Drop-set-x-from-integration-test-setup.sh.patch
-Patch0119:  0119-test-Only-plug-in-integration-test-setup.sh-in-inter.patch
-Patch0120:  0120-mkosi-Re-enable-TEST-21-DFUZZER-when-running-with-sa.patch
-Patch0121:  0121-fmf-Move-meson-logs-and-failed-test-journals-to-test.patch
-Patch0122:  0122-fmf-Log-clock-source.patch
-Patch0123:  0123-tree-wide-Fix-python-formatting.patch
-Patch0124:  0124-test-Add-option-to-save-in-progress-test-journals-to.patch
-Patch0125:  0125-test-Don-t-register-machines-with-machined-unless-we.patch
-Patch0126:  0126-test-Move-StateDirectory-directive-into-dropin.patch
-Patch0127:  0127-fmf-Bump-inotify-limits-to-avoid-systemd-nspawn-fail.patch
-Patch0128:  0128-fmf-Use-different-heuristic-on-beefy-systems.patch
-Patch0129:  0129-fmf-Skip-TEST-21-DFUZZER.patch
-Patch0130:  0130-test-Fix-bug-in-integration-test-wrapper.patch
-Patch0131:  0131-test-Only-move-journal-file-if-we-didn-t-just-unlink.patch
-Patch0132:  0132-fmf-Only-move-logs-if-corresponding-directory-exists.patch
-Patch0133:  0133-mkosi-Install-libxslt-on-CentOS-Fedora-instead-of-xs.patch
-Patch0134:  0134-man-Clarify-systemd-notify-and-sd_notify-PID-documen.patch
-Patch0135:  0135-mkosi-Update-to-latest.patch
-Patch0136:  0136-test-Drop-sandbox-from-integration-test-wrapper.patch
-Patch0137:  0137-ci-Stop-archiving-packages.patch
-Patch0138:  0138-sbsign-Make-two-debug-logs-into-error-logs.patch
-Patch0139:  0139-sbsign-Make-sure-output-file-mode-respects-umask.patch
-Patch0140:  0140-mkosi-Don-t-set-ToolsTreeRepositories-for-CentOS-Str.patch
-Patch0141:  0141-mkosi-Update-to-latest.patch
-Patch0142:  0142-mkosi-Use-a-bigger-variety-of-tools-tree-distributio.patch
-Patch0143:  0143-mkosi-lcov-and-shellcheck-are-not-in-EPEL-10.patch
-Patch0144:  0144-mkosi-Don-t-set-O-orphan_file-in-centos-stream-9-too.patch
-Patch0145:  0145-mkosi-Run-more-commands-as-root.patch
-Patch0146:  0146-test-Look-for-qemu-in-usr-libexec-qemu-kvm-as-well.patch
-Patch0147:  0147-TEST-74-AUX-UTILS-Move-run0-pcrlock-test-to-TEST-70-.patch
-Patch0148:  0148-test-Make-sure-we-run-lcov-from-the-meson-source-dir.patch
-Patch0149:  0149-mkosi-Run-two-more-mkosi-commands-with-sudo.patch
-Patch0150:  0150-mkosi-Update-to-latest.patch
-Patch0151:  0151-mkosi-Add-back-preserve-env-when-running-integration.patch
-Patch0152:  0152-mkosi-Drop-usage-of-_systemd_QUIET-in-arch-build-scr.patch
-Patch0153:  0153-HACKING-Move-OBS-section-further-down.patch
-Patch0154:  0154-docs-HACKING-use-run0-to-indicate-which-commands-req.patch
-Patch0155:  0155-HACKING-Drop-run0-from-mkosi-boot-invocation.patch
-Patch0156:  0156-boot-Improve-log-message.patch
-Patch0157:  0157-efivars-deal-with-uncommitted-efi-variables.patch
-Patch0158:  0158-core-device-do-not-drop-backslashes-in-SYSTEMD_WANTS.patch
-Patch0159:  0159-test-add-test-cases-for-parsing-SYSTEMD_WANTS-SYSTEM.patch
-Patch0160:  0160-process-util-do-not-unblock-unrelated-signals-while-.patch
-Patch0161:  0161-stub-drop-PE-sections-parsing-cap.patch
-Patch0162:  0162-bus-wait-for-jobs-fix-service-result-table.patch
-Patch0163:  0163-man-also-fix-documentation-of-start-limit-hit.patch
-Patch0164:  0164-varlink-fix-error-name.patch
-Patch0165:  0165-core-job-never-consider-reload-jobs-redundant.patch
-Patch0166:  0166-mount-util-make-path_get_mount_info_at-also-read-uta.patch
-Patch0167:  0167-machine-revert-type-change-of-leader-in-io.systemd.M.patch
-Patch0168:  0168-resolved-do-not-disable-mdns-llmnr-globally-if-it-s-.patch
-Patch0169:  0169-resolved-stop-mdns-llmnr-if-no-interface-request-it-.patch
-Patch0170:  0170-man-fix-reference-to-non-existing-ukify-parameter.patch
-Patch0171:  0171-ukify-add-loongarch64-to-efi-arch.patch
-Patch0172:  0172-ukify-add-riscv32-to-efi-arch.patch
-Patch0173:  0173-tools-add-loongarch64-to-debug-sd-boot-script.patch
-Patch0174:  0174-systemctl-fix-memleak.patch
-Patch0175:  0175-random-util-fix-compilation-error.patch
-Patch0176:  0176-mkosi-Update-to-latest.patch
-Patch0177:  0177-mkosi-Bump-minimum-version-to-25.patch
-Patch0178:  0178-mkosi-Add-VCS_TAG-to-PassEnvironment.patch
-Patch0179:  0179-mkosi-add-loongarch64-to-Debian-s-list-of-EFI-arches.patch
-Patch0180:  0180-kbd-model-map-add-a-georgian-mapping.patch
-Patch0181:  0181-core-add-trigger-to-path-unit-debug-log.patch
-Patch0182:  0182-test-cleanup-after-testcase_12_resolvectl2.patch
-Patch0183:  0183-test-install-stub-package-for-test-ukify-unit-test.patch
-Patch0184:  0184-test-use-local-stub-if-available-in-test-ukify.patch
-Patch0185:  0185-test-support-slow-test-ukify-on-Debian-Ubuntu.patch
-Patch0186:  0186-man-Update-nss-myhostname.xml-to-reflect-files.patch
-Patch0187:  0187-ukify-Fix-two-typing-issues.patch
-Patch0188:  0188-meson-generate-keyboard-keys-list-from-local-input.h.patch
-Patch0189:  0189-Fix-inversion-of-timesyncd_usec-epoch_usec-variables.patch
-Patch0190:  0190-pe-do-not-warn-about-.initrd-addons.patch
-Patch0191:  0191-Fix-tense-in-SD_MESSAGE_SHUTDOWN_STR.patch
-Patch0192:  0192-firstboot-fix-crash-when-hostname-question-is-skippe.patch
-Patch0193:  0193-build-deps-bump-coverallsapp-github-action-from-2.3..patch
-Patch0194:  0194-build-deps-bump-softprops-action-gh-release-from-2.1.patch
-Patch0195:  0195-build-deps-bump-super-linter-super-linter-from-7.1.0.patch
-Patch0196:  0196-homectl-Fix-empty-checks.patch
-Patch0197:  0197-ukify-measure-Revert-changes-to-use-SizeOfImage-from.patch
-Patch0198:  0198-sysupdate-Update-example-mode-to-644-instead-of-444.patch
-Patch0199:  0199-meson-add-install-tag-for-systemctl.patch
-Patch0200:  0200-test-Drop-Dremote-enabled-instructions-from-readme.patch
-Patch0201:  0201-test-Move-NO_BUILD-instructions-to-a-separate-sectio.patch
-Patch0202:  0202-test-Move-external-packages-section-down-and-reword-.patch
-Patch0203:  0203-repart-Don-t-fail-when-we-re-unable-to-read-file-att.patch
-Patch0204:  0204-homectl-fix-typo-in-help-text.patch
-Patch0205:  0205-homectl-fix-typo-in-man-page.patch
-Patch0206:  0206-resolved-fix-DNSSEC-missing-key-error.patch
-Patch0207:  0207-docs-Add-an-examples-for-command-line-access.patch
-Patch0208:  0208-mkosi-Only-make-build-sources-ephemeral-if-NO_BUILD-.patch
-Patch0209:  0209-vmspawn-ignore-failure-from-sshd-vsock-unit.patch
-Patch0210:  0210-mkosi-extend-util-linux-script-config-drop-in-to-F43.patch
-Patch0211:  0211-meson-Skip-getent-when-it-s-not-found.patch
-Patch0212:  0212-meson-also-skip-uid-gid-check-for-nobody-user-group-.patch
-Patch0213:  0213-core-namespace-relabel-bind-mount-source-based-on-th.patch
-Patch0214:  0214-mkosi-Install-strace-in-build-image.patch
-Patch0215:  0215-mkosi-Fix-section-for-BuildSourcesEphemeral.patch
-Patch0216:  0216-mkosi-Work-around-regression-in-opensuse-rpm-4.20-re.patch
-Patch0217:  0217-userdbctl-don-t-expect-argument-to-fuzzy.patch
-Patch0218:  0218-userdb-reset-errno-before-getpwent.patch
-Patch0219:  0219-network-routing-policy-rule-fix-compare-func.patch
-Patch0220:  0220-test-network-add-test-case-for-issue-35874.patch
-Patch0221:  0221-network-allow-to-configure-routing-policy-rule-even-.patch
-Patch0222:  0222-test-network-add-test-case-for-requesting-routing-po.patch
-Patch0223:  0223-meson-allow-to-customize-the-access-mode-for-tty-pts.patch
-Patch0224:  0224-meson-fix-suite-of-alignment-check-tests.patch
-Patch0225:  0225-hwdb-Make-remote-controllable-lights-work-out-of-the.patch
-Patch0226:  0226-hwdb-update-to-main-2025-02-07.patch
-Patch0227:  0227-udevadm-test-fix-gid-check.patch
-Patch0228:  0228-update-utmp-do-not-give-up-if-the-first-attempt-at-c.patch
-Patch0229:  0229-bootctl-fix-potential-uninitialized-memory-access.patch
-Patch0230:  0230-bootctl-also-shown-whether-stub-loader-partition-dat.patch
-Patch0231:  0231-bootctl-suppress-output-of-empty-partition-info-if-w.patch
-Patch0232:  0232-bootctl-minor-reordering-of-fields-in-output.patch
-Patch0233:  0233-missing_sched-add-CLONE_PIDFD.patch
-Patch0234:  0234-stub-Mention-that-VirtualSize-should-be-SizeOfRawDat.patch
-Patch0235:  0235-import-pubring.gpg-add-openSUSE-build-key.patch
-Patch0236:  0236-import-update-to-current-fedora-keyring.patch
-Patch0237:  0237-ukify-do-not-fail-if-pefile-complains-about-hardcode.patch
-Patch0238:  0238-tmpfiles-fix-copypasta-in-create_symlink-FIFO-symlin.patch
-Patch0239:  0239-udev-worker-add-debugging-log-about-success-of-flock.patch
-Patch0240:  0240-udev-watch-mention-that-the-failure-is-ignored.patch
-Patch0241:  0241-udev-watch-do-not-try-to-remove-invalid-watch-handle.patch
-Patch0242:  0242-login-Continue-watching-leader-pidfd-after-stop.patch
-Patch0243:  0243-login-Queue-session-for-garbage-collection-on-leader.patch
-Patch0244:  0244-ukify-print-debug-progress-messages-to-stderr.patch
-Patch0245:  0245-ukify-Calculate-section-size-more-correctly.patch
-Patch0246:  0246-mkosi-Update-to-latest.patch
-Patch0247:  0247-core-condition-fix-segfault-when-key-not-found-in-os.patch
-Patch0248:  0248-meson-bump-version-to-257.3.patch
-Patch0249:  0249-ci-update-workflows-to-run-on-source-git-setup.patch
-Patch0250:  0250-ci-setup-source-git-automation.patch
-Patch0251:  0251-ci-reconfigure-Packit-for-RHEL-10.patch
-Patch0252:  0252-journal-again-create-user-journals-for-users-with-hi.patch
-Patch0253:  0253-tmpfiles-make-purge-hard-to-mis-use.patch
-Patch0254:  0254-fedora-use-system-auth-in-pam-systemd-user.patch
-Patch0255:  0255-net-naming-scheme-start-rhel10-naming-and-include-rh.patch
-Patch0256:  0256-rules-copy-40-redhat.rules-from-RHEL-9.patch
-Patch0257:  0257-logind-set-RemoveIPC-to-false-by-default.patch
-Patch0258:  0258-tmpfiles-don-t-create-resolv.conf-stub-resolv.conf-s.patch
-Patch0259:  0259-rc-local-order-after-network-online.target.patch
-Patch0260:  0260-random-util-increase-random-seed-size-to-1024.patch
-Patch0261:  0261-journal-don-t-enable-systemd-journald-audit.socket-b.patch
-Patch0262:  0262-journald.conf-don-t-touch-current-audit-settings.patch
-Patch0263:  0263-rules-add-elevator-kernel-command-line-parameter.patch
-Patch0264:  0264-pid1-bump-DefaultTasksMax-to-80-of-the-kernel-pid.ma.patch
-Patch0265:  0265-udev-net-setup-link-change-the-default-MACAddressPol.patch
-Patch0266:  0266-core-decrease-log-level-of-messages-about-use-of-Kil.patch
-Patch0267:  0267-taint-remove-unmerged-bin.patch
-Patch0268:  0268-presets-remove-resolved.patch
-Patch0269:  0269-ci-run-mkosi-test-only-for-Fedora-and-CentOS-Stream.patch
-Patch0270:  0270-taint-remove-unused-variable-usr_sbin.patch
-Patch0271:  0271-packit-drop-the-libarchive-workaround.patch
-Patch0272:  0272-coredump-by-default-process-and-store-core-files-up-.patch
-Patch0273:  0273-Avoid-tmp-being-mounted-as-tmpfs-without-the-user-s-.patch
-Patch0274:  0274-unit-don-t-add-Requires-for-tmp.mount.patch
-Patch0275:  0275-units-add-Install-section-to-tmp.mount.patch
-Patch0276:  0276-units-don-t-enable-tmp.mount-statically-in-local-fs..patch
-Patch0277:  0277-netif-naming-scheme-add-rhel-9.5-scheme.patch
-Patch0278:  0278-netif-naming-scheme-rename-rhel-10.0-to-rhel-10.0.be.patch
-Patch0279:  0279-net-naming-scheme-disable-NAMING_FIRMWARE_NODE_SUN.patch
-Patch0280:  0280-netif-naming-scheme-introduce-rhel-10.0-scheme.patch
-Patch0281:  0281-udev-net_id-introduce-naming-scheme-for-RHEL-9.6.patch
-Patch0282:  0282-ci-use-ubuntu-22-04-for-deploy-of-man-pages.patch
-Patch0283:  0283-ci-fix-Packit.patch
-Patch0284:  0284-ci-drop-testing-farm-test.patch
-Patch0285:  0285-dbus-stash-the-subscriber-list-when-we-disconenct-fr.patch
-Patch0286:  0286-manager-s-deserialized_subscribed-subscribed_as_strv.patch
-Patch0287:  0287-shared-bus-util-move-bus_message_read_id128-to-bus-m.patch
-Patch0288:  0288-shared-bus-util-move-bus_message_hash_ops-to-bus-mes.patch
-Patch0289:  0289-shared-bus-util-move-string-set-append-get-funcs-to-.patch
-Patch0290:  0290-shared-serialize-make-input-params-const.patch
-Patch0291:  0291-shared-serialize-introduce-serialize_id128.patch
-Patch0292:  0292-bus-util-do-not-reset-the-count-returned-by-sd_bus_t.patch
-Patch0293:  0293-core-manager-use-FOREACH_ARRAY-at-one-more-place.patch
-Patch0294:  0294-core-manager-drop-duplicate-bus-track-deserializatio.patch
-Patch0295:  0295-bus-util-introduce-bus_get_instance_id.patch
-Patch0296:  0296-core-serialize-API-bus-id-and-validate-before-deseri.patch
-Patch0297:  0297-core-manager-restore-bus-track-deserialization-clean.patch
-Patch0298:  0298-shared-bus-util-add-missing-set.h-include.patch
-Patch0299:  0299-udevadm-test-add-missing-oom-check.patch
-Patch0300:  0300-udev-rules-replace-type-func-type-func.patch
-Patch0301:  0301-udev-rules-do-not-change-maximum-log-level-when-runn.patch
-Patch0302:  0302-udevadm-test-introduce-v-verbose-option-to-show-verb.patch
-Patch0303:  0303-udev-rules-show-original-token-string-in-log_event_e.patch
-Patch0304:  0304-udev-rules-logs-result-of-format-substitution.patch
-Patch0305:  0305-udev-rules-add-more-trace-logs-for-string-match.patch
-Patch0306:  0306-udev-rules-introduce-udev_replace_chars_and_log.patch
-Patch0307:  0307-udev-rules-ignore-whole-command-result-if-it-is-too-.patch
-Patch0308:  0308-udev-rules-update-log-messages.patch
-Patch0309:  0309-udev-rules-add-trace-logs-for-GOTO-and-parent-condit.patch
-Patch0310:  0310-udev-move-enums-to-udev-def.h.patch
-Patch0311:  0311-udev-move-listen_fds-to-udev-manager.c.patch
-Patch0312:  0312-udev-several-coding-style-fixes.patch
-Patch0313:  0313-udev-builtin-make-udev_builtin_add_property-and-frie.patch
-Patch0314:  0314-udev-introduce-reference-counter-for-UdevEvent.patch
-Patch0315:  0315-udev-net-make-Link-object-take-reference-to-UdevEven.patch
-Patch0316:  0316-udev-move-parsers-for-config-file-kerenel-command-li.patch
-Patch0317:  0317-udev-config-introduce-UdevConfig.patch
-Patch0318:  0318-udev-reload-.rules-files-and-builtins-only-when-nece.patch
-Patch0319:  0319-udev-also-reload-udev.conf-when-explicitly-requested.patch
-Patch0320:  0320-TEST-17-use-udevadm-control-reload-or-systemctl-relo.patch
-Patch0321:  0321-udevd-add-missing-header-for-glibc-2.34.patch
-Patch0322:  0322-meson-sort-source-files.patch
-Patch0323:  0323-sd-json-introduce-json_dispatch_log_level.patch
-Patch0324:  0324-varlink-invert-uid-check-to-reduce-call-of-getuid.patch
-Patch0325:  0325-string-util-modernize-split_pair.patch
-Patch0326:  0326-udev-split-manager_init-and-manager_main-into-small-.patch
-Patch0327:  0327-udev-config-split-on_ctrl_msg-into-small-pieces.patch
-Patch0328:  0328-udev-introduce-udev_property_name_is_valid-and-frien.patch
-Patch0329:  0329-udev-ctrl-refuse-ENV-control-message-with-invalid-en.patch
-Patch0330:  0330-varlink-add-comments-for-io.systemd.service-interfac.patch
-Patch0331:  0331-sd-varlink-introduce-sd_varlink_get_current_method.patch
-Patch0332:  0332-TEST-17-UDEV-wait-for-udevd-being-restarted-after-ex.patch
-Patch0333:  0333-udev-make-worker-event-source-take-file-descriptor.patch
-Patch0334:  0334-udev-dump-split-out-dump_event-from-udevadm-test.c.patch
-Patch0335:  0335-udev-rules-introduce-OPTIONS-dump-token.patch
-Patch0336:  0336-udev-control-move-setting-of-log-level-to-manager_ad.patch
-Patch0337:  0337-udev-config-allow-to-enable-trace-logging-through-ke.patch
-Patch0338:  0338-udev-dump-voidify-one-function-call.patch
-Patch0339:  0339-udev-dump-also-show-written-sysfs-attributes-and-sys.patch
-Patch0340:  0340-udevadm-test-allow-to-specify-extra-directories-to-l.patch
-Patch0341:  0341-shell-completion-udevadm-add-net_driver.patch
-Patch0342:  0342-udev-sort-builtins.patch
-Patch0343:  0343-udev-rules-log-the-first-line-number-when-continued.patch
-Patch0344:  0344-chase-introduce-flags-that-verify-that-chased-inode-.patch
-Patch0345:  0345-udevadm-verify-chase-specified-paths.patch
-Patch0346:  0346-bash-completion-udevadm-verify-suggest-found-udev-ru.patch
-Patch0347:  0347-udevadm-introduce-cat-command.patch
+Patch0001: 0001-Create-CNAME.patch
+Patch0002: 0002-sd-json-sd-varlink-drop-unexported-functions-from-pu.patch
+Patch0003: 0003-test-modernize-generate-sym-test.py.patch
+Patch0004: 0004-test-also-generate-list-of-symbols-from-header-files.patch
+Patch0005: 0005-man-systemd-cryptenroll-sort-fido2-credential-algori.patch
+Patch0006: 0006-analyze-tab-fix.patch
+Patch0007: 0007-analyze-add-missing-mask-option-to-help-text.patch
+Patch0008: 0008-test-set-nsec3-salt-length-8-in-knot.conf.patch
+Patch0009: 0009-test-capability-CAP_LINUX_IMMUTABLE-is-not-available.patch
+Patch0010: 0010-test-fd-util-skip-test-when-lacking-privileges-to-cr.patch
+Patch0011: 0011-test-fd-util-compare-FDs-to-bin-sh-instead-of-dev-nu.patch
+Patch0012: 0012-mkosi-use-inetutils-package-instead-of-hostname-for-.patch
+Patch0013: 0013-man-document-unprivileged-is-not-for-reading-propert.patch
+Patch0014: 0014-profile.d-don-t-bail-if-SHELL_-variables-are-unset.patch
+Patch0015: 0015-Fixing-VLAN-ranges-in-man-systemd.network.patch
+Patch0016: 0016-test-bpf-restrict-fs-Migrate-to-new-assertion-macros.patch
+Patch0017: 0017-man-update-example-in-systemd-measure.xml-35506.patch
+Patch0018: 0018-systemd-cryptenroll.xml-fix-typo.patch
+Patch0019: 0019-semaphore-skip-some-tests.patch
+Patch0020: 0020-shell-completion-add-systemd-creds.patch
+Patch0021: 0021-core-fix-loading-verity-settings-for-MountImages.patch
+Patch0022: 0022-test-add-more-coverage-for-extensions-and-verity.patch
+Patch0023: 0023-README-drop-CentOS-CI-badges.patch
+Patch0024: 0024-meson.version-change-to-257.1.patch
+Patch0025: 0025-journalctl-honor-quiet-with-setup-keys.patch
+Patch0026: 0026-dbus-log-disconnect-on-api-and-system-busses.patch
+Patch0027: 0027-manager-add-list-of-subscribers-to-dump-info.patch
+Patch0028: 0028-exec-util-allow-to-invoke-polkit-ask-password-agent-.patch
+Patch0029: 0029-mkosi-Fix-opensuse-build.patch
+Patch0030: 0030-units-use-PrivateTmp-disconnected-instead-of-yes-if-.patch
+Patch0031: 0031-battery-check-parse-options-before-checking-for-kern.patch
+Patch0032: 0032-test-loop-block-return-77-on-skip-in-more-places.patch
+Patch0033: 0033-mkosi-update-debian-commit-reference.patch
+Patch0034: 0034-shell-completion-add-smbios11-verb-to-systemd-analyz.patch
+Patch0035: 0035-logind-let-system-wide-idle-begin-at-the-time-logind.patch
+Patch0036: 0036-tmpfiles-reduce-quoting-in-warning-message.patch
+Patch0037: 0037-semaphore-bump-timeout.patch
+Patch0038: 0038-Revert-semaphore-skip-some-tests.patch
+Patch0039: 0039-mkosi-fix-section-for-WithNetwork.patch
+Patch0040: 0040-test-time-util-fix-truncation-of-usec-to-sec.patch
+Patch0041: 0041-network-don-t-warn-with-no-NSID-assigned.patch
+Patch0042: 0042-TEST-35-LOGIN-check-only-tty-session.patch
+Patch0043: 0043-test-README-Environment-setting-for-mkosi-should-be-.patch
+Patch0044: 0044-mkosi-temporarily-disable-panic_on_warn.patch
+Patch0045: 0045-networkd-show-wireguard-private-key-read-error-numbe.patch
+Patch0046: 0046-systemctl-edit-ignore-ENOENT-from-unit_is_masked.patch
+Patch0047: 0047-test-skip-TEST-69-SHUTDOWN-on-ubuntu-too.patch
+Patch0048: 0048-mkosi-Fix-tools-image-package-name.patch
+Patch0049: 0049-tpm2-util-Also-retry-unsealing-after-policy_pcr-retu.patch
+Patch0050: 0050-resolved-if-one-transaction-completes-expect-other-t.patch
+Patch0051: 0051-man-Document-generator-sandbox-environment.patch
+Patch0052: 0052-ukify-Fix-regression-in-no-sign-kernel-flag.patch
+Patch0053: 0053-mkosi-switch-debian-ubuntu-to-ci-v257-stable-branch.patch
+Patch0054: 0054-semaphore-switch-debian-ubuntu-to-ci-v257-stable-bra.patch
+Patch0055: 0055-Revert-terminal-util-unify-code-that-resets-dev-cons.patch
+Patch0056: 0056-mkosi-move-config-options.patch
+Patch0057: 0057-mkosi-Update-to-latest.patch
+Patch0058: 0058-mkosi-Add-gdb-to-tools-tree.patch
+Patch0059: 0059-mkosi-Add-libz1-to-opensuse-tools-tree.patch
+Patch0060: 0060-mkosi-Enable-EPEL-for-CentOS-Stream-tools-tree.patch
+Patch0061: 0061-mkosi-Use-tools-tree-by-default.patch
+Patch0062: 0062-mkosi-Use-build-as-extra-search-path-by-default.patch
+Patch0063: 0063-mkosi.clangd-Don-t-pass-host-if-we-re-not-using-flat.patch
+Patch0064: 0064-mkosi.clangd-Fail-on-command-errors.patch
+Patch0065: 0065-docs-Simplify-hacking-documentation.patch
+Patch0066: 0066-mkosi-Fix-authselect-systemd-homed-feature-name.patch
+Patch0067: 0067-docs-Use-meson-compile-instead-of-ninja.patch
+Patch0068: 0068-docs-Explicitly-mention-.local-bin-in-section-on-ins.patch
+Patch0069: 0069-mkosi-update-opensuse-spec-repo-commit.patch
+Patch0070: 0070-mkosi-update-openSUSE-commit-reference.patch
+Patch0071: 0071-mkosi-add-libopenssl-devel-package-to-openSUSE-tools.patch
+Patch0072: 0072-mkosi-switch-to-github-mirror-of-openSUSE-sources-fr.patch
+Patch0073: 0073-mkosi-Allow-disabling-vcs-tag-via-environment-variab.patch
+Patch0074: 0074-docs-Use-mkosi-sandbox-in-test-documentation-as-well.patch
+Patch0075: 0075-test-update-README-s-Ubuntu-CI-section-for-mkosi-cha.patch
+Patch0076: 0076-mkosi-Add-docbook-tools.patch
+Patch0077: 0077-mkosi-Handle-directories-in-debian-not-installed-cor.patch
+Patch0078: 0078-mkosi-Warn-on-unpackaged-files-in-the-debian-package.patch
+Patch0079: 0079-mkosi-Update-to-latest.patch
+Patch0080: 0080-mkosi-Make-path-exclude-more-generic.patch
+Patch0081: 0081-packit-Move-fmf-metadata-into-upstream.patch
+Patch0082: 0082-mkosi-replace-deprecated-settings-and-command-with-n.patch
+Patch0083: 0083-mkosi-Migrate-more-deprecated-options.patch
+Patch0084: 0084-ci-Rename-qemu-variable-to-vm.patch
+Patch0085: 0085-fmf-Insist-on-mkosi-sha-being-available.patch
+Patch0086: 0086-fmf-Support-being-used-downstream-in-dist-git-tests.patch
+Patch0087: 0087-core-fix-assert-when-AddDependencyUnitFiles-is-calle.patch
+Patch0088: 0088-repart-Use-streq_ptr.patch
+Patch0089: 0089-sd-device-add-missing-debugging-log.patch
+Patch0090: 0090-sd-device-fix-validation-for-devices-under-sys-firmw.patch
+Patch0091: 0091-resolved-stop-mdns-lnrr-when-config-changes-to-disab.patch
+Patch0092: 0092-shared-hibernate-util-don-t-attempt-to-fiemap-fd-if-.patch
+Patch0093: 0093-shared-hibernate-util-handle-the-case-where-no-swap-.patch
+Patch0094: 0094-locale-setup-do-not-load-locale-from-environemnt-whe.patch
+Patch0095: 0095-machine-GC-machine-when-no-leader-PID-is-set.patch
+Patch0096: 0096-creds-fix-use-after-free-in-varlink-interface.patch
+Patch0097: 0097-core-unit-serialize-fix-serialization-of-markers.patch
+Patch0098: 0098-test-answer-2nd-mdadm-create-question-for-compat-wit.patch
+Patch0099: 0099-hwdb-comment-out-the-entry-for-Logitech-MX-Keys-for-.patch
+Patch0100: 0100-mkosi-Install-which-in-build-image.patch
+Patch0101: 0101-packit-Simplify-configuration.patch
+Patch0102: 0102-fmf-Check-out-target-branch-in-packit.patch
+Patch0103: 0103-stdio-bridge-fix-polled-fds.patch
+Patch0104: 0104-Revert-mkosi-Fix-opensuse-build.patch
+Patch0105: 0105-CI-add-OBS-workflow-integration-to-build-packages-on.patch
+Patch0106: 0106-obs-also-trigger-Fedora-package-builds.patch
+Patch0107: 0107-systemctl-also-ignore-ENOENT-in-checking-inhibitors.patch
+Patch0108: 0108-systemctl-certainly-ignore-ENOENT-in-checking-inhibi.patch
+Patch0109: 0109-journalctl-make-invocation-and-list-invocations-acce.patch
+Patch0110: 0110-meson-bump-version-to-257.2.patch
+Patch0111: 0111-fmf-Don-t-fail-if-we-can-t-put-selinux-in-permissive.patch
+Patch0112: 0112-fmf-Fix-dist-git-example.patch
+Patch0113: 0113-fmf-Fix-glob.patch
+Patch0114: 0114-fmf-Only-mess-with-etc-yum.repos.d-when-running-with.patch
+Patch0115: 0115-fmf-Dump-CPU-and-memory-information.patch
+Patch0116: 0116-TEST-06-SELINUX-Add-knob-to-allow-checking-for-AVCs.patch
+Patch0117: 0117-fmf-Force-SELinux-relabel-when-running-within-testin.patch
+Patch0118: 0118-test-Drop-set-x-from-integration-test-setup.sh.patch
+Patch0119: 0119-test-Only-plug-in-integration-test-setup.sh-in-inter.patch
+Patch0120: 0120-mkosi-Re-enable-TEST-21-DFUZZER-when-running-with-sa.patch
+Patch0121: 0121-fmf-Move-meson-logs-and-failed-test-journals-to-test.patch
+Patch0122: 0122-fmf-Log-clock-source.patch
+Patch0123: 0123-tree-wide-Fix-python-formatting.patch
+Patch0124: 0124-test-Add-option-to-save-in-progress-test-journals-to.patch
+Patch0125: 0125-test-Don-t-register-machines-with-machined-unless-we.patch
+Patch0126: 0126-test-Move-StateDirectory-directive-into-dropin.patch
+Patch0127: 0127-fmf-Bump-inotify-limits-to-avoid-systemd-nspawn-fail.patch
+Patch0128: 0128-fmf-Use-different-heuristic-on-beefy-systems.patch
+Patch0129: 0129-fmf-Skip-TEST-21-DFUZZER.patch
+Patch0130: 0130-test-Fix-bug-in-integration-test-wrapper.patch
+Patch0131: 0131-test-Only-move-journal-file-if-we-didn-t-just-unlink.patch
+Patch0132: 0132-fmf-Only-move-logs-if-corresponding-directory-exists.patch
+Patch0133: 0133-mkosi-Install-libxslt-on-CentOS-Fedora-instead-of-xs.patch
+Patch0134: 0134-man-Clarify-systemd-notify-and-sd_notify-PID-documen.patch
+Patch0135: 0135-mkosi-Update-to-latest.patch
+Patch0136: 0136-test-Drop-sandbox-from-integration-test-wrapper.patch
+Patch0137: 0137-ci-Stop-archiving-packages.patch
+Patch0138: 0138-sbsign-Make-two-debug-logs-into-error-logs.patch
+Patch0139: 0139-sbsign-Make-sure-output-file-mode-respects-umask.patch
+Patch0140: 0140-mkosi-Don-t-set-ToolsTreeRepositories-for-CentOS-Str.patch
+Patch0141: 0141-mkosi-Update-to-latest.patch
+Patch0142: 0142-mkosi-Use-a-bigger-variety-of-tools-tree-distributio.patch
+Patch0143: 0143-mkosi-lcov-and-shellcheck-are-not-in-EPEL-10.patch
+Patch0144: 0144-mkosi-Don-t-set-O-orphan_file-in-centos-stream-9-too.patch
+Patch0145: 0145-mkosi-Run-more-commands-as-root.patch
+Patch0146: 0146-test-Look-for-qemu-in-usr-libexec-qemu-kvm-as-well.patch
+Patch0147: 0147-TEST-74-AUX-UTILS-Move-run0-pcrlock-test-to-TEST-70-.patch
+Patch0148: 0148-test-Make-sure-we-run-lcov-from-the-meson-source-dir.patch
+Patch0149: 0149-mkosi-Run-two-more-mkosi-commands-with-sudo.patch
+Patch0150: 0150-mkosi-Update-to-latest.patch
+Patch0151: 0151-mkosi-Add-back-preserve-env-when-running-integration.patch
+Patch0152: 0152-mkosi-Drop-usage-of-_systemd_QUIET-in-arch-build-scr.patch
+Patch0153: 0153-HACKING-Move-OBS-section-further-down.patch
+Patch0154: 0154-docs-HACKING-use-run0-to-indicate-which-commands-req.patch
+Patch0155: 0155-HACKING-Drop-run0-from-mkosi-boot-invocation.patch
+Patch0156: 0156-boot-Improve-log-message.patch
+Patch0157: 0157-efivars-deal-with-uncommitted-efi-variables.patch
+Patch0158: 0158-core-device-do-not-drop-backslashes-in-SYSTEMD_WANTS.patch
+Patch0159: 0159-test-add-test-cases-for-parsing-SYSTEMD_WANTS-SYSTEM.patch
+Patch0160: 0160-process-util-do-not-unblock-unrelated-signals-while-.patch
+Patch0161: 0161-stub-drop-PE-sections-parsing-cap.patch
+Patch0162: 0162-bus-wait-for-jobs-fix-service-result-table.patch
+Patch0163: 0163-man-also-fix-documentation-of-start-limit-hit.patch
+Patch0164: 0164-varlink-fix-error-name.patch
+Patch0165: 0165-core-job-never-consider-reload-jobs-redundant.patch
+Patch0166: 0166-mount-util-make-path_get_mount_info_at-also-read-uta.patch
+Patch0167: 0167-machine-revert-type-change-of-leader-in-io.systemd.M.patch
+Patch0168: 0168-resolved-do-not-disable-mdns-llmnr-globally-if-it-s-.patch
+Patch0169: 0169-resolved-stop-mdns-llmnr-if-no-interface-request-it-.patch
+Patch0170: 0170-man-fix-reference-to-non-existing-ukify-parameter.patch
+Patch0171: 0171-ukify-add-loongarch64-to-efi-arch.patch
+Patch0172: 0172-ukify-add-riscv32-to-efi-arch.patch
+Patch0173: 0173-tools-add-loongarch64-to-debug-sd-boot-script.patch
+Patch0174: 0174-systemctl-fix-memleak.patch
+Patch0175: 0175-random-util-fix-compilation-error.patch
+Patch0176: 0176-mkosi-Update-to-latest.patch
+Patch0177: 0177-mkosi-Bump-minimum-version-to-25.patch
+Patch0178: 0178-mkosi-Add-VCS_TAG-to-PassEnvironment.patch
+Patch0179: 0179-mkosi-add-loongarch64-to-Debian-s-list-of-EFI-arches.patch
+Patch0180: 0180-kbd-model-map-add-a-georgian-mapping.patch
+Patch0181: 0181-core-add-trigger-to-path-unit-debug-log.patch
+Patch0182: 0182-test-cleanup-after-testcase_12_resolvectl2.patch
+Patch0183: 0183-test-install-stub-package-for-test-ukify-unit-test.patch
+Patch0184: 0184-test-use-local-stub-if-available-in-test-ukify.patch
+Patch0185: 0185-test-support-slow-test-ukify-on-Debian-Ubuntu.patch
+Patch0186: 0186-man-Update-nss-myhostname.xml-to-reflect-files.patch
+Patch0187: 0187-ukify-Fix-two-typing-issues.patch
+Patch0188: 0188-meson-generate-keyboard-keys-list-from-local-input.h.patch
+Patch0189: 0189-Fix-inversion-of-timesyncd_usec-epoch_usec-variables.patch
+Patch0190: 0190-pe-do-not-warn-about-.initrd-addons.patch
+Patch0191: 0191-Fix-tense-in-SD_MESSAGE_SHUTDOWN_STR.patch
+Patch0192: 0192-firstboot-fix-crash-when-hostname-question-is-skippe.patch
+Patch0193: 0193-build-deps-bump-coverallsapp-github-action-from-2.3..patch
+Patch0194: 0194-build-deps-bump-softprops-action-gh-release-from-2.1.patch
+Patch0195: 0195-build-deps-bump-super-linter-super-linter-from-7.1.0.patch
+Patch0196: 0196-homectl-Fix-empty-checks.patch
+Patch0197: 0197-ukify-measure-Revert-changes-to-use-SizeOfImage-from.patch
+Patch0198: 0198-sysupdate-Update-example-mode-to-644-instead-of-444.patch
+Patch0199: 0199-meson-add-install-tag-for-systemctl.patch
+Patch0200: 0200-test-Drop-Dremote-enabled-instructions-from-readme.patch
+Patch0201: 0201-test-Move-NO_BUILD-instructions-to-a-separate-sectio.patch
+Patch0202: 0202-test-Move-external-packages-section-down-and-reword-.patch
+Patch0203: 0203-repart-Don-t-fail-when-we-re-unable-to-read-file-att.patch
+Patch0204: 0204-homectl-fix-typo-in-help-text.patch
+Patch0205: 0205-homectl-fix-typo-in-man-page.patch
+Patch0206: 0206-resolved-fix-DNSSEC-missing-key-error.patch
+Patch0207: 0207-docs-Add-an-examples-for-command-line-access.patch
+Patch0208: 0208-mkosi-Only-make-build-sources-ephemeral-if-NO_BUILD-.patch
+Patch0209: 0209-vmspawn-ignore-failure-from-sshd-vsock-unit.patch
+Patch0210: 0210-mkosi-extend-util-linux-script-config-drop-in-to-F43.patch
+Patch0211: 0211-meson-Skip-getent-when-it-s-not-found.patch
+Patch0212: 0212-meson-also-skip-uid-gid-check-for-nobody-user-group-.patch
+Patch0213: 0213-core-namespace-relabel-bind-mount-source-based-on-th.patch
+Patch0214: 0214-mkosi-Install-strace-in-build-image.patch
+Patch0215: 0215-mkosi-Fix-section-for-BuildSourcesEphemeral.patch
+Patch0216: 0216-mkosi-Work-around-regression-in-opensuse-rpm-4.20-re.patch
+Patch0217: 0217-userdbctl-don-t-expect-argument-to-fuzzy.patch
+Patch0218: 0218-userdb-reset-errno-before-getpwent.patch
+Patch0219: 0219-network-routing-policy-rule-fix-compare-func.patch
+Patch0220: 0220-test-network-add-test-case-for-issue-35874.patch
+Patch0221: 0221-network-allow-to-configure-routing-policy-rule-even-.patch
+Patch0222: 0222-test-network-add-test-case-for-requesting-routing-po.patch
+Patch0223: 0223-meson-allow-to-customize-the-access-mode-for-tty-pts.patch
+Patch0224: 0224-meson-fix-suite-of-alignment-check-tests.patch
+Patch0225: 0225-hwdb-Make-remote-controllable-lights-work-out-of-the.patch
+Patch0226: 0226-hwdb-update-to-main-2025-02-07.patch
+Patch0227: 0227-udevadm-test-fix-gid-check.patch
+Patch0228: 0228-update-utmp-do-not-give-up-if-the-first-attempt-at-c.patch
+Patch0229: 0229-bootctl-fix-potential-uninitialized-memory-access.patch
+Patch0230: 0230-bootctl-also-shown-whether-stub-loader-partition-dat.patch
+Patch0231: 0231-bootctl-suppress-output-of-empty-partition-info-if-w.patch
+Patch0232: 0232-bootctl-minor-reordering-of-fields-in-output.patch
+Patch0233: 0233-missing_sched-add-CLONE_PIDFD.patch
+Patch0234: 0234-stub-Mention-that-VirtualSize-should-be-SizeOfRawDat.patch
+Patch0235: 0235-import-pubring.gpg-add-openSUSE-build-key.patch
+Patch0236: 0236-import-update-to-current-fedora-keyring.patch
+Patch0237: 0237-ukify-do-not-fail-if-pefile-complains-about-hardcode.patch
+Patch0238: 0238-tmpfiles-fix-copypasta-in-create_symlink-FIFO-symlin.patch
+Patch0239: 0239-udev-worker-add-debugging-log-about-success-of-flock.patch
+Patch0240: 0240-udev-watch-mention-that-the-failure-is-ignored.patch
+Patch0241: 0241-udev-watch-do-not-try-to-remove-invalid-watch-handle.patch
+Patch0242: 0242-login-Continue-watching-leader-pidfd-after-stop.patch
+Patch0243: 0243-login-Queue-session-for-garbage-collection-on-leader.patch
+Patch0244: 0244-ukify-print-debug-progress-messages-to-stderr.patch
+Patch0245: 0245-ukify-Calculate-section-size-more-correctly.patch
+Patch0246: 0246-mkosi-Update-to-latest.patch
+Patch0247: 0247-core-condition-fix-segfault-when-key-not-found-in-os.patch
+Patch0248: 0248-meson-bump-version-to-257.3.patch
+Patch0249: 0249-ci-update-workflows-to-run-on-source-git-setup.patch
+Patch0250: 0250-ci-setup-source-git-automation.patch
+Patch0251: 0251-ci-reconfigure-Packit-for-RHEL-10.patch
+Patch0252: 0252-journal-again-create-user-journals-for-users-with-hi.patch
+Patch0253: 0253-tmpfiles-make-purge-hard-to-mis-use.patch
+Patch0254: 0254-fedora-use-system-auth-in-pam-systemd-user.patch
+Patch0255: 0255-net-naming-scheme-start-rhel10-naming-and-include-rh.patch
+Patch0256: 0256-rules-copy-40-redhat.rules-from-RHEL-9.patch
+Patch0257: 0257-logind-set-RemoveIPC-to-false-by-default.patch
+Patch0258: 0258-tmpfiles-don-t-create-resolv.conf-stub-resolv.conf-s.patch
+Patch0259: 0259-rc-local-order-after-network-online.target.patch
+Patch0260: 0260-random-util-increase-random-seed-size-to-1024.patch
+Patch0261: 0261-journal-don-t-enable-systemd-journald-audit.socket-b.patch
+Patch0262: 0262-journald.conf-don-t-touch-current-audit-settings.patch
+Patch0263: 0263-rules-add-elevator-kernel-command-line-parameter.patch
+Patch0264: 0264-pid1-bump-DefaultTasksMax-to-80-of-the-kernel-pid.ma.patch
+Patch0265: 0265-udev-net-setup-link-change-the-default-MACAddressPol.patch
+Patch0266: 0266-core-decrease-log-level-of-messages-about-use-of-Kil.patch
+Patch0267: 0267-taint-remove-unmerged-bin.patch
+Patch0268: 0268-presets-remove-resolved.patch
+Patch0269: 0269-ci-run-mkosi-test-only-for-Fedora-and-CentOS-Stream.patch
+Patch0270: 0270-taint-remove-unused-variable-usr_sbin.patch
+Patch0271: 0271-packit-drop-the-libarchive-workaround.patch
+Patch0272: 0272-coredump-by-default-process-and-store-core-files-up-.patch
+Patch0273: 0273-Avoid-tmp-being-mounted-as-tmpfs-without-the-user-s-.patch
+Patch0274: 0274-unit-don-t-add-Requires-for-tmp.mount.patch
+Patch0275: 0275-units-add-Install-section-to-tmp.mount.patch
+Patch0276: 0276-units-don-t-enable-tmp.mount-statically-in-local-fs..patch
+Patch0277: 0277-netif-naming-scheme-add-rhel-9.5-scheme.patch
+Patch0278: 0278-netif-naming-scheme-rename-rhel-10.0-to-rhel-10.0.be.patch
+Patch0279: 0279-net-naming-scheme-disable-NAMING_FIRMWARE_NODE_SUN.patch
+Patch0280: 0280-netif-naming-scheme-introduce-rhel-10.0-scheme.patch
+Patch0281: 0281-udev-net_id-introduce-naming-scheme-for-RHEL-9.6.patch
+Patch0282: 0282-ci-use-ubuntu-22-04-for-deploy-of-man-pages.patch
+Patch0283: 0283-ci-fix-Packit.patch
+Patch0284: 0284-ci-drop-testing-farm-test.patch
+Patch0285: 0285-dbus-stash-the-subscriber-list-when-we-disconenct-fr.patch
+Patch0286: 0286-manager-s-deserialized_subscribed-subscribed_as_strv.patch
+Patch0287: 0287-shared-bus-util-move-bus_message_read_id128-to-bus-m.patch
+Patch0288: 0288-shared-bus-util-move-bus_message_hash_ops-to-bus-mes.patch
+Patch0289: 0289-shared-bus-util-move-string-set-append-get-funcs-to-.patch
+Patch0290: 0290-shared-serialize-make-input-params-const.patch
+Patch0291: 0291-shared-serialize-introduce-serialize_id128.patch
+Patch0292: 0292-bus-util-do-not-reset-the-count-returned-by-sd_bus_t.patch
+Patch0293: 0293-core-manager-use-FOREACH_ARRAY-at-one-more-place.patch
+Patch0294: 0294-core-manager-drop-duplicate-bus-track-deserializatio.patch
+Patch0295: 0295-bus-util-introduce-bus_get_instance_id.patch
+Patch0296: 0296-core-serialize-API-bus-id-and-validate-before-deseri.patch
+Patch0297: 0297-core-manager-restore-bus-track-deserialization-clean.patch
+Patch0298: 0298-shared-bus-util-add-missing-set.h-include.patch
+Patch0299: 0299-udevadm-test-add-missing-oom-check.patch
+Patch0300: 0300-udev-rules-replace-type-func-type-func.patch
+Patch0301: 0301-udev-rules-do-not-change-maximum-log-level-when-runn.patch
+Patch0302: 0302-udevadm-test-introduce-v-verbose-option-to-show-verb.patch
+Patch0303: 0303-udev-rules-show-original-token-string-in-log_event_e.patch
+Patch0304: 0304-udev-rules-logs-result-of-format-substitution.patch
+Patch0305: 0305-udev-rules-add-more-trace-logs-for-string-match.patch
+Patch0306: 0306-udev-rules-introduce-udev_replace_chars_and_log.patch
+Patch0307: 0307-udev-rules-ignore-whole-command-result-if-it-is-too-.patch
+Patch0308: 0308-udev-rules-update-log-messages.patch
+Patch0309: 0309-udev-rules-add-trace-logs-for-GOTO-and-parent-condit.patch
+Patch0310: 0310-udev-move-enums-to-udev-def.h.patch
+Patch0311: 0311-udev-move-listen_fds-to-udev-manager.c.patch
+Patch0312: 0312-udev-several-coding-style-fixes.patch
+Patch0313: 0313-udev-builtin-make-udev_builtin_add_property-and-frie.patch
+Patch0314: 0314-udev-introduce-reference-counter-for-UdevEvent.patch
+Patch0315: 0315-udev-net-make-Link-object-take-reference-to-UdevEven.patch
+Patch0316: 0316-udev-move-parsers-for-config-file-kerenel-command-li.patch
+Patch0317: 0317-udev-config-introduce-UdevConfig.patch
+Patch0318: 0318-udev-reload-.rules-files-and-builtins-only-when-nece.patch
+Patch0319: 0319-udev-also-reload-udev.conf-when-explicitly-requested.patch
+Patch0320: 0320-TEST-17-use-udevadm-control-reload-or-systemctl-relo.patch
+Patch0321: 0321-udevd-add-missing-header-for-glibc-2.34.patch
+Patch0322: 0322-meson-sort-source-files.patch
+Patch0323: 0323-sd-json-introduce-json_dispatch_log_level.patch
+Patch0324: 0324-varlink-invert-uid-check-to-reduce-call-of-getuid.patch
+Patch0325: 0325-string-util-modernize-split_pair.patch
+Patch0326: 0326-udev-split-manager_init-and-manager_main-into-small-.patch
+Patch0327: 0327-udev-config-split-on_ctrl_msg-into-small-pieces.patch
+Patch0328: 0328-udev-introduce-udev_property_name_is_valid-and-frien.patch
+Patch0329: 0329-udev-ctrl-refuse-ENV-control-message-with-invalid-en.patch
+Patch0330: 0330-varlink-add-comments-for-io.systemd.service-interfac.patch
+Patch0331: 0331-sd-varlink-introduce-sd_varlink_get_current_method.patch
+Patch0332: 0332-TEST-17-UDEV-wait-for-udevd-being-restarted-after-ex.patch
+Patch0333: 0333-udev-make-worker-event-source-take-file-descriptor.patch
+Patch0334: 0334-udev-dump-split-out-dump_event-from-udevadm-test.c.patch
+Patch0335: 0335-udev-rules-introduce-OPTIONS-dump-token.patch
+Patch0336: 0336-udev-control-move-setting-of-log-level-to-manager_ad.patch
+Patch0337: 0337-udev-config-allow-to-enable-trace-logging-through-ke.patch
+Patch0338: 0338-udev-dump-voidify-one-function-call.patch
+Patch0339: 0339-udev-dump-also-show-written-sysfs-attributes-and-sys.patch
+Patch0340: 0340-udevadm-test-allow-to-specify-extra-directories-to-l.patch
+Patch0341: 0341-shell-completion-udevadm-add-net_driver.patch
+Patch0342: 0342-udev-sort-builtins.patch
+Patch0343: 0343-udev-rules-log-the-first-line-number-when-continued.patch
+Patch0344: 0344-chase-introduce-flags-that-verify-that-chased-inode-.patch
+Patch0345: 0345-udevadm-verify-chase-specified-paths.patch
+Patch0346: 0346-bash-completion-udevadm-verify-suggest-found-udev-ru.patch
+Patch0347: 0347-udevadm-introduce-cat-command.patch
+Patch0348: 0348-resolved-pick-up-new-DNSSEC-KSC-from-2024.patch
+Patch0349: 0349-test_ukify-Skip-on-riscv64.patch
+Patch0350: 0350-fuzz-journal-remote-use-ASSERT_OK-and-friends.patch
+Patch0351: 0351-logs-show-skip-journal-entry-with-an-invalid-timesta.patch
+Patch0352: 0352-man-mention-that-rhel-9.0-net-naming-scheme-is-the-s.patch
+Patch0353: 0353-backlight-Drop-support-for-actual_brightness.patch
+Patch0354: 0354-mkosi-use-C10S-repo-for-building-RPMs.patch
+Patch0355: 0355-test-adapt-TEST-22-to-the-downstream-purge-behavior.patch
+Patch0356: 0356-mkosi-reconfigure-the-CI-for-CentOS-Stream-10.patch
+Patch0357: 0357-test-skip-tests-for-components-not-shipped-in-RHEL-1.patch
+Patch0358: 0358-ci-add-a-unique-identifier-to-each-GH-Actions-job.patch
+Patch0359: 0359-test-limit-logging-when-running-TEST-21-DFUZZER.patch
+Patch0360: 0360-man-mention-RHEL-documentation-in-systemctl-s-man-pa.patch
+Patch0361: 0361-ukify-switch-from-zstd-to-zstandard.patch
+Patch0362: 0362-ukify-fix-zboot-parsing-with-zstd.patch
+Patch0363: 0363-ukify-if-the-specified-kernel-is-not-a-valid-PE-file.patch
+Patch0364: 0364-ukify-fix-version-detection-for-aarch64-zboot-kernel.patch
+Patch0365: 0365-ukify-when-decompressing-kernel-before-signing-call-.patch
+Patch0366: 0366-udev-net_id-introduce-naming-scheme-for-RHEL-10.1.patch
+Patch0367: 0367-udev-net_id-introduce-naming-scheme-for-RHEL-9.7.patch
+Patch0368: 0368-sd-event-drop-inotify-event-from-buffer-when-no-even.patch
+Patch0369: 0369-test-add-test-case-for-issue-38265.patch
+Patch0370: 0370-tree-wide-check-more-log-message-format-in-log_struc.patch
+Patch0371: 0371-core-output-log-cycle-path-in-one-log-message-not-ma.patch
+Patch0372: 0372-core-make-log-cycle-messages-recognizable-via-messag.patch
+Patch0373: 0373-core-change-ordering-cycle-log-message-log-levels.patch
+Patch0374: 0374-core-cast-log_oom-got-void.patch
+Patch0375: 0375-core-when-removing-a-job-from-a-transaction-include-.patch
+Patch0376: 0376-catalog-add-entries-for-the-order-cycle-log-messages.patch
+Patch0377: 0377-flush_ports-flush-POSIX-message-queues-properly.patch
+Patch0378: 0378-Add-entry-type-type1-type2-option-to-kernel-install.patch
+Patch0379: 0379-kernel-install-regroup-options-in-help-meesage.patch
+Patch0380: 0380-kernel-install-do-not-mix-and.patch
+Patch0381: 0381-man-kernel-install-mention-entry-type-option-in-the-.patch
+Patch0382: 0382-bootspec-rename-boot_entry_type_to_string-to-boot_en.patch
+Patch0383: 0383-bootspec-include-UKI-in-descriptive-name-for-type-2.patch
+Patch0384: 0384-bootspec-rename-BootEntryType-values.patch
+Patch0385: 0385-bootspec-rename-boot_entry_source_to_string-to-boot_.patch
+Patch0386: 0386-bootspec-boot_entry_source_to_json_string-to-boot_en.patch
+Patch0387: 0387-90-uki-copy.install-Skip-removing-UKI-related-when-B.patch
+Patch0388: 0388-hwdb-add-front-button-support-for-MSI-Claw-7-AI-A2VM.patch
+Patch0389: 0389-hwdb-add-accel-orientation-and-location-for-the-BMAX.patch
+Patch0390: 0390-hwdb.d-add-support-for-Akoya-P15645.patch
+Patch0391: 0391-hwdb.d-add-ANP09-Intel-n100-tablet-sensor-configurat.patch
+Patch0392: 0392-hwdb-add-axis-range-corrections-for-the-Lenovo-Yoga-.patch
+Patch0393: 0393-hwdb-add-GOLD-WARRIOR-SIM-PhoenixRC-10411R.patch
+Patch0394: 0394-hwdb-add-Code-Mercenaries-Hard-und-Software-GmbH-Vir.patch
+Patch0395: 0395-hwdb-Add-accel-orientation-quirk-for-the-GPD-Pocket-.patch
+Patch0396: 0396-hwdb-add-rotation-profile-matrix-for-Rog-Ally-X-2024.patch
+Patch0397: 0397-hwdb-fix-backspace-not-working-on-HP-Pavilion-laptop.patch
+Patch0398: 0398-hwdb-keyboard-Map-FN-key-on-TUXEDO-NB02-devices.patch
+Patch0399: 0399-hwdb-keyboard-Map-FN-key-on-TUXEDO-InfinityFlex-14-G.patch
+Patch0400: 0400-hwdb-add-G-Mode-key-support-37175.patch
+Patch0401: 0401-Add-emulated-release-to-G-Mode-key.patch
+Patch0402: 0402-hwdb-keyboard-Add-Alienware-special-keys.patch
+Patch0403: 0403-hwdb-add-bladeRF-SDR-devices.patch
+Patch0404: 0404-hwdb-append-ID_SOFTWARE_RADIO-to-hwdb-parser.patch
+Patch0405: 0405-hwdb.d-reword-and-simplify-boilerplate-texts.patch
+Patch0406: 0406-hwdb.d-update-expand-boilerplate-on-various-hwdb-fil.patch
+Patch0407: 0407-hwdb-say-that-settings-can-be-also-set-to-0.patch
+Patch0408: 0408-hwdb-add-Analog-Devices-PLUTO-SDR.patch
+Patch0409: 0409-hwdb-append-ID_MM_DEVICE_IGNORE-to-hwdb-parser.patch
+Patch0410: 0410-hwdb-run-update-hwdb.patch
+Patch0411: 0411-hwdb-run-update-hwdb-autosuspend.patch
+Patch0412: 0412-hwdb-add-missing-PLUTO-SDR-vendor-name.patch
+Patch0413: 0413-hwdb-add-Ettus-Research-SDR-devices.patch
+Patch0414: 0414-hwdb-add-RTL-SDR-devices.patch
+Patch0415: 0415-hwdb-merge-entries-for-Ettus-Research-B200.patch
+Patch0416: 0416-hwdb-make-Saitek-PLC-Pro-Flight-Rudder-Pedals-a-joys.patch
+Patch0417: 0417-hwdb-fix-touchpad-for-ASUS-X1504ZA-37696.patch
+Patch0418: 0418-hwdb-add-support-for-Loupedeck-devices.patch
+Patch0419: 0419-hwdb-Acer-Nitro-ANV15-51-Mic-Toggle.patch
+Patch0420: 0420-hwdb-Added-Beacn-and-TC-Helicon-Audio-controllers-37.patch
+Patch0421: 0421-hwdb-Add-support-for-Lenovo-IdeaPad-Slim-5-series.patch
+Patch0422: 0422-hwdb-Add-hwbd-definitions-for-maker-tools.patch
+Patch0423: 0423-hwdb-Add-accel-orientation-quirk-for-the-Microtech-e.patch
+Patch0424: 0424-hwdb-add-70-maker-tools.hwdb-to-meson.build.patch
+Patch0425: 0425-hwdb-fix-typo-in-70-maker-tools.hwdb.patch
+Patch0426: 0426-hwdb-update.patch
+Patch0427: 0427-Fix-Positivo-K116J-search-key-and-www-shortcut.patch
+Patch0428: 0428-hwdb-Acer-Nitro-ANV15-51-Nitro-Sense-Toggle.patch
+Patch0429: 0429-hwdb-several-cleanups.patch
+Patch0430: 0430-hwdb-disable-Asus-ROG-keyboards-sending-poweroff.patch
+Patch0431: 0431-hwdb-update.patch
+Patch0432: 0432-hwdb-update-autosuspend-rules.patch
+Patch0433: 0433-hwdb-set-touchpad-resolution-for-ThinkPad-T14-Gen2a.patch
+Patch0434: 0434-Revert-hwdb-disable-Asus-ROG-keyboards-sending-power.patch
+Patch0435: 0435-hwdb-Add-launch-emoji-keyboard-mapping-for-Asus-M160.patch
+Patch0436: 0436-Enable-KEY_PERFORMANCE-key-present-on-Linux-6.17.patch
+Patch0437: 0437-hwdb-add-HP-150-Wired-Mouse-37341.patch
+Patch0438: 0438-core-transaction-do-not-attempt-to-log-n-a-as-a-jour.patch
 
 # Downstream-only patches (9000–9999)
+%endif
 
 %ifarch %{ix86} x86_64 aarch64 riscv64
 %global want_bootloader 1
@@ -788,14 +881,12 @@ Requires:       (systemd-boot if %{shrink:(
 Requires:       python3dist(pefile)
 Requires:       python3dist(zstd)
 Requires:       python3dist(cryptography)
+%if %{undefined rhel}
 Recommends:     python3dist(pillow)
+%endif
 
 # for tests
-%ifarch riscv64
-# 2.42 received support for riscv64 + efi targets
-%global binutils_version_req >= 2.42
-%endif
-BuildRequires:  binutils %{?binutils_version_req}
+BuildRequires:  binutils
 
 BuildArch:      noarch
 
@@ -890,6 +981,20 @@ systemd-oomd is a system service that uses cgroups-v2 and pressure stall
 information (PSI) to monitor and take action on processes before an OOM
 occurs in kernel space.
 
+%package tests
+Summary:       Internal unit tests for systemd
+Requires:      %{name}%{_isa} = %{version}-%{release}
+# This dependency is provided transitively. Also add it explicitly to
+# appease rpminspect, https://github.com/rpminspect/rpminspect/issues/1231:
+Requires:      %{name}-libs%{_isa} = %{version}-%{release}
+Requires:      python3dist(psutil)
+
+License:       LGPL-2.1-or-later
+
+%description tests
+"Installed tests" that are usually run as part of the build system. They can be
+useful to test systemd internals.
+
 %prep
 %autosetup -S git
 
@@ -948,7 +1053,7 @@ CONFIGURE_OPTS=(
         -Dfirst-boot-full-preset=true
         -Ddefault-network=true
         -Dtests=unsafe
-        -Dinstall-tests=false
+        -Dinstall-tests=true
         -Dnobody-user=nobody
         -Dnobody-group=nobody
         -Dcompat-mutable-uid-boundaries=true
@@ -1380,6 +1485,8 @@ getent passwd systemd-oom &>/dev/null || useradd -r -l -g systemd-oom -d / -s /s
 
 %files oomd -f .file-list-oomd
 
+%files tests -f .file-list-tests
+
 %clean
 rm -rf $RPM_BUILD_ROOT
 rm -f 10-timeout-abort.conf.user
@@ -1387,8 +1494,104 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
-* Mon Mar 10 2025 systemd team <systemd-maint@redhat.com> - 257-9.1
-- bump the NIC naming policy to RHEL-10.0 (RHEL-82568)
+* Fri Aug 15 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-13
+- core/transaction: do not attempt to log "n/a" as a journal field (RHEL-106260)
+
+* Wed Aug 13 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-12
+- mkosi: use C10S repo for building RPMs (RHEL-79976)
+- test: adapt TEST-22 to the downstream --purge behavior (RHEL-79976)
+- mkosi: reconfigure the CI for CentOS Stream 10 (RHEL-79976)
+- test: skip tests for components not shipped in RHEL 10 (RHEL-79976)
+- ci: add a unique identifier to each GH Actions job (RHEL-79976)
+- test: limit logging when running TEST-21-DFUZZER (RHEL-79976)
+- man: mention RHEL documentation in systemctl's man page (RHEL-97762)
+- ukify: switch from zstd to zstandard (RHEL-97625)
+- ukify: fix zboot parsing with zstd (RHEL-97625)
+- ukify: if the specified kernel is not a valid PE file try to decompress it (RHEL-97625)
+- ukify: fix version detection for aarch64 zboot kernels with gzip or lzma compression (RHEL-97625)
+- ukify: when decompressing kernel before signing, call verify on decompressed file (RHEL-97625)
+- udev/net_id: introduce naming scheme for RHEL-10.1 (RHEL-44419)
+- udev/net_id: introduce naming scheme for RHEL-9.7 (RHEL-44419)
+- sd-event: drop inotify event from buffer when no event source is triggered (RHEL-104555)
+- test: add test case for issue #38265 (RHEL-104555)
+- tree-wide: check more log message format in log_struct() and friends (RHEL-106260)
+- core: output log cycle path in one log message, not many (RHEL-106260)
+- core: make log cycle messages recognizable via message IDs (RHEL-106260)
+- core: change ordering cycle log message log levels (RHEL-106260)
+- core: cast log_oom() got void (RHEL-106260)
+- core: when removing a job from a transaction, include in structured log message which (RHEL-106260)
+- catalog: add entries for the order cycle log messages (RHEL-106260)
+- flush_ports: flush POSIX message queues properly (RHEL-100553)
+- Add --entry-type=type1|type2 option to kernel-install. (RHEL-103354)
+- kernel-install: regroup options in help meesage (RHEL-103354)
+- kernel-install: do not mix || and && (RHEL-103354)
+- man/kernel-install: mention --entry-type= option in the man page (RHEL-103354)
+- bootspec: rename boot_entry_type_to_string() to boot_entry_type_description_to_string() (RHEL-103354)
+- bootspec: include 'UKI' in descriptive name for type #2 (RHEL-103354)
+- bootspec: rename BootEntryType values (RHEL-103354)
+- bootspec: rename boot_entry_source_to_string() to boot_entry_source_description_to_string() (RHEL-103354)
+- bootspec: boot_entry_source_to_json_string() to boot_entry_source_to_string() (RHEL-103354)
+- 90-uki-copy.install: Skip removing UKI related when BOOT_ENTRY_TYPE=type1 (RHEL-103354)
+- hwdb: add front button support for MSI Claw 7 AI+ A2VM (RHEL-72701)
+- hwdb: add accel orientation and location for the BMAX Y14 (RHEL-72701)
+- hwdb.d: add support for Akoya P15645 (RHEL-72701)
+- hwdb.d: add ANP09 Intel n100 tablet sensor configuration (#36390) (RHEL-72701)
+- hwdb: add axis range corrections for the Lenovo Yoga Slim 7 14ARE05 (RHEL-72701)
+- hwdb: add GOLD WARRIOR SIM PhoenixRC 10411R (RHEL-72701)
+- hwdb: add Code Mercenaries Hard- und Software GmbH Virtual RC USB (RHEL-72701)
+- hwdb: Add accel orientation quirk for the GPD Pocket 4 (RHEL-72701)
+- hwdb: add rotation profile matrix for Rog Ally X (2024) (#36591) (RHEL-72701)
+- hwdb: fix backspace not working on HP Pavilion laptop (#36777) (RHEL-72701)
+- hwdb/keyboard: Map FN key on TUXEDO NB02 devices (RHEL-72701)
+- hwdb/keyboard: Map FN key on TUXEDO InfinityFlex 14 Gen1 (RHEL-72701)
+- hwdb: add G-Mode key support (#37175) (RHEL-72701)
+- Add emulated release to G-Mode key (RHEL-72701)
+- hwdb: keyboard: Add Alienware special keys (RHEL-72701)
+- hwdb: add bladeRF SDR devices (RHEL-72701)
+- hwdb: append ID_SOFTWARE_RADIO to hwdb parser (RHEL-72701)
+- hwdb.d: reword and simplify boilerplate texts (RHEL-72701)
+- hwdb.d: update/expand boilerplate on various hwdb files (RHEL-72701)
+- hwdb: say that settings can be also set to 0 (RHEL-72701)
+- hwdb: add Analog Devices PLUTO SDR (RHEL-72701)
+-  hwdb: append ID_MM_DEVICE_IGNORE to hwdb parser (RHEL-72701)
+- hwdb: run "update-hwdb" (RHEL-72701)
+- hwdb: run "update-hwdb-autosuspend" (RHEL-72701)
+- hwdb: add missing PLUTO SDR vendor name (RHEL-72701)
+- hwdb: add Ettus Research SDR devices (RHEL-72701)
+- hwdb: add RTL-SDR devices (RHEL-72701)
+- hwdb: merge entries for Ettus Research B200 (RHEL-72701)
+- hwdb: make Saitek PLC Pro Flight Rudder Pedals a joystick (#37601) (RHEL-72701)
+- hwdb: fix touchpad for ASUS X1504ZA (#37696) (RHEL-72701)
+- hwdb: add support for Loupedeck devices (RHEL-72701)
+- hwdb: Acer Nitro ANV15-51 Mic Toggle (RHEL-72701)
+- hwdb: Added Beacn and TC-Helicon Audio controllers (#37798) (RHEL-72701)
+- hwdb: Add support for Lenovo IdeaPad Slim 5 series (RHEL-72701)
+- hwdb: Add hwbd definitions for maker tools (RHEL-72701)
+- hwdb: Add accel orientation quirk for the Microtech e-tab Pro (RHEL-72701)
+- hwdb: add 70-maker-tools.hwdb to meson.build (RHEL-72701)
+- hwdb: fix typo in 70-maker-tools.hwdb (RHEL-72701)
+- hwdb: update (RHEL-72701)
+- Fix Positivo K116J search key and www shortcut (RHEL-72701)
+- hwdb: Acer Nitro ANV15-51 Nitro Sense Toggle (RHEL-72701)
+- hwdb: several cleanups (RHEL-72701)
+- hwdb: disable Asus ROG keyboards sending poweroff (RHEL-72701)
+- hwdb: update (RHEL-72701)
+- hwdb: update autosuspend rules (RHEL-72701)
+- hwdb: set touchpad resolution for ThinkPad T14 Gen2a (RHEL-72701)
+- Revert "hwdb: disable Asus ROG keyboards sending poweroff" (RHEL-72701)
+- hwdb: Add launch emoji keyboard mapping for Asus M1607KA (RHEL-72701)
+- Enable KEY_PERFORMANCE key present on Linux 6.17 (RHEL-72701)
+- hwdb: add HP 150 Wired Mouse (#37341) (RHEL-72701)
+
+* Tue Apr 15 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-11
+- fuzz-journal-remote: use ASSERT_OK() and friends (RHEL-79976)
+- logs-show: skip journal entry with an invalid timestamp (RHEL-79976)
+- man: mention that rhel-9.0 net naming scheme is the same as v251 (RHEL-87179)
+- backlight: Drop support for actual_brightness (RHEL-86713)
+
+* Fri Apr 11 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-10
+- resolved: pick up new DNSSEC KSC from 2024 (RHEL-77718)
+- test_ukify: Skip on riscv64 (RHEL-85854)
 
 * Fri Feb 14 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-9
 - Add BuildRequires for git-core (RHEL-71409)

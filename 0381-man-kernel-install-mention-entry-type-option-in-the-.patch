@@ -1,0 +1,43 @@
+From b6cf66d2ea477872d69eeee90e576bae918142a8 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Fri, 11 Jul 2025 11:33:06 +0900
+Subject: [PATCH] man/kernel-install: mention --entry-type= option in the man
+ page
+
+Follow-up for b6d499768394297b1d313cdc72dab0720dc315f6.
+
+(cherry picked from commit a87b6c2c5a59561d79f40b166b416545449108db)
+
+Resolves: RHEL-103354
+---
+ man/kernel-install.xml | 17 +++++++++++++++++
+ 1 file changed, 17 insertions(+)
+
+diff --git a/man/kernel-install.xml b/man/kernel-install.xml
+index f3468bbde0..d786534ba8 100644
+--- a/man/kernel-install.xml
++++ b/man/kernel-install.xml
+@@ -284,6 +284,23 @@
+         </listitem>
+       </varlistentry>
+ 
++      <varlistentry>
++        <term><option>--entry-type=type1|type2|all</option></term>
++
++        <listitem>
++          <para>
++            Controls the type of entries handled by the command. This is typically useful when multiple types
++            of boot entries with the same kernel version are installed, and only one should be removed. When
++            <literal>type1</literal> or <literal>type2</literal> is specified, each plugin is invoked with
++            <varname>$KERNEL_INSTALL_BOOT_ENTRY_TYPE</varname> environment variable with the specified
++            value. When <literal>all</literal> is specified, the environment variable will not be set.
++            Defaults to <literal>all</literal>.
++          </para>
++
++          <xi:include href="version-info.xml" xpointer="v258"/>
++        </listitem>
++      </varlistentry>
++
+       <varlistentry>
+         <term><option>--entry-token=</option></term>
+ 

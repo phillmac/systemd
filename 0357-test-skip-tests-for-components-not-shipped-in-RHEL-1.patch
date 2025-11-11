@@ -1,0 +1,179 @@
+From b343298bafe31010256a45351aea1496e41a6382 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Mon, 14 Apr 2025 14:32:43 +0200
+Subject: [PATCH] test: skip tests for components not shipped in RHEL 10
+
+rhel-only: ci
+Related: RHEL-79976
+---
+ test/meson.build                           | 16 +++++++-------
+ test/units/TEST-21-DFUZZER.sh              | 18 ++--------------
+ test/units/TEST-65-ANALYZE.sh              | 25 ++++++++++++----------
+ test/units/TEST-74-AUX-UTILS.networkctl.sh |  5 +++++
+ test/units/TEST-74-AUX-UTILS.ssh.sh        |  5 +++++
+ 5 files changed, 34 insertions(+), 35 deletions(-)
+
+diff --git a/test/meson.build b/test/meson.build
+index 5545a56c23..8775a3a3df 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -323,7 +323,7 @@ foreach dirname : [
+         'TEST-05-RLIMITS',
+         'TEST-06-SELINUX',
+         'TEST-07-PID1',
+-        'TEST-08-INITRD',
++#        'TEST-08-INITRD', # we don't ship standalone systemd-shutdown
+         'TEST-09-REBOOT',
+         'TEST-13-NSPAWN',
+         'TEST-15-DROPIN',
+@@ -337,8 +337,8 @@ foreach dirname : [
+         'TEST-24-CRYPTSETUP',
+         'TEST-25-IMPORT',
+         'TEST-26-SYSTEMCTL',
+-        'TEST-29-PORTABLE',
+-        'TEST-30-ONCLOCKCHANGE',
++#        'TEST-29-PORTABLE', # we don't ship systemd-portabled and friends
++#        'TEST-30-ONCLOCKCHANGE', # we don't ship systemd-timesyncd
+         'TEST-31-DEVICE-ENUMERATION',
+         'TEST-32-OOMPOLICY',
+         'TEST-34-DYNAMICUSERMIGRATE',
+@@ -347,8 +347,8 @@ foreach dirname : [
+         'TEST-38-FREEZER',
+         'TEST-43-PRIVATEUSER-UNPRIV',
+         'TEST-44-LOG-NAMESPACE',
+-        'TEST-45-TIMEDATE',
+-        'TEST-46-HOMED',
++#        'TEST-45-TIMEDATE', # we don't ship systemd-timesyncd
++#        'TEST-46-HOMED', # we don't ship systemd-homed
+         'TEST-50-DISSECT',
+         'TEST-52-HONORFIRSTSHUTDOWN',
+         'TEST-53-ISSUE-16347',
+@@ -370,7 +370,7 @@ foreach dirname : [
+         'TEST-72-SYSUPDATE',
+         'TEST-73-LOCALE',
+         'TEST-74-AUX-UTILS',
+-        'TEST-75-RESOLVED',
++#        'TEST-75-RESOLVED', # we dont't ship systemd-networkd
+         'TEST-76-SYSCTL',
+         'TEST-78-SIGQUEUE',
+         'TEST-79-MEMPRESS',
+@@ -378,8 +378,8 @@ foreach dirname : [
+         'TEST-81-GENERATORS',
+         'TEST-82-SOFTREBOOT',
+         'TEST-83-BTRFS',
+-        'TEST-84-STORAGETM',
+-        'TEST-85-NETWORK',
++#        'TEST-84-STORAGETM', # we don't ship systemd-storagetm
++#        'TEST-85-NETWORK', # we don't ship systemd-networkd
+         'TEST-86-MULTI-PROFILE-UKI',
+ ]
+         subdir(dirname)
+diff --git a/test/units/TEST-21-DFUZZER.sh b/test/units/TEST-21-DFUZZER.sh
+index 08ebfd91eb..9fae9131f9 100755
+--- a/test/units/TEST-21-DFUZZER.sh
++++ b/test/units/TEST-21-DFUZZER.sh
+@@ -57,13 +57,13 @@ cat /etc/dfuzzer.conf
+ # TODO
+ #   * check for possibly newly introduced buses?
+ BUS_LIST=(
+-    org.freedesktop.home1
++#    org.freedesktop.home1
+     org.freedesktop.hostname1
+     org.freedesktop.import1
+     org.freedesktop.locale1
+     org.freedesktop.login1
+     org.freedesktop.machine1
+-    org.freedesktop.portable1
++#    org.freedesktop.portable1
+     org.freedesktop.resolve1
+     org.freedesktop.systemd1
+     org.freedesktop.timedate1
+@@ -76,20 +76,6 @@ if tail -n +1 /proc/pressure/{cpu,io,memory}; then
+     )
+ fi
+ 
+-# Some services require specific conditions:
+-#   - systemd-timesyncd can't run in a container
+-#   - systemd-networkd can run in a container if it has CAP_NET_ADMIN capability
+-if ! systemd-detect-virt --container; then
+-    BUS_LIST+=(
+-        org.freedesktop.network1
+-        org.freedesktop.timesync1
+-    )
+-elif busctl introspect org.freedesktop.network1 / &>/dev/null; then
+-    BUS_LIST+=(
+-        org.freedesktop.network1
+-    )
+-fi
+-
+ SESSION_BUS_LIST=(
+     org.freedesktop.systemd1
+ )
+diff --git a/test/units/TEST-65-ANALYZE.sh b/test/units/TEST-65-ANALYZE.sh
+index 2fa368a678..e03f6c17c8 100755
+--- a/test/units/TEST-65-ANALYZE.sh
++++ b/test/units/TEST-65-ANALYZE.sh
+@@ -882,17 +882,20 @@ systemd-analyze security --threshold=90 --offline=true \
+                            --security-policy=/tmp/testfile.json \
+                            --root=/tmp/img/ testfile.service
+ 
+-# The strict profile adds a lot of sanboxing options
+-systemd-analyze security --threshold=25 --offline=true \
+-                           --security-policy=/tmp/testfile.json \
+-                           --profile=strict \
+-                           --root=/tmp/img/ testfile.service
+-
+-# The trusted profile doesn't add any sanboxing options
+-(! systemd-analyze security --threshold=25 --offline=true \
+-                           --security-policy=/tmp/testfile.json \
+-                           --profile=/usr/lib/systemd/portable/profile/trusted/service.conf \
+-                           --root=/tmp/img/ testfile.service)
++# We don't ship systemd-portable in RHEL 10, hence there are no profiles we could use in the tests below
++if [[ -e /usr/lib/systemd/portable/profile ]]; then
++    # The strict profile adds a lot of sanboxing options
++    systemd-analyze security --threshold=25 --offline=true \
++                               --security-policy=/tmp/testfile.json \
++                               --profile=strict \
++                               --root=/tmp/img/ testfile.service
++
++    # The trusted profile doesn't add any sanboxing options
++    (! systemd-analyze security --threshold=25 --offline=true \
++                               --security-policy=/tmp/testfile.json \
++                               --profile=/usr/lib/systemd/portable/profile/trusted/service.conf \
++                               --root=/tmp/img/ testfile.service)
++fi
+ 
+ (! systemd-analyze security --threshold=50 --offline=true \
+                            --security-policy=/tmp/testfile.json \
+diff --git a/test/units/TEST-74-AUX-UTILS.networkctl.sh b/test/units/TEST-74-AUX-UTILS.networkctl.sh
+index 3d402a7182..7ed08a982f 100755
+--- a/test/units/TEST-74-AUX-UTILS.networkctl.sh
++++ b/test/units/TEST-74-AUX-UTILS.networkctl.sh
+@@ -7,6 +7,11 @@ set -o pipefail
+ # shellcheck source=test/units/util.sh
+ . "$(dirname "$0")"/util.sh
+ 
++if ! systemctl -q list-unit-files systemd-networkd.service; then
++    echo "Missing systemd-networkd.service, skipping the test"
++    exit 0
++fi
++
+ at_exit() {
+     systemctl stop systemd-networkd
+ 
+diff --git a/test/units/TEST-74-AUX-UTILS.ssh.sh b/test/units/TEST-74-AUX-UTILS.ssh.sh
+index 18848e1220..8114250738 100755
+--- a/test/units/TEST-74-AUX-UTILS.ssh.sh
++++ b/test/units/TEST-74-AUX-UTILS.ssh.sh
+@@ -8,6 +8,11 @@ if ! command -v ssh &> /dev/null || ! command -v sshd &> /dev/null ; then
+     exit 0
+ fi
+ 
++if [[ ! -e /etc/ssh/ssh_config.d/20-systemd-ssh-proxy.conf ]]; then
++    echo "Necessary configuration not found, skipping the test"
++    exit 0
++fi
++
+ systemctl -q is-active sshd-unix-local.socket
+ 
+ if test -e /dev/vsock ; then

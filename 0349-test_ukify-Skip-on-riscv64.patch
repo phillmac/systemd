@@ -1,0 +1,33 @@
+From 0131e46cd0673bdc7f7449ea77d7dde265be26bb Mon Sep 17 00:00:00 2001
+From: Andrea Bolognani <abologna@redhat.com>
+Date: Fri, 14 Mar 2025 18:36:13 +0100
+Subject: [PATCH] test_ukify: Skip on riscv64
+
+The test needs binutils 2.42 to work on the architecture,
+but we only have 2.41 in RHEL 10.
+
+Signed-off-by: Andrea Bolognani <abologna@redhat.com>
+
+rhel-only: test
+
+Resolves: RHEL-85854
+---
+ src/ukify/test/test_ukify.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/ukify/test/test_ukify.py b/src/ukify/test/test_ukify.py
+index 61d465fca1..c24c51d964 100755
+--- a/src/ukify/test/test_ukify.py
++++ b/src/ukify/test/test_ukify.py
+@@ -52,6 +52,11 @@ except ValueError as e:
+     print(str(e), file=sys.stderr)
+     sys.exit(77)
+ 
++# Skip this test on riscv64 for now. It needs binutils 2.42 to work
++# on the architecture, but we only have 2.41 in RHEL 10
++if ukify.guess_efi_arch() == 'riscv64':
++    sys.exit(77)
++
+ build_root = os.getenv('PROJECT_BUILD_ROOT')
+ try:
+     slow_tests = bool(int(os.getenv('SYSTEMD_SLOW_TESTS', '1')))

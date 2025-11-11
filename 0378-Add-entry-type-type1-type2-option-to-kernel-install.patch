@@ -1,0 +1,225 @@
+From fbd8517cc066d75c255b6f0cf0af14cde0a430f5 Mon Sep 17 00:00:00 2001
+From: Li Tian <litian@redhat.com>
+Date: Tue, 8 Jul 2025 14:44:35 +0800
+Subject: [PATCH] Add --entry-type=type1|type2 option to kernel-install.
+
+Both kernel-core and kernel-uki-virt call kernel-install upon removal. Need an additional argument to avoid complete removal for both traditional kernel and UKI.
+
+Signed-off-by: Li Tian <litian@redhat.com>
+
+(cherry picked from commit b6d499768394297b1d313cdc72dab0720dc315f6)
+
+Resolves: RHEL-103354
+---
+ shell-completion/bash/kernel-install         | 14 ++++++++++
+ src/kernel-install/50-depmod.install         |  5 ++++
+ src/kernel-install/90-loaderentry.install.in |  5 ++++
+ src/kernel-install/kernel-install.c          | 29 ++++++++++++++++++++
+ src/kernel-install/test-kernel-install.sh    |  7 +++++
+ src/shared/bootspec.c                        |  2 +-
+ src/shared/bootspec.h                        |  1 +
+ 7 files changed, 62 insertions(+), 1 deletion(-)
+
+diff --git a/shell-completion/bash/kernel-install b/shell-completion/bash/kernel-install
+index d3a9d9bbd8..a7714ad188 100644
+--- a/shell-completion/bash/kernel-install
++++ b/shell-completion/bash/kernel-install
+@@ -21,6 +21,15 @@ _kernel_install() {
+     local comps
+     local MACHINE_ID
+     local cur=${COMP_WORDS[COMP_CWORD]}
++    local prev=${COMP_WORDS[COMP_CWORD-1]}
++    local entry_types="type1 type2 all"
++
++    case "$prev" in
++        --entry-type)
++            COMPREPLY=( $(compgen -W "$entry_types" -- "$cur") )
++            return 0
++            ;;
++    esac
+ 
+     case $COMP_CWORD in
+         1)
+@@ -42,6 +51,11 @@ _kernel_install() {
+             ;;
+     esac
+ 
++    if [[ "${COMP_WORDS[1]}" == "remove" ]] && [[ $cur == -* ]]; then
++        COMPREPLY=( $(compgen -W '--entry-type' -- "$cur") )
++        return 0
++    fi
++
+     COMPREPLY=( $(compgen -W '$comps' -- "$cur") )
+     return 0
+ }
+diff --git a/src/kernel-install/50-depmod.install b/src/kernel-install/50-depmod.install
+index 08247c735b..aa2bb31a51 100755
+--- a/src/kernel-install/50-depmod.install
++++ b/src/kernel-install/50-depmod.install
+@@ -33,6 +33,11 @@ case "$COMMAND" in
+         exec depmod -a "$KERNEL_VERSION"
+         ;;
+     remove)
++        [ "$KERNEL_INSTALL_BOOT_ENTRY_TYPE" = "type2" ] || \
++        [ "$KERNEL_INSTALL_BOOT_ENTRY_TYPE" = "type1" ] && \
++        [ -d "/lib/modules/$KERNEL_VERSION/kernel" ] && \
++            echo "Multiple entry types exist, not removing modules.dep or associated files." && \
++            exit 0
+         [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
+             echo "Removing /lib/modules/${KERNEL_VERSION}/modules.dep and associated files"
+         exec rm -f \
+diff --git a/src/kernel-install/90-loaderentry.install.in b/src/kernel-install/90-loaderentry.install.in
+index 832a82794c..44d45f6921 100755
+--- a/src/kernel-install/90-loaderentry.install.in
++++ b/src/kernel-install/90-loaderentry.install.in
+@@ -45,6 +45,11 @@ LOADER_ENTRY="$BOOT_ROOT/loader/entries/$ENTRY_TOKEN-$KERNEL_VERSION.conf"
+ 
+ case "$COMMAND" in
+     remove)
++        if [ -f "/lib/modules/$KERNEL_VERSION/vmlinuz" ] && [ "$KERNEL_INSTALL_BOOT_ENTRY_TYPE" = "type2" ]; then
++            [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
++                echo "BOOT_ENTRY_TYPE=type2, not removing loader entries."
++            exit 0
++        fi
+         [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
+             echo "Removing ${LOADER_ENTRY%.conf}*.conf"
+         exec rm -f \
+diff --git a/src/kernel-install/kernel-install.c b/src/kernel-install/kernel-install.c
+index f059f5dc76..4aecce20ff 100644
+--- a/src/kernel-install/kernel-install.c
++++ b/src/kernel-install/kernel-install.c
+@@ -5,6 +5,7 @@
+ #include <sys/utsname.h>
+ 
+ #include "boot-entry.h"
++#include "bootspec.h"
+ #include "build.h"
+ #include "chase.h"
+ #include "conf-files.h"
+@@ -84,6 +85,7 @@ typedef struct Context {
+         Action action;
+         sd_id128_t machine_id;
+         bool machine_id_is_random;
++        BootEntryType entry_type;
+         KernelImageType kernel_image_type;
+         Layout layout;
+         char *layout_other;
+@@ -423,6 +425,20 @@ static int context_set_initrds(Context *c, char* const* strv) {
+         return context_set_path_strv(c, strv, "command line", "initrds", &c->initrds);
+ }
+ 
++static int context_set_entry_type(Context *c, const char *s) {
++        assert(c);
++        BootEntryType e;
++        if (isempty(s) || streq(s, "all")) {
++                c->entry_type = _BOOT_ENTRY_TYPE_INVALID;
++                return 0;
++        }
++        e = boot_entry_type_from_string(s);
++        if (e < 0)
++                return log_error_errno(e, "Invalid entry type: %s", s);
++        c->entry_type = e;
++        return 1;
++}
++
+ static int context_load_environment(Context *c) {
+         assert(c);
+ 
+@@ -977,6 +993,7 @@ static int context_build_environment(Context *c) {
+                                  "KERNEL_INSTALL_LAYOUT",           context_get_layout(c),
+                                  "KERNEL_INSTALL_INITRD_GENERATOR", strempty(c->initrd_generator),
+                                  "KERNEL_INSTALL_UKI_GENERATOR",    strempty(c->uki_generator),
++                                 "KERNEL_INSTALL_BOOT_ENTRY_TYPE",  boot_entry_type_to_string(c->entry_type),
+                                  "KERNEL_INSTALL_STAGING_AREA",     c->staging_area);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to build environment variables for plugins: %m");
+@@ -1490,6 +1507,9 @@ static int help(void) {
+                "     --root=PATH               Operate on an alternate filesystem root\n"
+                "     --image=PATH              Operate on disk image as filesystem root\n"
+                "     --image-policy=POLICY     Specify disk image dissection policy\n"
++               "     --entry-type=type1|type2|all\n"
++               "                               Operate only on the specified bootloader\n"
++               "                               entry type\n"
+                "\n"
+                "This program may also be invoked as 'installkernel':\n"
+                "  installkernel  [OPTIONS...] VERSION VMLINUZ [MAP] [INSTALLATION-DIR]\n"
+@@ -1519,6 +1539,7 @@ static int parse_argv(int argc, char *argv[], Context *c) {
+                 ARG_ROOT,
+                 ARG_IMAGE,
+                 ARG_IMAGE_POLICY,
++                ARG_BOOT_ENTRY_TYPE,
+         };
+         static const struct option options[] = {
+                 { "help",                 no_argument,       NULL, 'h'                      },
+@@ -1534,6 +1555,7 @@ static int parse_argv(int argc, char *argv[], Context *c) {
+                 { "image",                required_argument, NULL, ARG_IMAGE                },
+                 { "image-policy",         required_argument, NULL, ARG_IMAGE_POLICY         },
+                 { "no-legend",            no_argument,       NULL, ARG_NO_LEGEND            },
++                { "entry-type",           required_argument, NULL, ARG_BOOT_ENTRY_TYPE      },
+                 {}
+         };
+         int t, r;
+@@ -1617,6 +1639,12 @@ static int parse_argv(int argc, char *argv[], Context *c) {
+                                 return r;
+                         break;
+ 
++                case ARG_BOOT_ENTRY_TYPE:
++                        r = context_set_entry_type(c, optarg);
++                        if (r < 0)
++                                return r;
++                        break;
++
+                 case '?':
+                         return -EINVAL;
+ 
+@@ -1644,6 +1672,7 @@ static int run(int argc, char* argv[]) {
+                 .action = _ACTION_INVALID,
+                 .kernel_image_type = KERNEL_IMAGE_TYPE_UNKNOWN,
+                 .layout = _LAYOUT_INVALID,
++                .entry_type = _BOOT_ENTRY_TYPE_INVALID,
+                 .entry_token_type = BOOT_ENTRY_TOKEN_AUTO,
+         };
+         _cleanup_(loop_device_unrefp) LoopDevice *loop_device = NULL;
+diff --git a/src/kernel-install/test-kernel-install.sh b/src/kernel-install/test-kernel-install.sh
+index 51d618e650..7da8285969 100755
+--- a/src/kernel-install/test-kernel-install.sh
++++ b/src/kernel-install/test-kernel-install.sh
+@@ -97,6 +97,13 @@ test ! -e "$entry"
+ test ! -e "$BOOT_ROOT/the-token/1.1.1/linux"
+ test ! -e "$BOOT_ROOT/the-token/1.1.1/initrd"
+ 
++# Test --entry-type options
++"$kernel_install" -v add 1.1.1 "$D/sources/linux" "$D/sources/initrd"
++"$kernel_install" -v remove 1.1.1 --entry-type=type1
++test ! -e "$entry"
++test ! -e "$BOOT_ROOT/the-token/1.1.1/linux"
++test ! -e "$BOOT_ROOT/the-token/1.1.1/initrd"
++
+ # Invoke kernel-install as installkernel
+ ln -s --relative -v "$kernel_install" "$D/sources/installkernel"
+ "$D/sources/installkernel" -v 1.1.2 "$D/sources/linux" System.map /somedirignored
+diff --git a/src/shared/bootspec.c b/src/shared/bootspec.c
+index 12d2a9d147..3c2388e56a 100644
+--- a/src/shared/bootspec.c
++++ b/src/shared/bootspec.c
+@@ -33,7 +33,7 @@ static const char* const boot_entry_type_table[_BOOT_ENTRY_TYPE_MAX] = {
+         [BOOT_ENTRY_LOADER_AUTO] = "Automatic",
+ };
+ 
+-DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_type, BootEntryType);
++DEFINE_STRING_TABLE_LOOKUP(boot_entry_type, BootEntryType);
+ 
+ static const char* const boot_entry_type_json_table[_BOOT_ENTRY_TYPE_MAX] = {
+         [BOOT_ENTRY_CONF]        = "type1",
+diff --git a/src/shared/bootspec.h b/src/shared/bootspec.h
+index 95675214b2..eb5ff915fb 100644
+--- a/src/shared/bootspec.h
++++ b/src/shared/bootspec.h
+@@ -100,6 +100,7 @@ typedef struct BootConfig {
+ 
+ const char* boot_entry_type_to_string(BootEntryType) _const_;
+ const char* boot_entry_type_json_to_string(BootEntryType) _const_;
++BootEntryType boot_entry_type_from_string(const char *s) _pure_;
+ 
+ const char* boot_entry_source_to_string(BootEntrySource) _const_;
+ const char* boot_entry_source_json_to_string(BootEntrySource) _const_;

@@ -1,0 +1,1701 @@
+From 6165fd1282d279a641a52313b5f55eb0c7cd9040 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 18 Mar 2025 15:50:43 +0900
+Subject: [PATCH] tree-wide: check more log message format in log_struct() and
+ friends
+
+This introduce LOG_ITEM() macro that checks arbitrary formats in
+log_struct().
+Then, drop _printf_ attribute from log_struct_internal(), as it does not
+help so much, and compiler checked only the first format string.
+
+Hopefully, this silences false-positive warnings by Coverity.
+
+(cherry picked from commit 3cf6a3a3d4acf8347ccd0250274f517e6b2e9fe6)
+
+Related: RHEL-106260
+---
+ src/basic/log.c                         | 18 ++++++++-----
+ src/basic/log.h                         |  8 ++++--
+ src/basic/process-util.c                |  4 +--
+ src/basic/user-util.c                   |  4 +--
+ src/battery-check/battery-check.c       |  4 +--
+ src/core/cgroup.c                       |  8 +++---
+ src/core/clock-warp.c                   | 12 ++++-----
+ src/core/crash-handler.c                | 28 ++++++++++----------
+ src/core/device.c                       |  4 +--
+ src/core/exec-invoke.c                  |  6 ++---
+ src/core/execute.c                      |  2 +-
+ src/core/execute.h                      |  8 ++----
+ src/core/executor.c                     |  4 +--
+ src/core/job.c                          | 26 +++++++++----------
+ src/core/load-fragment.c                | 12 ++++-----
+ src/core/main.c                         | 20 +++++++--------
+ src/core/manager.c                      | 34 ++++++++++---------------
+ src/core/manager.h                      |  3 ---
+ src/core/mount.c                        |  4 +--
+ src/core/selinux-setup.c                |  2 +-
+ src/core/service.c                      |  4 +--
+ src/core/smack-setup.c                  |  2 +-
+ src/core/transaction.c                  |  6 ++---
+ src/core/unit.c                         | 22 ++++++++--------
+ src/core/unit.h                         |  4 +--
+ src/coredump/coredump.c                 |  4 +--
+ src/cryptsetup/cryptsetup.c             |  8 +++---
+ src/libsystemd/sd-event/sd-event.c      | 10 ++++----
+ src/libsystemd/sd-json/sd-json.c        | 16 ++++++------
+ src/login/logind-action.c               |  4 +--
+ src/login/logind-button.c               | 32 +++++++++++------------
+ src/login/logind-dbus.c                 |  6 ++---
+ src/login/logind-session.c              | 22 ++++++++--------
+ src/login/logind-wall.c                 |  4 +--
+ src/machine/machine.c                   | 12 ++++-----
+ src/network/networkd-dhcp4.c            | 10 ++++----
+ src/network/networkd-sysctl.c           | 14 +++++-----
+ src/pcrextend/pcrextend.c               |  8 +++---
+ src/portable/portable.c                 |  2 +-
+ src/resolve/resolved-dns-server.c       |  6 ++---
+ src/resolve/resolved-dns-transaction.c  | 12 ++++-----
+ src/resolve/resolved-dns-trust-anchor.c |  4 +--
+ src/shutdown/shutdown.c                 |  2 +-
+ src/sleep/sleep.c                       | 12 ++++-----
+ src/sysv-generator/sysv-generator.c     |  6 ++---
+ src/test/test-log.c                     | 14 +++++-----
+ src/test/test-macro.c                   |  2 ++
+ src/timedate/timedated.c                | 12 ++++-----
+ src/timesync/timesyncd-manager.c        |  8 +++---
+ src/timesync/timesyncd.c                |  6 ++---
+ src/tpm2-setup/tpm2-setup.c             |  4 +--
+ src/udev/udevadm-settle.c               |  4 +--
+ 52 files changed, 245 insertions(+), 248 deletions(-)
+
+diff --git a/src/basic/log.c b/src/basic/log.c
+index b99f37385c..ec6f22cba7 100644
+--- a/src/basic/log.c
++++ b/src/basic/log.c
+@@ -1108,7 +1108,9 @@ int log_struct_internal(
+                         iovec[n++] = IOVEC_MAKE_STRING(header);
+ 
+                         va_start(ap, format);
++                        DISABLE_WARNING_FORMAT_NONLITERAL;
+                         r = log_format_iovec(iovec, iovec_len, &n, true, error, format, ap);
++                        REENABLE_WARNING;
+                         m = n;
+                         if (r < 0)
+                                 fallback = true;
+@@ -1145,7 +1147,9 @@ int log_struct_internal(
+                 errno = ERRNO_VALUE(error);
+ 
+                 va_copy(aq, ap);
++                DISABLE_WARNING_FORMAT_NONLITERAL;
+                 (void) vsnprintf(buf, sizeof buf, format, aq);
++                REENABLE_WARNING;
+                 va_end(aq);
+ 
+                 if (startswith(buf, "MESSAGE=")) {
+@@ -1634,9 +1638,9 @@ int log_syntax_internal(
+                                         level,
+                                         error,
+                                         file, line, func,
+-                                        "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
+-                                        "CONFIG_FILE=%s", config_file,
+-                                        "CONFIG_LINE=%u", config_line,
++                                        LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
++                                        LOG_ITEM("CONFIG_FILE=%s", config_file),
++                                        LOG_ITEM("CONFIG_LINE=%u", config_line),
+                                         LOG_MESSAGE("%s:%u: %s", config_file, config_line, buffer),
+                                         unit_fmt, unit,
+                                         NULL);
+@@ -1645,8 +1649,8 @@ int log_syntax_internal(
+                                         level,
+                                         error,
+                                         file, line, func,
+-                                        "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
+-                                        "CONFIG_FILE=%s", config_file,
++                                        LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
++                                        LOG_ITEM("CONFIG_FILE=%s", config_file),
+                                         LOG_MESSAGE("%s: %s", config_file, buffer),
+                                         unit_fmt, unit,
+                                         NULL);
+@@ -1655,7 +1659,7 @@ int log_syntax_internal(
+                                 level,
+                                 error,
+                                 file, line, func,
+-                                "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
++                                LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
+                                 LOG_MESSAGE("%s: %s", unit, buffer),
+                                 unit_fmt, unit,
+                                 NULL);
+@@ -1664,7 +1668,7 @@ int log_syntax_internal(
+                                 level,
+                                 error,
+                                 file, line, func,
+-                                "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
++                                LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
+                                 LOG_MESSAGE("%s", buffer),
+                                 NULL);
+ }
+diff --git a/src/basic/log.h b/src/basic/log.h
+index 3859a6c41d..618f0104f3 100644
+--- a/src/basic/log.h
++++ b/src/basic/log.h
+@@ -152,7 +152,7 @@ int log_struct_internal(
+                 const char *file,
+                 int line,
+                 const char *func,
+-                const char *format, ...) _printf_(6,0) _sentinel_;
++                const char *format, ...) _sentinel_;
+ 
+ int log_oom_internal(
+                 int level,
+@@ -313,11 +313,15 @@ bool log_on_console(void) _pure_;
+ /* Do a fake formatting of the message string to let the scanner verify the arguments against the format
+  * message. The variable will never be set to true, but we don't tell the compiler that :) */
+ extern bool _log_message_dummy;
+-#  define LOG_MESSAGE(fmt, ...) "MESSAGE=%.0d" fmt, (_log_message_dummy && printf(fmt, ##__VA_ARGS__)), ##__VA_ARGS__
++#  define LOG_ITEM(fmt, ...) "%.0d" fmt, (_log_message_dummy && printf(fmt, ##__VA_ARGS__)), ##__VA_ARGS__
++#  define LOG_MESSAGE(fmt, ...) LOG_ITEM("MESSAGE=" fmt, ##__VA_ARGS__)
+ #else
++#  define LOG_ITEM(fmt, ...) fmt, ##__VA_ARGS__
+ #  define LOG_MESSAGE(fmt, ...) "MESSAGE=" fmt, ##__VA_ARGS__
+ #endif
+ 
++#define LOG_MESSAGE_ID(id) LOG_ITEM("MESSAGE_ID=" id)
++
+ void log_received_signal(int level, const struct signalfd_siginfo *si);
+ 
+ /* If turned on, any requests for a log target involving "syslog" will be implicitly upgraded to the equivalent journal target */
+diff --git a/src/basic/process-util.c b/src/basic/process-util.c
+index 18fbadf175..0c3cf307bd 100644
+--- a/src/basic/process-util.c
++++ b/src/basic/process-util.c
+@@ -1327,8 +1327,8 @@ void valgrind_summary_hack(void) {
+                 if (pid < 0)
+                         log_struct_errno(
+                                 LOG_EMERG, errno,
+-                                "MESSAGE_ID=" SD_MESSAGE_VALGRIND_HELPER_FORK_STR,
+-                                LOG_MESSAGE( "Failed to fork off valgrind helper: %m"));
++                                LOG_MESSAGE_ID(SD_MESSAGE_VALGRIND_HELPER_FORK_STR),
++                                LOG_MESSAGE("Failed to fork off valgrind helper: %m"));
+                 else if (pid == 0)
+                         exit(EXIT_SUCCESS);
+                 else {
+diff --git a/src/basic/user-util.c b/src/basic/user-util.c
+index 2b7c923b5e..eea1962b2b 100644
+--- a/src/basic/user-util.c
++++ b/src/basic/user-util.c
+@@ -762,8 +762,8 @@ bool valid_user_group_name(const char *u, ValidUserFlags flags) {
+                 if (FLAGS_SET(flags, VALID_USER_WARN) && !valid_user_group_name(u, 0))
+                         log_struct(LOG_NOTICE,
+                                    LOG_MESSAGE("Accepting user/group name '%s', which does not match strict user/group name rules.", u),
+-                                   "USER_GROUP_NAME=%s", u,
+-                                   "MESSAGE_ID=" SD_MESSAGE_UNSAFE_USER_NAME_STR);
++                                   LOG_ITEM("USER_GROUP_NAME=%s", u),
++                                   LOG_MESSAGE_ID(SD_MESSAGE_UNSAFE_USER_NAME_STR));
+ 
+                 /* Note that we make no restrictions on the length in relaxed mode! */
+         } else {
+diff --git a/src/battery-check/battery-check.c b/src/battery-check/battery-check.c
+index a2ed5cbafd..fba7942bf0 100644
+--- a/src/battery-check/battery-check.c
++++ b/src/battery-check/battery-check.c
+@@ -145,7 +145,7 @@ static int run(int argc, char *argv[]) {
+                 return 0;
+         log_struct(LOG_EMERG,
+                    LOG_MESSAGE("%s " BATTERY_LOW_MESSAGE, special_glyph(SPECIAL_GLYPH_LOW_BATTERY)),
+-                   "MESSAGE_ID=" SD_MESSAGE_BATTERY_LOW_WARNING_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_BATTERY_LOW_WARNING_STR));
+ 
+         fd = open_terminal("/dev/console", O_WRONLY|O_NOCTTY|O_CLOEXEC);
+         if (fd < 0)
+@@ -168,7 +168,7 @@ static int run(int argc, char *argv[]) {
+         if (r > 0) {
+                 log_struct(LOG_EMERG,
+                            LOG_MESSAGE("Battery level critically low, powering off."),
+-                           "MESSAGE_ID=" SD_MESSAGE_BATTERY_LOW_POWEROFF_STR);
++                           LOG_MESSAGE_ID(SD_MESSAGE_BATTERY_LOW_POWEROFF_STR));
+                 return r;
+         }
+ 
+diff --git a/src/core/cgroup.c b/src/core/cgroup.c
+index 6933aae54d..22a29666b6 100644
+--- a/src/core/cgroup.c
++++ b/src/core/cgroup.c
+@@ -3899,13 +3899,13 @@ int unit_check_oomd_kill(Unit *u) {
+ 
+         if (n > 0)
+                 log_unit_struct(u, LOG_NOTICE,
+-                                "MESSAGE_ID=" SD_MESSAGE_UNIT_OOMD_KILL_STR,
++                                LOG_MESSAGE_ID(SD_MESSAGE_UNIT_OOMD_KILL_STR),
+                                 LOG_UNIT_INVOCATION_ID(u),
+                                 LOG_UNIT_MESSAGE(u, "systemd-oomd killed %"PRIu64" process(es) in this unit.", n),
+-                                "N_PROCESSES=%" PRIu64, n);
++                                LOG_ITEM("N_PROCESSES=%" PRIu64, n));
+         else
+                 log_unit_struct(u, LOG_NOTICE,
+-                                "MESSAGE_ID=" SD_MESSAGE_UNIT_OOMD_KILL_STR,
++                                LOG_MESSAGE_ID(SD_MESSAGE_UNIT_OOMD_KILL_STR),
+                                 LOG_UNIT_INVOCATION_ID(u),
+                                 LOG_UNIT_MESSAGE(u, "systemd-oomd killed some process(es) in this unit."));
+ 
+@@ -3947,7 +3947,7 @@ int unit_check_oom(Unit *u) {
+                 return 0;
+ 
+         log_unit_struct(u, LOG_NOTICE,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_OUT_OF_MEMORY_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_OUT_OF_MEMORY_STR),
+                         LOG_UNIT_INVOCATION_ID(u),
+                         LOG_UNIT_MESSAGE(u, "A process of this unit has been killed by the OOM killer."));
+ 
+diff --git a/src/core/clock-warp.c b/src/core/clock-warp.c
+index ceaf4b3926..3620c6942e 100644
+--- a/src/core/clock-warp.c
++++ b/src/core/clock-warp.c
+@@ -71,17 +71,17 @@ void clock_apply_epoch(bool allow_backwards) {
+                 "timestamp on "EPOCH_CLOCK_FILE;
+         if (advance)
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_TIME_BUMP_STR,
+-                           "REALTIME_USEC=" USEC_FMT, epoch_usec,
+-                           "DIRECTION=forwards",
++                           LOG_MESSAGE_ID(SD_MESSAGE_TIME_BUMP_STR),
++                           LOG_ITEM("REALTIME_USEC=" USEC_FMT, epoch_usec),
++                           LOG_ITEM("DIRECTION=forwards"),
+                            LOG_MESSAGE("System time advanced to %s: %s",
+                                        from,
+                                        FORMAT_TIMESTAMP(epoch_usec)));
+         else
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_TIME_BUMP_STR,
+-                           "REALTIME_USEC=" USEC_FMT, epoch_usec,
+-                           "DIRECTION=backwards",
++                           LOG_MESSAGE_ID(SD_MESSAGE_TIME_BUMP_STR),
++                           LOG_ITEM("REALTIME_USEC=" USEC_FMT, epoch_usec),
++                           LOG_ITEM("DIRECTION=backwards"),
+                            LOG_MESSAGE("System time was further ahead than %s after %s, clock reset to %s",
+                                        FORMAT_TIMESPAN(CLOCK_VALID_RANGE_USEC_MAX, USEC_PER_DAY),
+                                        from,
+diff --git a/src/core/crash-handler.c b/src/core/crash-handler.c
+index 68bc96e517..5c2e3beadb 100644
+--- a/src/core/crash-handler.c
++++ b/src/core/crash-handler.c
+@@ -23,7 +23,7 @@ _noreturn_ void freeze_or_exit_or_reboot(void) {
+         if (detect_container() > 0) {
+                 log_struct(LOG_EMERG,
+                            LOG_MESSAGE("Exiting PID 1..."),
+-                           "MESSAGE_ID=" SD_MESSAGE_CRASH_EXIT_STR);
++                           LOG_MESSAGE_ID(SD_MESSAGE_CRASH_EXIT_STR));
+                 _exit(EXIT_EXCEPTION);
+         }
+ 
+@@ -32,7 +32,7 @@ _noreturn_ void freeze_or_exit_or_reboot(void) {
+                 (void) reboot(RB_POWER_OFF);
+                 log_struct_errno(LOG_EMERG, errno,
+                                  LOG_MESSAGE("Failed to power off: %m"),
+-                                 "MESSAGE_ID=" SD_MESSAGE_CRASH_FAILED_STR);
++                                 LOG_MESSAGE_ID(SD_MESSAGE_CRASH_FAILED_STR));
+         } else if (arg_crash_action == CRASH_REBOOT) {
+                 log_notice("Rebooting in 10s...");
+                 (void) sleep(10);
+@@ -41,12 +41,12 @@ _noreturn_ void freeze_or_exit_or_reboot(void) {
+                 (void) reboot(RB_AUTOBOOT);
+                 log_struct_errno(LOG_EMERG, errno,
+                                  LOG_MESSAGE("Failed to reboot: %m"),
+-                                 "MESSAGE_ID=" SD_MESSAGE_CRASH_FAILED_STR);
++                                 LOG_MESSAGE_ID(SD_MESSAGE_CRASH_FAILED_STR));
+         }
+ 
+         log_struct(LOG_EMERG,
+                    LOG_MESSAGE("Freezing execution."),
+-                   "MESSAGE_ID=" SD_MESSAGE_CRASH_FREEZE_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_CRASH_FREEZE_STR));
+         sync();
+         freeze();
+ }
+@@ -67,7 +67,7 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+         else if (!arg_dump_core)
+                 log_struct(LOG_EMERG,
+                            LOG_MESSAGE("Caught <%s>, not dumping core.", signal_to_string(sig)),
+-                           "MESSAGE_ID=" SD_MESSAGE_CRASH_NO_COREDUMP_STR);
++                           LOG_MESSAGE_ID(SD_MESSAGE_CRASH_NO_COREDUMP_STR));
+         else {
+                 sa = (struct sigaction) {
+                         .sa_handler = nop_signal_handler,
+@@ -81,7 +81,7 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+                 if (pid < 0)
+                         log_struct_errno(LOG_EMERG, errno,
+                                          LOG_MESSAGE("Caught <%s>, cannot fork for core dump: %m", signal_to_string(sig)),
+-                                         "MESSAGE_ID=" SD_MESSAGE_CRASH_NO_FORK_STR);
++                                         LOG_MESSAGE_ID(SD_MESSAGE_CRASH_NO_FORK_STR));
+                 else if (pid == 0) {
+                         /* Enable default signal handler for core dump */
+ 
+@@ -105,15 +105,15 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+                                 if (siginfo->si_pid == 0)
+                                         log_struct(LOG_EMERG,
+                                                    LOG_MESSAGE("Caught <%s>, from unknown sender process.", signal_to_string(sig)),
+-                                                   "MESSAGE_ID=" SD_MESSAGE_CRASH_UNKNOWN_SIGNAL_STR);
++                                                   LOG_MESSAGE_ID(SD_MESSAGE_CRASH_UNKNOWN_SIGNAL_STR));
+                                 else if (siginfo->si_pid == 1)
+                                         log_struct(LOG_EMERG,
+                                                    LOG_MESSAGE("Caught <%s>, from our own process.", signal_to_string(sig)),
+-                                                   "MESSAGE_ID=" SD_MESSAGE_CRASH_SYSTEMD_SIGNAL_STR);
++                                                   LOG_MESSAGE_ID(SD_MESSAGE_CRASH_SYSTEMD_SIGNAL_STR));
+                                 else
+                                         log_struct(LOG_EMERG,
+                                                    LOG_MESSAGE("Caught <%s> from PID "PID_FMT".", signal_to_string(sig), siginfo->si_pid),
+-                                                   "MESSAGE_ID=" SD_MESSAGE_CRASH_PROCESS_SIGNAL_STR);
++                                                   LOG_MESSAGE_ID(SD_MESSAGE_CRASH_PROCESS_SIGNAL_STR));
+                         }
+ 
+                         /* Order things nicely. */
+@@ -121,7 +121,7 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+                         if (r < 0)
+                                 log_struct_errno(LOG_EMERG, r,
+                                                  LOG_MESSAGE("Caught <%s>, waitpid() failed: %m", signal_to_string(sig)),
+-                                                 "MESSAGE_ID=" SD_MESSAGE_CRASH_WAITPID_FAILED_STR);
++                                                 LOG_MESSAGE_ID(SD_MESSAGE_CRASH_WAITPID_FAILED_STR));
+                         else if (status.si_code != CLD_DUMPED) {
+                                 const char *s = status.si_code == CLD_EXITED ?
+                                         exit_status_to_string(status.si_status, EXIT_STATUS_LIBC) :
+@@ -134,12 +134,12 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+                                                        sigchld_code_to_string(status.si_code),
+                                                        status.si_status,
+                                                        strna(s)),
+-                                           "MESSAGE_ID=" SD_MESSAGE_CRASH_COREDUMP_FAILED_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_CRASH_COREDUMP_FAILED_STR));
+                         } else
+                                 log_struct(LOG_EMERG,
+                                            LOG_MESSAGE("Caught <%s>, dumped core as pid "PID_FMT".",
+                                                        signal_to_string(sig), pid),
+-                                           "MESSAGE_ID=" SD_MESSAGE_CRASH_COREDUMP_PID_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_CRASH_COREDUMP_PID_STR));
+                 }
+         }
+ 
+@@ -161,7 +161,7 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+                 if (pid < 0)
+                         log_struct_errno(LOG_EMERG, errno,
+                                          LOG_MESSAGE("Failed to fork off crash shell: %m"),
+-                                         "MESSAGE_ID=" SD_MESSAGE_CRASH_SHELL_FORK_FAILED_STR);
++                                         LOG_MESSAGE_ID(SD_MESSAGE_CRASH_SHELL_FORK_FAILED_STR));
+                 else if (pid == 0) {
+                         (void) setsid();
+                         (void) terminal_vhangup("/dev/console");
+@@ -171,7 +171,7 @@ _noreturn_ static void crash(int sig, siginfo_t *siginfo, void *context) {
+ 
+                         log_struct_errno(LOG_EMERG, errno,
+                                          LOG_MESSAGE("execle() failed: %m"),
+-                                         "MESSAGE_ID=" SD_MESSAGE_CRASH_EXECLE_FAILED_STR);
++                                         LOG_MESSAGE_ID(SD_MESSAGE_CRASH_EXECLE_FAILED_STR));
+                         _exit(EXIT_EXCEPTION);
+                 } else {
+                         log_info("Spawned crash shell as PID "PID_FMT".", pid);
+diff --git a/src/core/device.c b/src/core/device.c
+index 196117daba..056f8a4786 100644
+--- a/src/core/device.c
++++ b/src/core/device.c
+@@ -665,8 +665,8 @@ static int device_setup_unit(Manager *m, sd_device *dev, const char *path, bool
+         if (r < 0)
+                 return log_struct_errno(
+                                 LOG_WARNING, r,
+-                                "MESSAGE_ID=" SD_MESSAGE_DEVICE_PATH_NOT_SUITABLE_STR,
+-                                "DEVICE=%s", path,
++                                LOG_MESSAGE_ID(SD_MESSAGE_DEVICE_PATH_NOT_SUITABLE_STR),
++                                LOG_ITEM("DEVICE=%s", path),
+                                 LOG_MESSAGE("Failed to generate valid unit name from device path '%s', ignoring device: %m",
+                                             path));
+ 
+diff --git a/src/core/exec-invoke.c b/src/core/exec-invoke.c
+index 9d636f5529..aa2719ae0f 100644
+--- a/src/core/exec-invoke.c
++++ b/src/core/exec-invoke.c
+@@ -4015,7 +4015,7 @@ static void log_command_line(
+         _cleanup_free_ char *cmdline = quote_command_line(argv, SHELL_ESCAPE_EMPTY);
+ 
+         log_exec_struct(context, params, LOG_DEBUG,
+-                        "EXECUTABLE=%s", executable,
++                        LOG_ITEM("EXECUTABLE=%s", executable),
+                         LOG_EXEC_MESSAGE(params, "%s: %s", msg, strnull(cmdline)),
+                         LOG_EXEC_INVOCATION_ID(params));
+ }
+@@ -5165,11 +5165,11 @@ int exec_invoke(
+         if (r < 0) {
+                 *exit_status = EXIT_EXEC;
+                 log_exec_struct_errno(context, params, LOG_NOTICE, r,
+-                                      "MESSAGE_ID=" SD_MESSAGE_SPAWN_FAILED_STR,
++                                      LOG_MESSAGE_ID(SD_MESSAGE_SPAWN_FAILED_STR),
+                                       LOG_EXEC_MESSAGE(params,
+                                                        "Unable to locate executable '%s': %m",
+                                                        command->path),
+-                                      "EXECUTABLE=%s", command->path);
++                                      LOG_ITEM("EXECUTABLE=%s", command->path));
+                 /* If the error will be ignored by manager, tune down the log level here. Missing executable
+                  * is very much expected in this case. */
+                 return r != -ENOMEM && FLAGS_SET(command->flags, EXEC_COMMAND_IGNORE_FAILURE) ? 1 : r;
+diff --git a/src/core/execute.c b/src/core/execute.c
+index 3d55b0b772..e8df89eda7 100644
+--- a/src/core/execute.c
++++ b/src/core/execute.c
+@@ -419,7 +419,7 @@ static void log_command_line(Unit *unit, const char *msg, const char *executable
+         _cleanup_free_ char *cmdline = quote_command_line(argv, SHELL_ESCAPE_EMPTY);
+ 
+         log_unit_struct(unit, LOG_DEBUG,
+-                        "EXECUTABLE=%s", executable,
++                        LOG_ITEM("EXECUTABLE=%s", executable),
+                         LOG_UNIT_MESSAGE(unit, "%s: %s", msg, strnull(cmdline)),
+                         LOG_UNIT_INVOCATION_ID(unit));
+ }
+diff --git a/src/core/execute.h b/src/core/execute.h
+index 32dabf177f..96b689829e 100644
+--- a/src/core/execute.h
++++ b/src/core/execute.h
+@@ -639,12 +639,8 @@ bool exec_is_cgroup_mount_read_only(const ExecContext *context, const ExecParame
+ 
+ #define LOG_EXEC_ID_FIELD(ep) \
+         ((ep)->runtime_scope == RUNTIME_SCOPE_USER ? "USER_UNIT=" : "UNIT=")
+-#define LOG_EXEC_ID_FIELD_FORMAT(ep) \
+-        ((ep)->runtime_scope == RUNTIME_SCOPE_USER ? "USER_UNIT=%s" : "UNIT=%s")
+ #define LOG_EXEC_INVOCATION_ID_FIELD(ep) \
+         ((ep)->runtime_scope == RUNTIME_SCOPE_USER ? "USER_INVOCATION_ID=" : "INVOCATION_ID=")
+-#define LOG_EXEC_INVOCATION_ID_FIELD_FORMAT(ep) \
+-        ((ep)->runtime_scope == RUNTIME_SCOPE_USER ? "USER_INVOCATION_ID=%s" : "INVOCATION_ID=%s")
+ 
+ #define log_exec_full_errno_zerook(ec, ep, level, error, ...)                     \
+         ({                                                                        \
+@@ -689,8 +685,8 @@ bool exec_is_cgroup_mount_read_only(const ExecContext *context, const ExecParame
+ 
+ /* Like LOG_MESSAGE(), but with the unit name prefixed. */
+ #define LOG_EXEC_MESSAGE(ep, fmt, ...) LOG_MESSAGE("%s: " fmt, (ep)->unit_id, ##__VA_ARGS__)
+-#define LOG_EXEC_ID(ep) LOG_EXEC_ID_FIELD_FORMAT(ep), (ep)->unit_id
+-#define LOG_EXEC_INVOCATION_ID(ep) LOG_EXEC_INVOCATION_ID_FIELD_FORMAT(ep), (ep)->invocation_id_string
++#define LOG_EXEC_ID(ep) LOG_ITEM("%s%s", LOG_EXEC_ID_FIELD(ep), (ep)->unit_id)
++#define LOG_EXEC_INVOCATION_ID(ep) LOG_ITEM("%s%s", LOG_EXEC_INVOCATION_ID_FIELD(ep), (ep)->invocation_id_string)
+ 
+ #define log_exec_struct_errno(ec, ep, level, error, ...)                          \
+         ({                                                                        \
+diff --git a/src/core/executor.c b/src/core/executor.c
+index 23dcf6b57f..bc3566a9fc 100644
+--- a/src/core/executor.c
++++ b/src/core/executor.c
+@@ -252,10 +252,10 @@ static int run(int argc, char *argv[]) {
+                                 exit_status_to_string(exit_status, EXIT_STATUS_LIBC | EXIT_STATUS_SYSTEMD));
+ 
+                 log_exec_struct_errno(&context, &params, LOG_ERR, r,
+-                                      "MESSAGE_ID=" SD_MESSAGE_SPAWN_FAILED_STR,
++                                      LOG_MESSAGE_ID(SD_MESSAGE_SPAWN_FAILED_STR),
+                                       LOG_EXEC_MESSAGE(&params, "Failed at step %s spawning %s: %m",
+                                                        status, command.path),
+-                                      "EXECUTABLE=%s", command.path);
++                                      LOG_ITEM("EXECUTABLE=%s", command.path));
+         } else
+                 /* r == 0: 'skip' is chosen in the confirm spawn prompt
+                  * r > 0:  expected/ignored failure, do not log at error level */
+diff --git a/src/core/job.c b/src/core/job.c
+index c6c736cc6f..ccf12467a4 100644
+--- a/src/core/job.c
++++ b/src/core/job.c
+@@ -626,8 +626,8 @@ static void job_emit_start_message(Unit *u, uint32_t job_id, JobType t) {
+                 DISABLE_WARNING_FORMAT_NONLITERAL;
+                 log_unit_struct(u, LOG_INFO,
+                                 msg_fmt, ident,
+-                                "JOB_ID=%" PRIu32, job_id,
+-                                "JOB_TYPE=%s", job_type_to_string(t),
++                                LOG_ITEM("JOB_ID=%" PRIu32, job_id),
++                                LOG_ITEM("JOB_TYPE=%s", job_type_to_string(t)),
+                                 LOG_UNIT_INVOCATION_ID(u),
+                                 mid);
+                 REENABLE_WARNING;
+@@ -792,9 +792,9 @@ static void job_emit_done_message(Unit *u, uint32_t job_id, JobType t, JobResult
+                                         job_done_messages[result].log_level,
+                                         LOG_MESSAGE("%s was skipped because no trigger condition checks were met.",
+                                                     ident),
+-                                        "JOB_ID=%" PRIu32, job_id,
+-                                        "JOB_TYPE=%s", job_type_to_string(t),
+-                                        "JOB_RESULT=%s", job_result_to_string(result),
++                                        LOG_ITEM("JOB_ID=%" PRIu32, job_id),
++                                        LOG_ITEM("JOB_TYPE=%s", job_type_to_string(t)),
++                                        LOG_ITEM("JOB_RESULT=%s", job_result_to_string(result)),
+                                         LOG_UNIT_INVOCATION_ID(u),
+                                         mid);
+                         else
+@@ -806,9 +806,9 @@ static void job_emit_done_message(Unit *u, uint32_t job_id, JobType t, JobResult
+                                                     condition_type_to_string(c->type),
+                                                     c->negate ? "!" : "",
+                                                     c->parameter),
+-                                        "JOB_ID=%" PRIu32, job_id,
+-                                        "JOB_TYPE=%s", job_type_to_string(t),
+-                                        "JOB_RESULT=%s", job_result_to_string(result),
++                                        LOG_ITEM("JOB_ID=%" PRIu32, job_id),
++                                        LOG_ITEM("JOB_TYPE=%s", job_type_to_string(t)),
++                                        LOG_ITEM("JOB_RESULT=%s", job_result_to_string(result)),
+                                         LOG_UNIT_INVOCATION_ID(u),
+                                         mid);
+                 } else {
+@@ -817,9 +817,9 @@ static void job_emit_done_message(Unit *u, uint32_t job_id, JobType t, JobResult
+                         DISABLE_WARNING_FORMAT_NONLITERAL;
+                         log_unit_struct(u, job_done_messages[result].log_level,
+                                         msg_fmt, ident,
+-                                        "JOB_ID=%" PRIu32, job_id,
+-                                        "JOB_TYPE=%s", job_type_to_string(t),
+-                                        "JOB_RESULT=%s", job_result_to_string(result),
++                                        LOG_ITEM("JOB_ID=%" PRIu32, job_id),
++                                        LOG_ITEM("JOB_TYPE=%s", job_type_to_string(t)),
++                                        LOG_ITEM("JOB_RESULT=%s", job_result_to_string(result)),
+                                         LOG_UNIT_INVOCATION_ID(u),
+                                         mid);
+                         REENABLE_WARNING;
+@@ -1076,8 +1076,8 @@ int job_finish_and_invalidate(Job *j, JobResult result, bool recursive, bool alr
+          * And JOB_FAILURE is already handled by the unit itself (unit_notify). */
+         if (IN_SET(result, JOB_TIMEOUT, JOB_DEPENDENCY)) {
+                 log_unit_struct(u, LOG_NOTICE,
+-                                "JOB_TYPE=%s", job_type_to_string(t),
+-                                "JOB_RESULT=%s", job_result_to_string(result),
++                                LOG_ITEM("JOB_TYPE=%s", job_type_to_string(t)),
++                                LOG_ITEM("JOB_RESULT=%s", job_result_to_string(result)),
+                                 LOG_UNIT_MESSAGE(u, "Job %s/%s failed with result '%s'.",
+                                                  u->id,
+                                                  job_type_to_string(t),
+diff --git a/src/core/load-fragment.c b/src/core/load-fragment.c
+index b46f53f157..90f054ec9e 100644
+--- a/src/core/load-fragment.c
++++ b/src/core/load-fragment.c
+@@ -2526,12 +2526,12 @@ int config_parse_user_group_compat(
+ 
+         if (strstr(lvalue, "User") && streq(k, NOBODY_USER_NAME))
+                 log_struct(LOG_NOTICE,
+-                           "MESSAGE=%s:%u: Special user %s configured, this is not safe!", filename, line, k,
+-                           "UNIT=%s", unit,
+-                           "MESSAGE_ID=" SD_MESSAGE_NOBODY_USER_UNSUITABLE_STR,
+-                           "OFFENDING_USER=%s", k,
+-                           "CONFIG_FILE=%s", filename,
+-                           "CONFIG_LINE=%u", line);
++                           LOG_MESSAGE("%s:%u: Special user %s configured, this is not safe!", filename, line, k),
++                           LOG_MESSAGE_ID(SD_MESSAGE_NOBODY_USER_UNSUITABLE_STR),
++                           LOG_ITEM("UNIT=%s", unit),
++                           LOG_ITEM("OFFENDING_USER=%s", k),
++                           LOG_ITEM("CONFIG_FILE=%s", filename),
++                           LOG_ITEM("CONFIG_LINE=%u", line));
+ 
+         return free_and_replace(*user, k);
+ }
+diff --git a/src/core/main.c b/src/core/main.c
+index 4bd2d8df75..506bc00f1d 100644
+--- a/src/core/main.c
++++ b/src/core/main.c
+@@ -2156,7 +2156,7 @@ static int invoke_main_loop(
+                         *ret_error_message = "Failed to run main loop";
+                         return log_struct_errno(LOG_EMERG, objective,
+                                                 LOG_MESSAGE("Failed to run main loop: %m"),
+-                                                "MESSAGE_ID=" SD_MESSAGE_CORE_MAINLOOP_FAILED_STR);
++                                                LOG_MESSAGE_ID(SD_MESSAGE_CORE_MAINLOOP_FAILED_STR));
+                 }
+ 
+                 /* Ensure shutdown timestamp is taken even when bypassing the job engine */
+@@ -2469,7 +2469,7 @@ static int initialize_runtime(
+                                 *ret_error_message = "Failed to drop capability bounding set of usermode helpers";
+                                 return log_struct_errno(LOG_EMERG, r,
+                                                         LOG_MESSAGE("Failed to drop capability bounding set of usermode helpers: %m"),
+-                                                        "MESSAGE_ID=" SD_MESSAGE_CORE_CAPABILITY_BOUNDING_USER_STR);
++                                                        LOG_MESSAGE_ID(SD_MESSAGE_CORE_CAPABILITY_BOUNDING_USER_STR));
+                         }
+ 
+                         r = capability_bounding_set_drop(arg_capability_bounding_set, true);
+@@ -2477,7 +2477,7 @@ static int initialize_runtime(
+                                 *ret_error_message = "Failed to drop capability bounding set";
+                                 return log_struct_errno(LOG_EMERG, r,
+                                                         LOG_MESSAGE("Failed to drop capability bounding set: %m"),
+-                                                        "MESSAGE_ID=" SD_MESSAGE_CORE_CAPABILITY_BOUNDING_STR);
++                                                        LOG_MESSAGE_ID(SD_MESSAGE_CORE_CAPABILITY_BOUNDING_STR));
+                         }
+                 }
+ 
+@@ -2486,7 +2486,7 @@ static int initialize_runtime(
+                                 *ret_error_message = "Failed to disable new privileges";
+                                 return log_struct_errno(LOG_EMERG, errno,
+                                                         LOG_MESSAGE("Failed to disable new privileges: %m"),
+-                                                        "MESSAGE_ID=" SD_MESSAGE_CORE_DISABLE_PRIVILEGES_STR);
++                                                        LOG_MESSAGE_ID(SD_MESSAGE_CORE_DISABLE_PRIVILEGES_STR));
+                         }
+                 }
+ 
+@@ -2503,7 +2503,7 @@ static int initialize_runtime(
+                         *ret_error_message = "$XDG_RUNTIME_DIR is not set";
+                         return log_struct_errno(LOG_EMERG, r,
+                                                 LOG_MESSAGE("Failed to determine $XDG_RUNTIME_DIR path: %m"),
+-                                                "MESSAGE_ID=" SD_MESSAGE_CORE_NO_XDGDIR_PATH_STR);
++                                                LOG_MESSAGE_ID(SD_MESSAGE_CORE_NO_XDGDIR_PATH_STR));
+                 }
+ 
+                 if (!skip_setup) {
+@@ -2612,14 +2612,14 @@ static int do_queue_default_job(
+                         *ret_error_message = "Failed to start default target";
+                         return log_struct_errno(LOG_EMERG, r,
+                                                 LOG_MESSAGE("Failed to start default target: %s", bus_error_message(&error, r)),
+-                                                "MESSAGE_ID=" SD_MESSAGE_CORE_START_TARGET_FAILED_STR);
++                                                LOG_MESSAGE_ID(SD_MESSAGE_CORE_START_TARGET_FAILED_STR));
+                 }
+ 
+         } else if (r < 0) {
+                 *ret_error_message = "Failed to isolate default target";
+                 return log_struct_errno(LOG_EMERG, r,
+                                         LOG_MESSAGE("Failed to isolate default target: %s", bus_error_message(&error, r)),
+-                                        "MESSAGE_ID=" SD_MESSAGE_CORE_ISOLATE_TARGET_FAILED_STR);
++                                        LOG_MESSAGE_ID(SD_MESSAGE_CORE_ISOLATE_TARGET_FAILED_STR));
+         } else
+                 log_info("Queued %s job for default target %s.",
+                          job_type_to_string(job->type),
+@@ -2969,7 +2969,7 @@ static int collect_fds(FDSet **ret_fds, const char **ret_error_message) {
+                 *ret_error_message = "Failed to allocate fd set";
+                 return log_struct_errno(LOG_EMERG, r,
+                                         LOG_MESSAGE("Failed to allocate fd set: %m"),
+-                                        "MESSAGE_ID=" SD_MESSAGE_CORE_FD_SET_FAILED_STR);
++                                        LOG_MESSAGE_ID(SD_MESSAGE_CORE_FD_SET_FAILED_STR));
+         }
+ 
+         /* The serialization fd should have O_CLOEXEC turned on already, let's verify that we didn't pick it up here */
+@@ -3164,7 +3164,7 @@ int main(int argc, char *argv[]) {
+                 if (r < 0) {
+                         log_struct_errno(LOG_EMERG, r,
+                                          LOG_MESSAGE("Failed to fix up PID 1 environment: %m"),
+-                                         "MESSAGE_ID=" SD_MESSAGE_CORE_PID1_ENVIRONMENT_STR);
++                                         LOG_MESSAGE_ID(SD_MESSAGE_CORE_PID1_ENVIRONMENT_STR));
+                         error_message = "Failed to fix up PID1 environment";
+                         goto finish;
+                 }
+@@ -3315,7 +3315,7 @@ int main(int argc, char *argv[]) {
+         if (r < 0) {
+                 log_struct_errno(LOG_EMERG, r,
+                                  LOG_MESSAGE("Failed to allocate manager object: %m"),
+-                                 "MESSAGE_ID=" SD_MESSAGE_CORE_MANAGER_ALLOCATE_STR);
++                                 LOG_MESSAGE_ID(SD_MESSAGE_CORE_MANAGER_ALLOCATE_STR));
+                 error_message = "Failed to allocate manager object";
+                 goto finish;
+         }
+diff --git a/src/core/manager.c b/src/core/manager.c
+index cd8cdd87a5..f7f901521b 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -945,16 +945,10 @@ int manager_new(RuntimeScope runtime_scope, ManagerTestRunFlags test_run_flags,
+         /* Prepare log fields we can use for structured logging */
+         if (MANAGER_IS_SYSTEM(m)) {
+                 m->unit_log_field = "UNIT=";
+-                m->unit_log_format_string = "UNIT=%s";
+-
+                 m->invocation_log_field = "INVOCATION_ID=";
+-                m->invocation_log_format_string = "INVOCATION_ID=%s";
+         } else {
+                 m->unit_log_field = "USER_UNIT=";
+-                m->unit_log_format_string = "USER_UNIT=%s";
+-
+                 m->invocation_log_field = "USER_INVOCATION_ID=";
+-                m->invocation_log_format_string = "USER_INVOCATION_ID=%s";
+         }
+ 
+         /* Reboot immediately if the user hits C-A-D more often than 7x per 2s */
+@@ -3335,7 +3329,7 @@ static int manager_dispatch_time_change_fd(sd_event_source *source, int fd, uint
+         Unit *u;
+ 
+         log_struct(LOG_DEBUG,
+-                   "MESSAGE_ID=" SD_MESSAGE_TIME_CHANGE_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_TIME_CHANGE_STR),
+                    LOG_MESSAGE("Time has been changed"));
+ 
+         /* Restart the watch */
+@@ -3863,8 +3857,8 @@ static void log_taint_string(Manager *m) {
+ 
+         log_struct(LOG_NOTICE,
+                    LOG_MESSAGE("System is tainted: %s", taint),
+-                   "TAINT=%s", taint,
+-                   "MESSAGE_ID=" SD_MESSAGE_TAINTED_STR);
++                   LOG_ITEM("TAINT=%s", taint),
++                   LOG_MESSAGE_ID(SD_MESSAGE_TAINTED_STR));
+ }
+ 
+ static void manager_notify_finished(Manager *m) {
+@@ -3880,8 +3874,8 @@ static void manager_notify_finished(Manager *m) {
+                                                                 m->timestamps[MANAGER_TIMESTAMP_SHUTDOWN_START].monotonic);
+ 
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_STARTUP_FINISHED_STR,
+-                           "USERSPACE_USEC="USEC_FMT, userspace_usec,
++                           LOG_MESSAGE_ID(SD_MESSAGE_STARTUP_FINISHED_STR),
++                           LOG_ITEM("USERSPACE_USEC="USEC_FMT, userspace_usec),
+                            LOG_MESSAGE("Soft-reboot finished in %s, counter is now at %u.",
+                                        FORMAT_TIMESPAN(total_usec, USEC_PER_MSEC),
+                                        m->soft_reboots_count));
+@@ -3912,10 +3906,10 @@ static void manager_notify_finished(Manager *m) {
+                         initrd_usec = m->timestamps[MANAGER_TIMESTAMP_USERSPACE].monotonic - m->timestamps[MANAGER_TIMESTAMP_INITRD].monotonic;
+ 
+                         log_struct(LOG_INFO,
+-                                   "MESSAGE_ID=" SD_MESSAGE_STARTUP_FINISHED_STR,
+-                                   "KERNEL_USEC="USEC_FMT, kernel_usec,
+-                                   "INITRD_USEC="USEC_FMT, initrd_usec,
+-                                   "USERSPACE_USEC="USEC_FMT, userspace_usec,
++                                   LOG_MESSAGE_ID(SD_MESSAGE_STARTUP_FINISHED_STR),
++                                   LOG_ITEM("KERNEL_USEC="USEC_FMT, kernel_usec),
++                                   LOG_ITEM("INITRD_USEC="USEC_FMT, initrd_usec),
++                                   LOG_ITEM("USERSPACE_USEC="USEC_FMT, userspace_usec),
+                                    LOG_MESSAGE("Startup finished in %s%s (kernel) + %s (initrd) + %s (userspace) = %s.",
+                                                buf,
+                                                FORMAT_TIMESPAN(kernel_usec, USEC_PER_MSEC),
+@@ -3929,9 +3923,9 @@ static void manager_notify_finished(Manager *m) {
+                         initrd_usec = 0;
+ 
+                         log_struct(LOG_INFO,
+-                                   "MESSAGE_ID=" SD_MESSAGE_STARTUP_FINISHED_STR,
+-                                   "KERNEL_USEC="USEC_FMT, kernel_usec,
+-                                   "USERSPACE_USEC="USEC_FMT, userspace_usec,
++                                   LOG_MESSAGE_ID(SD_MESSAGE_STARTUP_FINISHED_STR),
++                                   LOG_ITEM("KERNEL_USEC="USEC_FMT, kernel_usec),
++                                   LOG_ITEM("USERSPACE_USEC="USEC_FMT, userspace_usec),
+                                    LOG_MESSAGE("Startup finished in %s%s (kernel) + %s (userspace) = %s.",
+                                                buf,
+                                                FORMAT_TIMESPAN(kernel_usec, USEC_PER_MSEC),
+@@ -3944,8 +3938,8 @@ static void manager_notify_finished(Manager *m) {
+                 total_usec = userspace_usec = m->timestamps[MANAGER_TIMESTAMP_FINISH].monotonic - m->timestamps[MANAGER_TIMESTAMP_USERSPACE].monotonic;
+ 
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_USER_STARTUP_FINISHED_STR,
+-                           "USERSPACE_USEC="USEC_FMT, userspace_usec,
++                           LOG_MESSAGE_ID(SD_MESSAGE_USER_STARTUP_FINISHED_STR),
++                           LOG_ITEM("USERSPACE_USEC="USEC_FMT, userspace_usec),
+                            LOG_MESSAGE("Startup finished in %s.",
+                                        FORMAT_TIMESPAN(total_usec, USEC_PER_MSEC)));
+         }
+diff --git a/src/core/manager.h b/src/core/manager.h
+index c5bd242968..66ad04baf5 100644
+--- a/src/core/manager.h
++++ b/src/core/manager.h
+@@ -474,10 +474,7 @@ struct Manager {
+         EmergencyAction cad_burst_action;
+ 
+         const char *unit_log_field;
+-        const char *unit_log_format_string;
+-
+         const char *invocation_log_field;
+-        const char *invocation_log_format_string;
+ 
+         int first_boot; /* tri-state */
+ 
+diff --git a/src/core/mount.c b/src/core/mount.c
+index f16e46e276..4f7691626b 100644
+--- a/src/core/mount.c
++++ b/src/core/mount.c
+@@ -1832,8 +1832,8 @@ static int mount_setup_unit(
+         if (r < 0)
+                 return log_struct_errno(
+                                 LOG_WARNING, r,
+-                                "MESSAGE_ID=" SD_MESSAGE_MOUNT_POINT_PATH_NOT_SUITABLE_STR,
+-                                "MOUNT_POINT=%s", where,
++                                LOG_MESSAGE_ID(SD_MESSAGE_MOUNT_POINT_PATH_NOT_SUITABLE_STR),
++                                LOG_ITEM("MOUNT_POINT=%s", where),
+                                 LOG_MESSAGE("Failed to generate valid unit name from mount point path '%s', ignoring mount point: %m",
+                                             where));
+ 
+diff --git a/src/core/selinux-setup.c b/src/core/selinux-setup.c
+index 89f736b47b..39f5edc045 100644
+--- a/src/core/selinux-setup.c
++++ b/src/core/selinux-setup.c
+@@ -94,7 +94,7 @@ int mac_selinux_setup(bool *loaded_policy) {
+                         if (!initialized)
+                                 return log_struct_errno(LOG_EMERG, SYNTHETIC_ERRNO(EIO),
+                                                         LOG_MESSAGE("Failed to load SELinux policy :%m"),
+-                                                        "MESSAGE_ID=" SD_MESSAGE_SELINUX_FAILED_STR);
++                                                        LOG_MESSAGE_ID(SD_MESSAGE_SELINUX_FAILED_STR));
+ 
+                         log_warning("Failed to load new SELinux policy. Continuing with old policy.");
+                 } else
+diff --git a/src/core/service.c b/src/core/service.c
+index c436650791..7d09bfc576 100644
+--- a/src/core/service.c
++++ b/src/core/service.c
+@@ -2674,12 +2674,12 @@ static void service_enter_restart(Service *s, bool shortcut) {
+         s->n_restarts++;
+ 
+         log_unit_struct(UNIT(s), LOG_INFO,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_RESTART_SCHEDULED_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_RESTART_SCHEDULED_STR),
+                         LOG_UNIT_INVOCATION_ID(UNIT(s)),
+                         LOG_UNIT_MESSAGE(UNIT(s),
+                                          "Scheduled restart job%s, restart counter is at %u.",
+                                          shortcut ? " immediately on client request" : "", s->n_restarts),
+-                        "N_RESTARTS=%u", s->n_restarts);
++                        LOG_ITEM("N_RESTARTS=%u", s->n_restarts));
+ 
+         service_set_state(s, SERVICE_AUTO_RESTART_QUEUED);
+ 
+diff --git a/src/core/smack-setup.c b/src/core/smack-setup.c
+index 7ea902b6f9..de2ffcb714 100644
+--- a/src/core/smack-setup.c
++++ b/src/core/smack-setup.c
+@@ -382,7 +382,7 @@ int mac_smack_setup(bool *loaded_policy) {
+         default:
+                 return log_struct_errno(LOG_EMERG, r,
+                                         LOG_MESSAGE("Failed to write Smack onlycap list: %m"),
+-                                        "MESSAGE_ID=" SD_MESSAGE_SMACK_FAILED_WRITE_STR);
++                                        LOG_MESSAGE_ID(SD_MESSAGE_SMACK_FAILED_WRITE_STR));
+         }
+ 
+         *loaded_policy = true;
+diff --git a/src/core/transaction.c b/src/core/transaction.c
+index 377ea05983..7fc0459cd4 100644
+--- a/src/core/transaction.c
++++ b/src/core/transaction.c
+@@ -401,7 +401,7 @@ static int transaction_verify_order_one(Transaction *tr, Job *j, Job *from, unsi
+                                                     "Found %s on %s/%s",
+                                                     unit_id == array ? "ordering cycle" : "dependency",
+                                                     *unit_id, *job_type),
+-                                   "%s", strna(unit_ids));
++                                   LOG_ITEM("%s", strna(unit_ids)));
+ 
+                 if (delete) {
+                         const char *status;
+@@ -411,7 +411,7 @@ static int transaction_verify_order_one(Transaction *tr, Job *j, Job *from, unsi
+                                                     "Job %s/%s deleted to break ordering cycle starting with %s/%s",
+                                                     delete->unit->id, job_type_to_string(delete->type),
+                                                     j->unit->id, job_type_to_string(j->type)),
+-                                   "%s", strna(unit_ids));
++                                   LOG_ITEM("%s", strna(unit_ids)));
+ 
+                         if (log_get_show_color())
+                                 status = ANSI_HIGHLIGHT_RED " SKIP " ANSI_NORMAL;
+@@ -430,7 +430,7 @@ static int transaction_verify_order_one(Transaction *tr, Job *j, Job *from, unsi
+                 log_struct(LOG_ERR,
+                            LOG_UNIT_MESSAGE(j->unit, "Unable to break cycle starting with %s/%s",
+                                             j->unit->id, job_type_to_string(j->type)),
+-                           "%s", strna(unit_ids));
++                           LOG_ITEM("%s", strna(unit_ids)));
+ 
+                 return sd_bus_error_setf(e, BUS_ERROR_TRANSACTION_ORDER_IS_CYCLIC,
+                                          "Transaction order is cyclic. See system logs for details.");
+diff --git a/src/core/unit.c b/src/core/unit.c
+index ac893ac82a..d36f860de9 100644
+--- a/src/core/unit.c
++++ b/src/core/unit.c
+@@ -5085,10 +5085,10 @@ void unit_warn_if_dir_nonempty(Unit *u, const char* where) {
+         }
+ 
+         log_unit_struct(u, LOG_NOTICE,
+-                        "MESSAGE_ID=" SD_MESSAGE_OVERMOUNTING_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_OVERMOUNTING_STR),
+                         LOG_UNIT_INVOCATION_ID(u),
+                         LOG_UNIT_MESSAGE(u, "Directory %s to mount over is not empty, mounting anyway.", where),
+-                        "WHERE=%s", where);
++                        LOG_ITEM("WHERE=%s", where));
+ }
+ 
+ int unit_fail_if_noncanonical(Unit *u, const char* where) {
+@@ -6018,7 +6018,7 @@ void unit_log_success(Unit *u) {
+          * a lot of devices. */
+         log_unit_struct(u,
+                         MANAGER_IS_USER(u->manager) ? LOG_DEBUG : LOG_INFO,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_SUCCESS_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_SUCCESS_STR),
+                         LOG_UNIT_INVOCATION_ID(u),
+                         LOG_UNIT_MESSAGE(u, "Deactivated successfully."));
+ }
+@@ -6028,10 +6028,10 @@ void unit_log_failure(Unit *u, const char *result) {
+         assert(result);
+ 
+         log_unit_struct(u, LOG_WARNING,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_FAILURE_RESULT_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_FAILURE_RESULT_STR),
+                         LOG_UNIT_INVOCATION_ID(u),
+                         LOG_UNIT_MESSAGE(u, "Failed with result '%s'.", result),
+-                        "UNIT_RESULT=%s", result);
++                        LOG_ITEM("UNIT_RESULT=%s", result));
+ }
+ 
+ void unit_log_skip(Unit *u, const char *result) {
+@@ -6039,10 +6039,10 @@ void unit_log_skip(Unit *u, const char *result) {
+         assert(result);
+ 
+         log_unit_struct(u, LOG_INFO,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_SKIPPED_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_SKIPPED_STR),
+                         LOG_UNIT_INVOCATION_ID(u),
+                         LOG_UNIT_MESSAGE(u, "Skipped due to '%s'.", result),
+-                        "UNIT_RESULT=%s", result);
++                        LOG_ITEM("UNIT_RESULT=%s", result));
+ }
+ 
+ void unit_log_process_exit(
+@@ -6070,7 +6070,7 @@ void unit_log_process_exit(
+                 level = LOG_WARNING;
+ 
+         log_unit_struct(u, level,
+-                        "MESSAGE_ID=" SD_MESSAGE_UNIT_PROCESS_EXIT_STR,
++                        LOG_MESSAGE_ID(SD_MESSAGE_UNIT_PROCESS_EXIT_STR),
+                         LOG_UNIT_MESSAGE(u, "%s exited, code=%s, status=%i/%s%s",
+                                          kind,
+                                          sigchld_code_to_string(code), status,
+@@ -6078,9 +6078,9 @@ void unit_log_process_exit(
+                                                ? exit_status_to_string(status, EXIT_STATUS_FULL)
+                                                : signal_to_string(status)),
+                                          success ? " (success)" : ""),
+-                        "EXIT_CODE=%s", sigchld_code_to_string(code),
+-                        "EXIT_STATUS=%i", status,
+-                        "COMMAND=%s", strna(command),
++                        LOG_ITEM("EXIT_CODE=%s", sigchld_code_to_string(code)),
++                        LOG_ITEM("EXIT_STATUS=%i", status),
++                        LOG_ITEM("COMMAND=%s", strna(command)),
+                         LOG_UNIT_INVOCATION_ID(u));
+ }
+ 
+diff --git a/src/core/unit.h b/src/core/unit.h
+index 8a3b812a4b..d24658ed9b 100644
+--- a/src/core/unit.h
++++ b/src/core/unit.h
+@@ -1145,8 +1145,8 @@ UnitDependency unit_mount_dependency_type_to_dependency_type(UnitMountDependency
+ 
+ /* Like LOG_MESSAGE(), but with the unit name prefixed. */
+ #define LOG_UNIT_MESSAGE(unit, fmt, ...) LOG_MESSAGE("%s: " fmt, (unit)->id, ##__VA_ARGS__)
+-#define LOG_UNIT_ID(unit) (unit)->manager->unit_log_format_string, (unit)->id
+-#define LOG_UNIT_INVOCATION_ID(unit) (unit)->manager->invocation_log_format_string, (unit)->invocation_id_string
++#define LOG_UNIT_ID(unit) LOG_ITEM("%s%s", (unit)->manager->unit_log_field, (unit)->id)
++#define LOG_UNIT_INVOCATION_ID(unit) LOG_ITEM("%s%s", (unit)->manager->invocation_log_field, (unit)->invocation_id_string)
+ 
+ const char* collect_mode_to_string(CollectMode m) _const_;
+ CollectMode collect_mode_from_string(const char *s) _pure_;
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 6970a6a898..d3a1f7c09d 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -623,8 +623,8 @@ static int save_external_coredump(
+         if (truncated)
+                 log_struct(LOG_INFO,
+                            LOG_MESSAGE("Core file was truncated to %"PRIu64" bytes.", max_size),
+-                           "SIZE_LIMIT=%"PRIu64, max_size,
+-                           "MESSAGE_ID=" SD_MESSAGE_TRUNCATED_CORE_STR);
++                           LOG_ITEM("SIZE_LIMIT=%"PRIu64, max_size),
++                           LOG_MESSAGE_ID(SD_MESSAGE_TRUNCATED_CORE_STR));
+ 
+         r = fix_permissions(fd, tmp, fn, context, allow_user);
+         if (r < 0)
+diff --git a/src/cryptsetup/cryptsetup.c b/src/cryptsetup/cryptsetup.c
+index 1da9e21d8e..adeffae003 100644
+--- a/src/cryptsetup/cryptsetup.c
++++ b/src/cryptsetup/cryptsetup.c
+@@ -1033,11 +1033,11 @@ static int measure_volume_key(
+                 return log_error_errno(r, "Could not extend PCR: %m");
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_TPM_PCR_EXTEND_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_TPM_PCR_EXTEND_STR),
+                    LOG_MESSAGE("Successfully extended PCR index %u with '%s' and volume key (banks %s).", arg_tpm2_measure_pcr, s, joined),
+-                   "MEASURING=%s", s,
+-                   "PCR=%u", arg_tpm2_measure_pcr,
+-                   "BANKS=%s", joined);
++                   LOG_ITEM("MEASURING=%s", s),
++                   LOG_ITEM("PCR=%u", arg_tpm2_measure_pcr),
++                   LOG_ITEM("BANKS=%s", joined));
+ 
+         return 0;
+ #else
+diff --git a/src/libsystemd/sd-event/sd-event.c b/src/libsystemd/sd-event/sd-event.c
+index f5a38b31d1..83ced81667 100644
+--- a/src/libsystemd/sd-event/sd-event.c
++++ b/src/libsystemd/sd-event/sd-event.c
+@@ -1913,15 +1913,15 @@ _public_ int sd_event_trim_memory(void) {
+                    LOG_MESSAGE("Memory trimming took %s, returned %s to OS.",
+                                FORMAT_TIMESPAN(period, 0),
+                                FORMAT_BYTES(l)),
+-                   "MESSAGE_ID=" SD_MESSAGE_MEMORY_TRIM_STR,
+-                   "TRIMMED_BYTES=%zu", l,
+-                   "TRIMMED_USEC=" USEC_FMT, period);
++                   LOG_MESSAGE_ID(SD_MESSAGE_MEMORY_TRIM_STR),
++                   LOG_ITEM("TRIMMED_BYTES=%zu", l),
++                   LOG_ITEM("TRIMMED_USEC=" USEC_FMT, period));
+ #else
+         log_struct(LOG_DEBUG,
+                    LOG_MESSAGE("Memory trimming took %s.",
+                                FORMAT_TIMESPAN(period, 0)),
+-                   "MESSAGE_ID=" SD_MESSAGE_MEMORY_TRIM_STR,
+-                   "TRIMMED_USEC=" USEC_FMT, period);
++                   LOG_MESSAGE_ID(SD_MESSAGE_MEMORY_TRIM_STR),
++                   LOG_ITEM("TRIMMED_USEC=" USEC_FMT, period));
+ #endif
+ 
+         return 0;
+diff --git a/src/libsystemd/sd-json/sd-json.c b/src/libsystemd/sd-json/sd-json.c
+index a8a5e47761..64b59e0f3f 100644
+--- a/src/libsystemd/sd-json/sd-json.c
++++ b/src/libsystemd/sd-json/sd-json.c
+@@ -5043,10 +5043,10 @@ int json_log_internal(
+                                 level,
+                                 error,
+                                 file, line, func,
+-                                "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
+-                                "CONFIG_FILE=%s", source,
+-                                "CONFIG_LINE=%u", source_line,
+-                                "CONFIG_COLUMN=%u", source_column,
++                                LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
++                                LOG_ITEM("CONFIG_FILE=%s", source),
++                                LOG_ITEM("CONFIG_LINE=%u", source_line),
++                                LOG_ITEM("CONFIG_COLUMN=%u", source_column),
+                                 LOG_MESSAGE("%s:%u:%u: %s", source, source_line, source_column, buffer),
+                                 NULL);
+         else if (source_line > 0 && source_column > 0)
+@@ -5054,9 +5054,9 @@ int json_log_internal(
+                                 level,
+                                 error,
+                                 file, line, func,
+-                                "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
+-                                "CONFIG_LINE=%u", source_line,
+-                                "CONFIG_COLUMN=%u", source_column,
++                                LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
++                                LOG_ITEM("CONFIG_LINE=%u", source_line),
++                                LOG_ITEM("CONFIG_COLUMN=%u", source_column),
+                                 LOG_MESSAGE("(string):%u:%u: %s", source_line, source_column, buffer),
+                                 NULL);
+         else
+@@ -5064,7 +5064,7 @@ int json_log_internal(
+                                 level,
+                                 error,
+                                 file, line, func,
+-                                "MESSAGE_ID=" SD_MESSAGE_INVALID_CONFIGURATION_STR,
++                                LOG_MESSAGE_ID(SD_MESSAGE_INVALID_CONFIGURATION_STR),
+                                 LOG_MESSAGE("%s", buffer),
+                                 NULL);
+ }
+diff --git a/src/login/logind-action.c b/src/login/logind-action.c
+index db9a0e1bba..f209d697e9 100644
+--- a/src/login/logind-action.c
++++ b/src/login/logind-action.c
+@@ -327,8 +327,8 @@ static int manager_handle_action_secure_attention_key(
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Secure Attention Key sequence pressed on seat %s", seat),
+-                   "MESSAGE_ID=" SD_MESSAGE_SECURE_ATTENTION_KEY_PRESS_STR,
+-                   "SEAT_ID=%s", seat);
++                   LOG_MESSAGE_ID(SD_MESSAGE_SECURE_ATTENTION_KEY_PRESS_STR),
++                   LOG_ITEM("SEAT_ID=%s", seat));
+ 
+         r = sd_bus_emit_signal(
+                         m->bus,
+diff --git a/src/login/logind-button.c b/src/login/logind-button.c
+index f980ea5ece..828b25d9bc 100644
+--- a/src/login/logind-button.c
++++ b/src/login/logind-button.c
+@@ -171,7 +171,7 @@ static int long_press_of_power_key_handler(sd_event_source *e, uint64_t usec, vo
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Power key pressed long."),
+-                   "MESSAGE_ID=" SD_MESSAGE_POWER_KEY_LONG_PRESS_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_POWER_KEY_LONG_PRESS_STR));
+ 
+         manager_handle_action(m, INHIBIT_HANDLE_POWER_KEY, m->handle_power_key_long_press, m->power_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+         return 0;
+@@ -187,7 +187,7 @@ static int long_press_of_reboot_key_handler(sd_event_source *e, uint64_t usec, v
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Reboot key pressed long."),
+-                   "MESSAGE_ID=" SD_MESSAGE_REBOOT_KEY_LONG_PRESS_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_REBOOT_KEY_LONG_PRESS_STR));
+ 
+         manager_handle_action(m, INHIBIT_HANDLE_REBOOT_KEY, m->handle_reboot_key_long_press, m->reboot_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+         return 0;
+@@ -203,7 +203,7 @@ static int long_press_of_suspend_key_handler(sd_event_source *e, uint64_t usec,
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Suspend key pressed long."),
+-                   "MESSAGE_ID=" SD_MESSAGE_SUSPEND_KEY_LONG_PRESS_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_SUSPEND_KEY_LONG_PRESS_STR));
+ 
+         manager_handle_action(m, INHIBIT_HANDLE_SUSPEND_KEY, m->handle_suspend_key_long_press, m->suspend_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+         return 0;
+@@ -219,7 +219,7 @@ static int long_press_of_hibernate_key_handler(sd_event_source *e, uint64_t usec
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Hibernate key pressed long."),
+-                   "MESSAGE_ID=" SD_MESSAGE_HIBERNATE_KEY_LONG_PRESS_STR);
++                   LOG_MESSAGE_ID(SD_MESSAGE_HIBERNATE_KEY_LONG_PRESS_STR));
+ 
+         manager_handle_action(m, INHIBIT_HANDLE_HIBERNATE_KEY, m->handle_hibernate_key_long_press, m->hibernate_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+         return 0;
+@@ -272,7 +272,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         } else {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Power key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_POWER_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_POWER_KEY_STR));
+                                 manager_handle_action(b->manager, INHIBIT_HANDLE_POWER_KEY, b->manager->handle_power_key, b->manager->power_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+                         }
+                         break;
+@@ -289,7 +289,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         } else {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Reboot key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_REBOOT_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_REBOOT_KEY_STR));
+                                 manager_handle_action(b->manager, INHIBIT_HANDLE_REBOOT_KEY, b->manager->handle_reboot_key, b->manager->reboot_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+                         }
+                         break;
+@@ -307,7 +307,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         } else {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Suspend key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_SUSPEND_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_SUSPEND_KEY_STR));
+                                 manager_handle_action(b->manager, INHIBIT_HANDLE_SUSPEND_KEY, b->manager->handle_suspend_key, b->manager->suspend_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+                         }
+                         break;
+@@ -319,7 +319,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         } else {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Hibernate key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_HIBERNATE_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_HIBERNATE_KEY_STR));
+                                 manager_handle_action(b->manager, INHIBIT_HANDLE_HIBERNATE_KEY, b->manager->handle_hibernate_key, b->manager->hibernate_key_ignore_inhibited, /* is_edge= */ true, b->seat);
+                         }
+                         break;
+@@ -354,7 +354,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                                 */
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Power key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_POWER_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_POWER_KEY_STR));
+ 
+                                 b->manager->power_key_long_press_event_source = sd_event_source_unref(b->manager->power_key_long_press_event_source);
+ 
+@@ -366,7 +366,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         if (b->manager->reboot_key_long_press_event_source) {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Reboot key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_REBOOT_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_REBOOT_KEY_STR));
+ 
+                                 b->manager->reboot_key_long_press_event_source = sd_event_source_unref(b->manager->reboot_key_long_press_event_source);
+ 
+@@ -378,7 +378,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         if (b->manager->suspend_key_long_press_event_source) {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Suspend key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_SUSPEND_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_SUSPEND_KEY_STR));
+ 
+                                 b->manager->suspend_key_long_press_event_source = sd_event_source_unref(b->manager->suspend_key_long_press_event_source);
+ 
+@@ -389,7 +389,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                         if (b->manager->hibernate_key_long_press_event_source) {
+                                 log_struct(LOG_INFO,
+                                            LOG_MESSAGE("Hibernate key pressed short."),
+-                                           "MESSAGE_ID=" SD_MESSAGE_HIBERNATE_KEY_STR);
++                                           LOG_MESSAGE_ID(SD_MESSAGE_HIBERNATE_KEY_STR));
+ 
+                                 b->manager->hibernate_key_long_press_event_source = sd_event_source_unref(b->manager->hibernate_key_long_press_event_source);
+ 
+@@ -410,7 +410,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                 if (ev.code == SW_LID) {
+                         log_struct(LOG_INFO,
+                                    LOG_MESSAGE("Lid closed."),
+-                                   "MESSAGE_ID=" SD_MESSAGE_LID_CLOSED_STR);
++                                   LOG_MESSAGE_ID(SD_MESSAGE_LID_CLOSED_STR));
+ 
+                         b->lid_closed = true;
+                         button_lid_switch_handle_action(b->manager, /* is_edge= */ true, b->seat);
+@@ -420,7 +420,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                 } else if (ev.code == SW_DOCK) {
+                         log_struct(LOG_INFO,
+                                    LOG_MESSAGE("System docked."),
+-                                   "MESSAGE_ID=" SD_MESSAGE_SYSTEM_DOCKED_STR);
++                                   LOG_MESSAGE_ID(SD_MESSAGE_SYSTEM_DOCKED_STR));
+ 
+                         b->docked = true;
+                 }
+@@ -430,7 +430,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                 if (ev.code == SW_LID) {
+                         log_struct(LOG_INFO,
+                                    LOG_MESSAGE("Lid opened."),
+-                                   "MESSAGE_ID=" SD_MESSAGE_LID_OPENED_STR);
++                                   LOG_MESSAGE_ID(SD_MESSAGE_LID_OPENED_STR));
+ 
+                         b->lid_closed = false;
+                         b->check_event_source = sd_event_source_unref(b->check_event_source);
+@@ -439,7 +439,7 @@ static int button_dispatch(sd_event_source *s, int fd, uint32_t revents, void *u
+                 } else if (ev.code == SW_DOCK) {
+                         log_struct(LOG_INFO,
+                                    LOG_MESSAGE("System undocked."),
+-                                   "MESSAGE_ID=" SD_MESSAGE_SYSTEM_UNDOCKED_STR);
++                                   LOG_MESSAGE_ID(SD_MESSAGE_SYSTEM_UNDOCKED_STR));
+ 
+                         b->docked = false;
+                 }
+diff --git a/src/login/logind-dbus.c b/src/login/logind-dbus.c
+index 80a2470a71..f0cf20df18 100644
+--- a/src/login/logind-dbus.c
++++ b/src/login/logind-dbus.c
+@@ -1763,7 +1763,7 @@ static int bus_manager_log_shutdown(
+         const char *log_verb = a->log_verb ? strjoina("SHUTDOWN=", a->log_verb) : NULL;
+ 
+         return log_struct(LOG_NOTICE,
+-                          "MESSAGE_ID=%s", a->message_id ?: SD_MESSAGE_SHUTDOWN_STR,
++                          LOG_ITEM("MESSAGE_ID=%s", a->message_id ?: SD_MESSAGE_SHUTDOWN_STR),
+                           LOG_MESSAGE("%s%s%s%s.",
+                                       message,
+                                       m->wall_message ? " (" : "",
+@@ -2749,8 +2749,8 @@ static int method_cancel_scheduled_shutdown(sd_bus_message *message, void *userd
+ 
+                 log_struct(LOG_INFO,
+                            LOG_MESSAGE("System shutdown has been cancelled"),
+-                           "ACTION=%s", handle_action_to_string(a->handle),
+-                           "MESSAGE_ID=" SD_MESSAGE_SHUTDOWN_CANCELED_STR,
++                           LOG_ITEM("ACTION=%s", handle_action_to_string(a->handle)),
++                           LOG_MESSAGE_ID(SD_MESSAGE_SHUTDOWN_CANCELED_STR),
+                            username ? "OPERATOR=%s" : NULL, username);
+ 
+                 (void) wall("System shutdown has been cancelled",
+diff --git a/src/login/logind-session.c b/src/login/logind-session.c
+index 57cc37ccc4..aa2420d5dd 100644
+--- a/src/login/logind-session.c
++++ b/src/login/logind-session.c
+@@ -857,10 +857,10 @@ int session_start(Session *s, sd_bus_message *properties, sd_bus_error *error) {
+                 return r;
+ 
+         log_struct(s->class == SESSION_BACKGROUND ? LOG_DEBUG : LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_SESSION_START_STR,
+-                   "SESSION_ID=%s", s->id,
+-                   "USER_ID=%s", s->user->user_record->user_name,
+-                   "LEADER="PID_FMT, s->leader.pid,
++                   LOG_MESSAGE_ID(SD_MESSAGE_SESSION_START_STR),
++                   LOG_ITEM("SESSION_ID=%s", s->id),
++                   LOG_ITEM("USER_ID=%s", s->user->user_record->user_name),
++                   LOG_ITEM("LEADER="PID_FMT, s->leader.pid),
+                    LOG_MESSAGE("New session %s of user %s.", s->id, s->user->user_record->user_name));
+ 
+         if (!dual_timestamp_is_set(&s->timestamp))
+@@ -928,9 +928,9 @@ static int session_stop_scope(Session *s, bool force) {
+                  * Therefore session stop and session removal may be two distinct events.
+                  * Session stop is quite significant on its own, let's log it. */
+                 log_struct(s->class == SESSION_BACKGROUND ? LOG_DEBUG : LOG_INFO,
+-                           "SESSION_ID=%s", s->id,
+-                           "USER_ID=%s", s->user->user_record->user_name,
+-                           "LEADER="PID_FMT, s->leader.pid,
++                           LOG_ITEM("SESSION_ID=%s", s->id),
++                           LOG_ITEM("USER_ID=%s", s->user->user_record->user_name),
++                           LOG_ITEM("LEADER="PID_FMT, s->leader.pid),
+                            LOG_MESSAGE("Session %s logged out. Waiting for processes to exit.", s->id));
+         }
+ 
+@@ -985,10 +985,10 @@ int session_finalize(Session *s) {
+ 
+         if (s->started)
+                 log_struct(s->class == SESSION_BACKGROUND ? LOG_DEBUG : LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_SESSION_STOP_STR,
+-                           "SESSION_ID=%s", s->id,
+-                           "USER_ID=%s", s->user->user_record->user_name,
+-                           "LEADER="PID_FMT, s->leader.pid,
++                           LOG_MESSAGE_ID(SD_MESSAGE_SESSION_STOP_STR),
++                           LOG_ITEM("SESSION_ID=%s", s->id),
++                           LOG_ITEM("USER_ID=%s", s->user->user_record->user_name),
++                           LOG_ITEM("LEADER="PID_FMT, s->leader.pid),
+                            LOG_MESSAGE("Removed session %s.", s->id));
+ 
+         s->timer_event_source = sd_event_source_unref(s->timer_event_source);
+diff --git a/src/login/logind-wall.c b/src/login/logind-wall.c
+index ff70a595f1..85d5d7c4a2 100644
+--- a/src/login/logind-wall.c
++++ b/src/login/logind-wall.c
+@@ -84,8 +84,8 @@ static int warn_wall(Manager *m, usec_t n) {
+ 
+         log_struct(level,
+                    LOG_MESSAGE("%s", l),
+-                   "ACTION=%s", handle_action_to_string(m->scheduled_shutdown_action),
+-                   "MESSAGE_ID=" SD_MESSAGE_SHUTDOWN_SCHEDULED_STR,
++                   LOG_ITEM("ACTION=%s", handle_action_to_string(m->scheduled_shutdown_action)),
++                   LOG_MESSAGE_ID(SD_MESSAGE_SHUTDOWN_SCHEDULED_STR),
+                    username ? "OPERATOR=%s" : NULL, username);
+ 
+         if (m->enable_wall_messages)
+diff --git a/src/machine/machine.c b/src/machine/machine.c
+index 26ce1556a5..bc3d906a89 100644
+--- a/src/machine/machine.c
++++ b/src/machine/machine.c
+@@ -536,9 +536,9 @@ int machine_start(Machine *m, sd_bus_message *properties, sd_bus_error *error) {
+                 return r;
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_MACHINE_START_STR,
+-                   "NAME=%s", m->name,
+-                   "LEADER="PID_FMT, m->leader.pid,
++                   LOG_MESSAGE_ID(SD_MESSAGE_MACHINE_START_STR),
++                   LOG_ITEM("NAME=%s", m->name),
++                   LOG_ITEM("LEADER="PID_FMT, m->leader.pid),
+                    LOG_MESSAGE("New machine %s.", m->name));
+ 
+         if (!dual_timestamp_is_set(&m->timestamp))
+@@ -585,9 +585,9 @@ int machine_finalize(Machine *m) {
+ 
+         if (m->started) {
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_MACHINE_STOP_STR,
+-                           "NAME=%s", m->name,
+-                           "LEADER="PID_FMT, m->leader.pid,
++                           LOG_MESSAGE_ID(SD_MESSAGE_MACHINE_STOP_STR),
++                           LOG_ITEM("NAME=%s", m->name),
++                           LOG_ITEM("LEADER="PID_FMT, m->leader.pid),
+                            LOG_MESSAGE("Machine %s terminated.", m->name));
+ 
+                 m->stopping = true; /* The machine is supposed to be going away. Don't try to kill it. */
+diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
+index d94ac1a213..58bc332164 100644
+--- a/src/network/networkd-dhcp4.c
++++ b/src/network/networkd-dhcp4.c
+@@ -937,9 +937,9 @@ static int dhcp4_request_address(Link *link, bool announce) {
+                                                     prefixlen,
+                                                     IPV4_ADDRESS_FMT_VAL(router[0]),
+                                                     IPV4_ADDRESS_FMT_VAL(server)),
+-                                   "ADDRESS="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(address),
+-                                   "PREFIXLEN=%u", prefixlen,
+-                                   "GATEWAY="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(router[0]));
++                                   LOG_ITEM("ADDRESS="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(address)),
++                                   LOG_ITEM("PREFIXLEN=%u", prefixlen),
++                                   LOG_ITEM("GATEWAY="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(router[0])));
+                 else
+                         log_struct(LOG_INFO,
+                                    LOG_LINK_INTERFACE(link),
+@@ -947,8 +947,8 @@ static int dhcp4_request_address(Link *link, bool announce) {
+                                                     IPV4_ADDRESS_FMT_VAL(address),
+                                                     prefixlen,
+                                                     IPV4_ADDRESS_FMT_VAL(server)),
+-                                   "ADDRESS="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(address),
+-                                   "PREFIXLEN=%u", prefixlen);
++                                   LOG_ITEM("ADDRESS="IPV4_ADDRESS_FMT_STR, IPV4_ADDRESS_FMT_VAL(address)),
++                                   LOG_ITEM("PREFIXLEN=%u", prefixlen));
+         }
+ 
+         r = address_new(&addr);
+diff --git a/src/network/networkd-sysctl.c b/src/network/networkd-sysctl.c
+index 10a35bc44b..88c6776987 100644
+--- a/src/network/networkd-sysctl.c
++++ b/src/network/networkd-sysctl.c
+@@ -67,13 +67,13 @@ static int sysctl_event_handler(void *ctx, void *data, size_t data_sz) {
+ 
+         if (!strneq(value, we->newvalue, sizeof(we->newvalue)))
+                 log_struct(LOG_WARNING,
+-                           "MESSAGE_ID=" SD_MESSAGE_SYSCTL_CHANGED_STR,
+-                           "OBJECT_PID=" PID_FMT, we->pid,
+-                           "OBJECT_COMM=%s", we->comm,
+-                           "SYSCTL=%s", path,
+-                           "OLDVALUE=%s", we->current,
+-                           "NEWVALUE=%s", we->newvalue,
+-                           "OURVALUE=%s", value,
++                           LOG_MESSAGE_ID(SD_MESSAGE_SYSCTL_CHANGED_STR),
++                           LOG_ITEM("OBJECT_PID=" PID_FMT, we->pid),
++                           LOG_ITEM("OBJECT_COMM=%s", we->comm),
++                           LOG_ITEM("SYSCTL=%s", path),
++                           LOG_ITEM("OLDVALUE=%s", we->current),
++                           LOG_ITEM("NEWVALUE=%s", we->newvalue),
++                           LOG_ITEM("OURVALUE=%s", value),
+                            LOG_MESSAGE("Foreign process '%s[" PID_FMT "]' changed sysctl '%s' from '%s' to '%s', conflicting with our setting to '%s'.",
+                                        we->comm, we->pid, path, we->current, we->newvalue, value));
+ 
+diff --git a/src/pcrextend/pcrextend.c b/src/pcrextend/pcrextend.c
+index 6bdb5418b5..3aa87bd44c 100644
+--- a/src/pcrextend/pcrextend.c
++++ b/src/pcrextend/pcrextend.c
+@@ -238,11 +238,11 @@ static int extend_now(unsigned pcr, const void *data, size_t size, Tpm2Userspace
+                 return log_error_errno(r, "Could not extend PCR: %m");
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_TPM_PCR_EXTEND_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_TPM_PCR_EXTEND_STR),
+                    LOG_MESSAGE("Extended PCR index %u with '%s' (banks %s).", pcr, safe, joined_banks),
+-                   "MEASURING=%s", safe,
+-                   "PCR=%u", pcr,
+-                   "BANKS=%s", joined_banks);
++                   LOG_ITEM("MEASURING=%s", safe),
++                   LOG_ITEM("PCR=%u", pcr),
++                   LOG_ITEM("BANKS=%s", joined_banks));
+ 
+         return 0;
+ }
+diff --git a/src/portable/portable.c b/src/portable/portable.c
+index 18a8060a9f..c6f35cceb2 100644
+--- a/src/portable/portable.c
++++ b/src/portable/portable.c
+@@ -1591,7 +1591,7 @@ static void log_portable_verb(
+                                isempty(profile) ? "" : "' using profile '",
+                                strempty(profile)),
+                    message_id,
+-                   "PORTABLE_ROOT=%s", strna(root_base_name));
++                   LOG_ITEM("PORTABLE_ROOT=%s", strna(root_base_name)));
+ }
+ 
+ int portable_attach(
+diff --git a/src/resolve/resolved-dns-server.c b/src/resolve/resolved-dns-server.c
+index b48d8e1417..f0540ac8dd 100644
+--- a/src/resolve/resolved-dns-server.c
++++ b/src/resolve/resolved-dns-server.c
+@@ -727,11 +727,11 @@ void dns_server_warn_downgrade(DnsServer *server) {
+                 return;
+ 
+         log_struct(LOG_NOTICE,
+-                   "MESSAGE_ID=" SD_MESSAGE_DNSSEC_DOWNGRADE_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_DNSSEC_DOWNGRADE_STR),
+                    LOG_MESSAGE("Server %s does not support DNSSEC, downgrading to non-DNSSEC mode.",
+                                strna(dns_server_string_full(server))),
+-                   "DNS_SERVER=%s", strna(dns_server_string_full(server)),
+-                   "DNS_SERVER_FEATURE_LEVEL=%s", dns_server_feature_level_to_string(server->possible_feature_level));
++                   LOG_ITEM("DNS_SERVER=%s", strna(dns_server_string_full(server))),
++                   LOG_ITEM("DNS_SERVER_FEATURE_LEVEL=%s", dns_server_feature_level_to_string(server->possible_feature_level)));
+ 
+         server->warned_downgrade = true;
+ }
+diff --git a/src/resolve/resolved-dns-transaction.c b/src/resolve/resolved-dns-transaction.c
+index 9e539a54f3..d21e2f4177 100644
+--- a/src/resolve/resolved-dns-transaction.c
++++ b/src/resolve/resolved-dns-transaction.c
+@@ -401,14 +401,14 @@ void dns_transaction_complete(DnsTransaction *t, DnsTransactionState state) {
+                 dns_resource_key_to_string(dns_transaction_key(t), key_str, sizeof key_str);
+ 
+                 log_struct(LOG_NOTICE,
+-                           "MESSAGE_ID=" SD_MESSAGE_DNSSEC_FAILURE_STR,
++                           LOG_MESSAGE_ID(SD_MESSAGE_DNSSEC_FAILURE_STR),
+                            LOG_MESSAGE("DNSSEC validation failed for question %s: %s",
+                                        key_str, dnssec_result_to_string(t->answer_dnssec_result)),
+-                           "DNS_TRANSACTION=%" PRIu16, t->id,
+-                           "DNS_QUESTION=%s", key_str,
+-                           "DNSSEC_RESULT=%s", dnssec_result_to_string(t->answer_dnssec_result),
+-                           "DNS_SERVER=%s", strna(dns_server_string_full(t->server)),
+-                           "DNS_SERVER_FEATURE_LEVEL=%s", dns_server_feature_level_to_string(t->server->possible_feature_level));
++                           LOG_ITEM("DNS_TRANSACTION=%" PRIu16, t->id),
++                           LOG_ITEM("DNS_QUESTION=%s", key_str),
++                           LOG_ITEM("DNSSEC_RESULT=%s", dnssec_result_to_string(t->answer_dnssec_result)),
++                           LOG_ITEM("DNS_SERVER=%s", strna(dns_server_string_full(t->server))),
++                           LOG_ITEM("DNS_SERVER_FEATURE_LEVEL=%s", dns_server_feature_level_to_string(t->server->possible_feature_level)));
+         }
+ 
+         /* Note that this call might invalidate the query. Callers
+diff --git a/src/resolve/resolved-dns-trust-anchor.c b/src/resolve/resolved-dns-trust-anchor.c
+index be9e487454..52764601bb 100644
+--- a/src/resolve/resolved-dns-trust-anchor.c
++++ b/src/resolve/resolved-dns-trust-anchor.c
+@@ -637,11 +637,11 @@ static int dns_trust_anchor_remove_revoked(DnsTrustAnchor *d, DnsResourceRecord
+ 
+         /* We found the key! Warn the user */
+         log_struct(LOG_WARNING,
+-                   "MESSAGE_ID=" SD_MESSAGE_DNSSEC_TRUST_ANCHOR_REVOKED_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_DNSSEC_TRUST_ANCHOR_REVOKED_STR),
+                    LOG_MESSAGE("DNSSEC trust anchor %s has been revoked.\n"
+                                "Please update the trust anchor, or upgrade your operating system.",
+                                strna(dns_resource_record_to_string(rr))),
+-                   "TRUST_ANCHOR=%s", dns_resource_record_to_string(rr));
++                   LOG_ITEM("TRUST_ANCHOR=%s", dns_resource_record_to_string(rr)));
+ 
+         if (dns_answer_size(new_answer) <= 0) {
+                 assert_se(hashmap_remove(d->positive_by_key, rr->key) == old_answer);
+diff --git a/src/shutdown/shutdown.c b/src/shutdown/shutdown.c
+index e26a8579c5..401d4f98f2 100644
+--- a/src/shutdown/shutdown.c
++++ b/src/shutdown/shutdown.c
+@@ -679,6 +679,6 @@ int main(int argc, char *argv[]) {
+ error:
+         log_struct_errno(LOG_EMERG, r,
+                          LOG_MESSAGE("Critical error while doing system shutdown: %m"),
+-                         "MESSAGE_ID=" SD_MESSAGE_SHUTDOWN_ERROR_STR);
++                         LOG_MESSAGE_ID(SD_MESSAGE_SHUTDOWN_ERROR_STR));
+         freeze();
+ }
+diff --git a/src/sleep/sleep.c b/src/sleep/sleep.c
+index 181bb4ccef..7eb3130c4e 100644
+--- a/src/sleep/sleep.c
++++ b/src/sleep/sleep.c
+@@ -285,21 +285,21 @@ static int execute(
+         (void) lock_all_homes();
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_SLEEP_START_STR,
++                   LOG_MESSAGE_ID(SD_MESSAGE_SLEEP_START_STR),
+                    LOG_MESSAGE("Performing sleep operation '%s'...", sleep_operation_to_string(operation)),
+-                   "SLEEP=%s", sleep_operation_to_string(arg_operation));
++                   LOG_ITEM("SLEEP=%s", sleep_operation_to_string(arg_operation)));
+ 
+         r = write_state(state_fd, sleep_config->states[operation]);
+         if (r < 0)
+                 log_struct_errno(LOG_ERR, r,
+-                                 "MESSAGE_ID=" SD_MESSAGE_SLEEP_STOP_STR,
++                                 LOG_MESSAGE_ID(SD_MESSAGE_SLEEP_STOP_STR),
+                                  LOG_MESSAGE("Failed to put system to sleep. System resumed again: %m"),
+-                                 "SLEEP=%s", sleep_operation_to_string(arg_operation));
++                                 LOG_ITEM("SLEEP=%s", sleep_operation_to_string(arg_operation)));
+         else
+                 log_struct(LOG_INFO,
+-                           "MESSAGE_ID=" SD_MESSAGE_SLEEP_STOP_STR,
++                           LOG_MESSAGE_ID(SD_MESSAGE_SLEEP_STOP_STR),
+                            LOG_MESSAGE("System returned from sleep operation '%s'.", sleep_operation_to_string(arg_operation)),
+-                           "SLEEP=%s", sleep_operation_to_string(arg_operation));
++                           LOG_ITEM("SLEEP=%s", sleep_operation_to_string(arg_operation)));
+ 
+         arguments[1] = "post";
+         (void) execute_directories(dirs, DEFAULT_TIMEOUT_USEC, NULL, NULL, (char **) arguments, NULL, EXEC_DIR_PARALLEL | EXEC_DIR_IGNORE_ERRORS);
+diff --git a/src/sysv-generator/sysv-generator.c b/src/sysv-generator/sysv-generator.c
+index fde8c057e3..871de10eef 100644
+--- a/src/sysv-generator/sysv-generator.c
++++ b/src/sysv-generator/sysv-generator.c
+@@ -770,9 +770,9 @@ static int enumerate_sysv(const LookupPaths *lp, Hashmap *all_services) {
+                                                fpath,
+                                                special_glyph(SPECIAL_GLYPH_WARNING_SIGN),
+                                                special_glyph(SPECIAL_GLYPH_WARNING_SIGN)),
+-                                   "MESSAGE_ID=" SD_MESSAGE_SYSV_GENERATOR_DEPRECATED_STR,
+-                                   "SYSVSCRIPT=%s", fpath,
+-                                   "UNIT=%s", name);
++                                   LOG_MESSAGE_ID(SD_MESSAGE_SYSV_GENERATOR_DEPRECATED_STR),
++                                   LOG_ITEM("SYSVSCRIPT=%s", fpath),
++                                   LOG_ITEM("UNIT=%s", name));
+ 
+                         service = new(SysvStub, 1);
+                         if (!service)
+diff --git a/src/test/test-log.c b/src/test/test-log.c
+index 57cab63269..b36e0fcd96 100644
+--- a/src/test/test-log.c
++++ b/src/test/test-log.c
+@@ -50,24 +50,24 @@ static void test_log_struct(void) {
+                    "MESSAGE=Waldo PID="PID_FMT" (no errno)", getpid_cached(),
+                    "SERVICE=piepapo");
+ 
+-        /* The same as above, just using LOG_MESSAGE(), which is generally recommended */
++        /* The same as above, just using LOG_MESSAGE() and LOG_ITEM(), which is generally recommended */
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Waldo PID="PID_FMT" (no errno)", getpid_cached()),
+-                   "SERVICE=piepapo");
++                   LOG_ITEM("SERVICE=piepapo"));
+ 
+         log_struct_errno(LOG_INFO, EILSEQ,
+                          LOG_MESSAGE("Waldo PID="PID_FMT": %m (normal)", getpid_cached()),
+-                         "SERVICE=piepapo");
++                         LOG_ITEM("SERVICE=piepapo"));
+ 
+         log_struct_errno(LOG_INFO, SYNTHETIC_ERRNO(EILSEQ),
+                          LOG_MESSAGE("Waldo PID="PID_FMT": %m (synthetic)", getpid_cached()),
+-                         "SERVICE=piepapo");
++                         LOG_ITEM("SERVICE=piepapo"));
+ 
+         log_struct(LOG_INFO,
+                    LOG_MESSAGE("Foobar PID="PID_FMT, getpid_cached()),
+-                   "FORMAT_STR_TEST=1=%i A=%c 2=%hi 3=%li 4=%lli 1=%p foo=%s 2.5=%g 3.5=%g 4.5=%Lg",
+-                   (int) 1, 'A', (short) 2, (long int) 3, (long long int) 4, (void*) 1, "foo", (float) 2.5f, (double) 3.5, (long double) 4.5,
+-                   "SUFFIX=GOT IT");
++                   LOG_ITEM("FORMAT_STR_TEST=1=%i A=%c 2=%hi 3=%li 4=%lli 1=%p foo=%s 2.5=%g 3.5=%g 4.5=%Lg",
++                            (int) 1, 'A', (short) 2, (long int) 3, (long long int) 4, (void*) 1, "foo", (float) 2.5f, (double) 3.5, (long double) 4.5),
++                   LOG_ITEM("SUFFIX=GOT IT"));
+ }
+ 
+ static void test_long_lines(void) {
+diff --git a/src/test/test-macro.c b/src/test/test-macro.c
+index c4c533777d..838aa46fd6 100644
+--- a/src/test/test-macro.c
++++ b/src/test/test-macro.c
+@@ -3,6 +3,8 @@
+ #include <stddef.h>
+ #include <sys/stat.h>
+ 
++#include "sd-messages.h"
++
+ #include "errno-util.h"
+ #include "id128-util.h"
+ #include "log.h"
+diff --git a/src/timedate/timedated.c b/src/timedate/timedated.c
+index b196034a25..d820607672 100644
+--- a/src/timedate/timedated.c
++++ b/src/timedate/timedated.c
+@@ -730,10 +730,10 @@ static int method_set_timezone(sd_bus_message *m, void *userdata, sd_bus_error *
+         }
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_TIMEZONE_CHANGE_STR,
+-                   "TIMEZONE=%s", c->zone,
+-                   "TIMEZONE_SHORTNAME=%s", tzname[daylight],
+-                   "DAYLIGHT=%i", daylight,
++                   LOG_MESSAGE_ID(SD_MESSAGE_TIMEZONE_CHANGE_STR),
++                   LOG_ITEM("TIMEZONE=%s", c->zone),
++                   LOG_ITEM("TIMEZONE_SHORTNAME=%s", tzname[daylight]),
++                   LOG_ITEM("DAYLIGHT=%i", daylight),
+                    LOG_MESSAGE("Changed time zone to '%s' (%s).", c->zone, tzname[daylight]));
+ 
+         (void) sd_bus_emit_properties_changed(sd_bus_message_get_bus(m),
+@@ -928,8 +928,8 @@ static int method_set_time(sd_bus_message *m, void *userdata, sd_bus_error *erro
+         }
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_TIME_CHANGE_STR,
+-                   "REALTIME="USEC_FMT, timespec_load(&ts),
++                   LOG_MESSAGE_ID(SD_MESSAGE_TIME_CHANGE_STR),
++                   LOG_ITEM("REALTIME="USEC_FMT, timespec_load(&ts)),
+                    LOG_MESSAGE("Changed local time to %s", strnull(FORMAT_TIMESTAMP(timespec_load(&ts)))));
+ 
+         return sd_bus_reply_method_return(m, NULL);
+diff --git a/src/timesync/timesyncd-manager.c b/src/timesync/timesyncd-manager.c
+index 8315169ba7..a30cdc8f49 100644
+--- a/src/timesync/timesyncd-manager.c
++++ b/src/timesync/timesyncd-manager.c
+@@ -618,10 +618,10 @@ static int manager_receive_response(sd_event_source *source, int fd, uint32_t re
+                 log_struct(LOG_INFO,
+                            LOG_MESSAGE("Initial clock synchronization to %s.",
+                                        FORMAT_TIMESTAMP_STYLE(dts.realtime, TIMESTAMP_US)),
+-                           "MESSAGE_ID=" SD_MESSAGE_TIME_SYNC_STR,
+-                           "MONOTONIC_USEC=" USEC_FMT, dts.monotonic,
+-                           "REALTIME_USEC=" USEC_FMT, dts.realtime,
+-                           "BOOTTIME_USEC=" USEC_FMT, dts.boottime);
++                           LOG_MESSAGE_ID(SD_MESSAGE_TIME_SYNC_STR),
++                           LOG_ITEM("MONOTONIC_USEC=" USEC_FMT, dts.monotonic),
++                           LOG_ITEM("REALTIME_USEC=" USEC_FMT, dts.realtime),
++                           LOG_ITEM("BOOTTIME_USEC=" USEC_FMT, dts.boottime));
+         }
+ 
+         r = manager_arm_timer(m, m->poll_interval_usec);
+diff --git a/src/timesync/timesyncd.c b/src/timesync/timesyncd.c
+index d002501d29..6568c8963f 100644
+--- a/src/timesync/timesyncd.c
++++ b/src/timesync/timesyncd.c
+@@ -126,9 +126,9 @@ static int load_clock_timestamp(uid_t uid, gid_t gid) {
+         }
+ 
+         log_struct(LOG_INFO,
+-                   "MESSAGE_ID=" SD_MESSAGE_TIME_BUMP_STR,
+-                   "REALTIME_USEC=" USEC_FMT, epoch + 1,
+-                   "DIRECTION=forwards",
++                   LOG_MESSAGE_ID(SD_MESSAGE_TIME_BUMP_STR),
++                   LOG_ITEM("REALTIME_USEC=" USEC_FMT, epoch + 1),
++                   LOG_ITEM("DIRECTION=forwards"),
+                    LOG_MESSAGE("System clock time advanced to %s: %s",
+                                epoch > TIME_EPOCH * USEC_PER_SEC ? "recorded timestamp" : "built-in epoch",
+                                FORMAT_TIMESTAMP(epoch + 1)));
+diff --git a/src/tpm2-setup/tpm2-setup.c b/src/tpm2-setup/tpm2-setup.c
+index ee9d243d5e..45d38ecae8 100644
+--- a/src/tpm2-setup/tpm2-setup.c
++++ b/src/tpm2-setup/tpm2-setup.c
+@@ -296,7 +296,7 @@ static int run(int argc, char *argv[]) {
+         if (r == -EDEADLK) {
+                 log_struct_errno(LOG_INFO, r,
+                                  LOG_MESSAGE("Insufficient permissions to access TPM, not generating SRK."),
+-                                 "MESSAGE_ID=" SD_MESSAGE_SRK_ENROLLMENT_NEEDS_AUTHORIZATION_STR);
++                                 LOG_MESSAGE_ID(SD_MESSAGE_SRK_ENROLLMENT_NEEDS_AUTHORIZATION_STR));
+                 return 76; /* Special return value which means "Insufficient permissions to access TPM,
+                             * cannot generate SRK". This isn't really an error when called at boot. */;
+         }
+@@ -307,7 +307,7 @@ static int run(int argc, char *argv[]) {
+ 
+         if (runtime_key.pkey) {
+                 if (memcmp_nn(tpm2_key.fingerprint, tpm2_key.fingerprint_size,
+-                             runtime_key.fingerprint, runtime_key.fingerprint_size) != 0)
++                              runtime_key.fingerprint, runtime_key.fingerprint_size) != 0)
+                         return log_error_errno(SYNTHETIC_ERRNO(ENOTRECOVERABLE),
+                                                "Saved runtime SRK differs from TPM SRK, refusing.");
+ 
+diff --git a/src/udev/udevadm-settle.c b/src/udev/udevadm-settle.c
+index d47a9c3a07..cf1b5cbc60 100644
+--- a/src/udev/udevadm-settle.c
++++ b/src/udev/udevadm-settle.c
+@@ -147,8 +147,8 @@ static int emit_deprecation_warning(void) {
+ 
+                 log_struct(LOG_NOTICE,
+                            LOG_MESSAGE("systemd-udev-settle.service is deprecated. Please fix %s not to pull it in.", t),
+-                           "OFFENDING_UNITS=%s", t,
+-                           "MESSAGE_ID=" SD_MESSAGE_SYSTEMD_UDEV_SETTLE_DEPRECATED_STR);
++                           LOG_ITEM("OFFENDING_UNITS=%s", t),
++                           LOG_MESSAGE_ID(SD_MESSAGE_SYSTEMD_UDEV_SETTLE_DEPRECATED_STR));
+         }
+ 
+         return 0;
