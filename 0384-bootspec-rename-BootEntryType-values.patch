@@ -1,0 +1,185 @@
+From 2271500d8db755310633132ee50aeda7c1561d0c Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 7 Jul 2025 18:10:13 +0200
+Subject: [PATCH] bootspec: rename BootEntryType values
+
+So we exposed different names for the entry types in JSON than we named
+our enum values. Which is very confusing. Let's unify that. Given that
+the JSON fields are externally visible let's stick to that naming, even
+though I think "unified" and "conf" would have been more descriptive.
+
+This ensures we follow our usual logic that the enum identifiers and the
+strings they map to use the same naming.
+
+(cherry picked from commit 9880c7f103cde943a40aa9eec8e70c40708ecb45)
+
+Resolves: RHEL-103354
+---
+ src/shared/bootspec.c | 32 ++++++++++++++++----------------
+ src/shared/bootspec.h | 10 +++++-----
+ src/vmspawn/vmspawn.c | 10 +++++-----
+ 3 files changed, 26 insertions(+), 26 deletions(-)
+
+diff --git a/src/shared/bootspec.c b/src/shared/bootspec.c
+index 0d52764f60..d561e9265f 100644
+--- a/src/shared/bootspec.c
++++ b/src/shared/bootspec.c
+@@ -27,22 +27,22 @@
+ #include "unaligned.h"
+ 
+ static const char* const boot_entry_type_description_table[_BOOT_ENTRY_TYPE_MAX] = {
+-        [BOOT_ENTRY_CONF]        = "Boot Loader Specification Type #1 (.conf)",
+-        [BOOT_ENTRY_UNIFIED]     = "Boot Loader Specification Type #2 (UKI, .efi)",
+-        [BOOT_ENTRY_LOADER]      = "Reported by Boot Loader",
+-        [BOOT_ENTRY_LOADER_AUTO] = "Automatic",
++        [BOOT_ENTRY_TYPE1]  = "Boot Loader Specification Type #1 (.conf)",
++        [BOOT_ENTRY_TYPE2]  = "Boot Loader Specification Type #2 (UKI, .efi)",
++        [BOOT_ENTRY_LOADER] = "Reported by Boot Loader",
++        [BOOT_ENTRY_AUTO]   = "Automatic",
+ };
+ 
+ DEFINE_STRING_TABLE_LOOKUP(boot_entry_type, BootEntryType);
+ 
+-static const char* const boot_entry_type_json_table[_BOOT_ENTRY_TYPE_MAX] = {
+-        [BOOT_ENTRY_CONF]        = "type1",
+-        [BOOT_ENTRY_UNIFIED]     = "type2",
+-        [BOOT_ENTRY_LOADER]      = "loader",
+-        [BOOT_ENTRY_LOADER_AUTO] = "auto",
++static const char* const boot_entry_type_table[_BOOT_ENTRY_TYPE_MAX] = {
++        [BOOT_ENTRY_TYPE1]  = "type1",
++        [BOOT_ENTRY_TYPE2]  = "type2",
++        [BOOT_ENTRY_LOADER] = "loader",
++        [BOOT_ENTRY_AUTO]   = "auto",
+ };
+ 
+-DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_type_json, BootEntryType);
++DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_type, BootEntryType);
+ 
+ static const char* const boot_entry_source_table[_BOOT_ENTRY_SOURCE_MAX] = {
+         [BOOT_ENTRY_ESP]      = "EFI System Partition",
+@@ -313,7 +313,7 @@ static int boot_entry_load_type1(
+                 const char *fname,
+                 BootEntry *ret) {
+ 
+-        _cleanup_(boot_entry_free) BootEntry tmp = BOOT_ENTRY_INIT(BOOT_ENTRY_CONF, source);
++        _cleanup_(boot_entry_free) BootEntry tmp = BOOT_ENTRY_INIT(BOOT_ENTRY_TYPE1, source);
+         char *c;
+         int r;
+ 
+@@ -752,7 +752,7 @@ static int boot_entry_load_unified(
+         if (r < 0)
+                 return log_error_errno(r, "Failed to extract file name from '%s': %m", path);
+ 
+-        _cleanup_(boot_entry_free) BootEntry tmp = BOOT_ENTRY_INIT(BOOT_ENTRY_UNIFIED, source);
++        _cleanup_(boot_entry_free) BootEntry tmp = BOOT_ENTRY_INIT(BOOT_ENTRY_TYPE2, source);
+ 
+         r = boot_filename_extract_tries(fname, &tmp.id, &tmp.tries_left, &tmp.tries_done);
+         if (r < 0)
+@@ -1607,7 +1607,7 @@ int boot_config_augment_from_loader(
+                         return log_oom();
+ 
+                 config->entries[config->n_entries++] = (BootEntry) {
+-                        .type = startswith(*i, "auto-") ? BOOT_ENTRY_LOADER_AUTO : BOOT_ENTRY_LOADER,
++                        .type = startswith(*i, "auto-") ? BOOT_ENTRY_AUTO : BOOT_ENTRY_LOADER,
+                         .id = TAKE_PTR(c),
+                         .title = TAKE_PTR(t),
+                         .path = TAKE_PTR(p),
+@@ -1827,7 +1827,7 @@ int show_boot_entry(
+                 if (e->type == BOOT_ENTRY_LOADER)
+                         printf(" %s(reported/absent)%s",
+                                ansi_highlight_red(), ansi_normal());
+-                else if (!e->reported_by_loader && e->type != BOOT_ENTRY_LOADER_AUTO)
++                else if (!e->reported_by_loader && e->type != BOOT_ENTRY_AUTO)
+                         printf(" %s(not reported/new)%s",
+                                ansi_highlight_green(), ansi_normal());
+         }
+@@ -1854,7 +1854,7 @@ int show_boot_entry(
+ 
+                 /* Let's urlify the link to make it easy to view in an editor, but only if it is a text
+                  * file. Unified images are binary ELFs, and EFI variables are not pure text either. */
+-                if (e->type == BOOT_ENTRY_CONF)
++                if (e->type == BOOT_ENTRY_TYPE1)
+                         (void) terminal_urlify_path(e->path, text, &link);
+ 
+                 printf("       source: %s (on the %s)\n",
+@@ -1929,7 +1929,7 @@ int boot_entry_to_json(const BootConfig *c, size_t i, sd_json_variant **ret) {
+ 
+         r = sd_json_variant_merge_objectbo(
+                         &v,
+-                        SD_JSON_BUILD_PAIR("type", SD_JSON_BUILD_STRING(boot_entry_type_json_to_string(e->type))),
++                        SD_JSON_BUILD_PAIR("type", SD_JSON_BUILD_STRING(boot_entry_type_to_string(e->type))),
+                         SD_JSON_BUILD_PAIR("source", SD_JSON_BUILD_STRING(boot_entry_source_json_to_string(e->source))),
+                         SD_JSON_BUILD_PAIR_CONDITION(!!e->id, "id", SD_JSON_BUILD_STRING(e->id)),
+                         SD_JSON_BUILD_PAIR_CONDITION(!!e->path, "path", SD_JSON_BUILD_STRING(e->path)),
+diff --git a/src/shared/bootspec.h b/src/shared/bootspec.h
+index 0f0a015f1a..bd6307603d 100644
+--- a/src/shared/bootspec.h
++++ b/src/shared/bootspec.h
+@@ -13,10 +13,10 @@
+ #include "string-util.h"
+ 
+ typedef enum BootEntryType {
+-        BOOT_ENTRY_CONF,        /* Boot Loader Specification Type #1 entries: *.conf files */
+-        BOOT_ENTRY_UNIFIED,     /* Boot Loader Specification Type #2 entries: *.efi files */
+-        BOOT_ENTRY_LOADER,      /* Additional entries augmented from LoaderEntries EFI variable (regular entries) */
+-        BOOT_ENTRY_LOADER_AUTO, /* Additional entries augmented from LoaderEntries EFI variable (special "automatic" entries) */
++        BOOT_ENTRY_TYPE1,     /* Boot Loader Specification Type #1 entries: *.conf files */
++        BOOT_ENTRY_TYPE2,     /* Boot Loader Specification Type #2 entries: *.efi files (UKIs) */
++        BOOT_ENTRY_LOADER,    /* Additional entries augmented from LoaderEntries EFI variable (regular entries) */
++        BOOT_ENTRY_AUTO,      /* Additional entries augmented from LoaderEntries EFI variable (special "automatic" entries) */
+         _BOOT_ENTRY_TYPE_MAX,
+         _BOOT_ENTRY_TYPE_INVALID = -EINVAL,
+ } BootEntryType;
+@@ -99,7 +99,7 @@ typedef struct BootConfig {
+         }
+ 
+ const char* boot_entry_type_description_to_string(BootEntryType) _const_;
+-const char* boot_entry_type_json_to_string(BootEntryType) _const_;
++const char* boot_entry_type_to_string(BootEntryType) _const_;
+ BootEntryType boot_entry_type_from_string(const char *s) _pure_;
+ 
+ const char* boot_entry_source_to_string(BootEntrySource) _const_;
+diff --git a/src/vmspawn/vmspawn.c b/src/vmspawn/vmspawn.c
+index 2a5bc4a8c4..159e8ba663 100644
+--- a/src/vmspawn/vmspawn.c
++++ b/src/vmspawn/vmspawn.c
+@@ -1216,7 +1216,7 @@ static int discover_boot_entry(const char *root, char **ret_linux, char ***ret_i
+ 
+         const BootEntry *boot_entry = boot_config_default_entry(&config);
+ 
+-        if (boot_entry && !IN_SET(boot_entry->type, BOOT_ENTRY_UNIFIED, BOOT_ENTRY_CONF))
++        if (boot_entry && !IN_SET(boot_entry->type, BOOT_ENTRY_TYPE1, BOOT_ENTRY_TYPE2))
+                 boot_entry = NULL;
+ 
+         /* If we cannot determine a default entry search for UKIs (Type #2 EFI Unified Kernel Images)
+@@ -1224,14 +1224,14 @@ static int discover_boot_entry(const char *root, char **ret_linux, char ***ret_i
+          * https://uapi-group.org/specifications/specs/boot_loader_specification */
+         if (!boot_entry)
+                 FOREACH_ARRAY(entry, config.entries, config.n_entries)
+-                        if (entry->type == BOOT_ENTRY_UNIFIED) {
++                        if (entry->type == BOOT_ENTRY_TYPE2) { /* UKI */
+                                 boot_entry = entry;
+                                 break;
+                         }
+ 
+         if (!boot_entry)
+                 FOREACH_ARRAY(entry, config.entries, config.n_entries)
+-                        if (entry->type == BOOT_ENTRY_CONF) {
++                        if (entry->type == BOOT_ENTRY_TYPE1) { /* .conf */
+                                 boot_entry = entry;
+                                 break;
+                         }
+@@ -1243,11 +1243,11 @@ static int discover_boot_entry(const char *root, char **ret_linux, char ***ret_i
+ 
+         _cleanup_free_ char *linux_kernel = NULL;
+         _cleanup_strv_free_ char **initrds = NULL;
+-        if (boot_entry->type == BOOT_ENTRY_UNIFIED) {
++        if (boot_entry->type == BOOT_ENTRY_TYPE2) { /* UKI */
+                 linux_kernel = path_join(boot_entry->root, boot_entry->kernel);
+                 if (!linux_kernel)
+                         return log_oom();
+-        } else if (boot_entry->type == BOOT_ENTRY_CONF) {
++        } else if (boot_entry->type == BOOT_ENTRY_TYPE1) { /* .conf */
+                 linux_kernel = path_join(boot_entry->root, boot_entry->kernel);
+                 if (!linux_kernel)
+                         return log_oom();

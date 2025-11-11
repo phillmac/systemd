@@ -1,0 +1,58 @@
+From 53c6a73be9d57fcb9ee593c570a9408b63a89851 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 7 Jul 2025 18:25:22 +0200
+Subject: [PATCH] bootspec: rename boot_entry_source_to_string() to
+ boot_entry_source_description_to_string()
+
+Similar to the previous changes, let's make clear this string table
+contains *descriptive*, i.e. meaningful human-readable strings.
+
+(cherry picked from commit 2030922e2ddb0aed335c8c4202a0c86f36c4d31d)
+
+Resolves: RHEL-103354
+---
+ src/shared/bootspec.c | 6 +++---
+ src/shared/bootspec.h | 2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/shared/bootspec.c b/src/shared/bootspec.c
+index d561e9265f..5da8f64fa6 100644
+--- a/src/shared/bootspec.c
++++ b/src/shared/bootspec.c
+@@ -44,12 +44,12 @@ static const char* const boot_entry_type_table[_BOOT_ENTRY_TYPE_MAX] = {
+ 
+ DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_type, BootEntryType);
+ 
+-static const char* const boot_entry_source_table[_BOOT_ENTRY_SOURCE_MAX] = {
++static const char* const boot_entry_source_description_table[_BOOT_ENTRY_SOURCE_MAX] = {
+         [BOOT_ENTRY_ESP]      = "EFI System Partition",
+         [BOOT_ENTRY_XBOOTLDR] = "Extended Boot Loader Partition",
+ };
+ 
+-DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_source, BootEntrySource);
++DEFINE_STRING_TABLE_LOOKUP_TO_STRING(boot_entry_source_description, BootEntrySource);
+ 
+ static const char* const boot_entry_source_json_table[_BOOT_ENTRY_SOURCE_MAX] = {
+         [BOOT_ENTRY_ESP]      = "esp",
+@@ -1859,7 +1859,7 @@ int show_boot_entry(
+ 
+                 printf("       source: %s (on the %s)\n",
+                        link ?: text ?: e->path,
+-                       boot_entry_source_to_string(e->source));
++                       boot_entry_source_description_to_string(e->source));
+         }
+         if (e->tries_left != UINT_MAX) {
+                 printf("        tries: %u left", e->tries_left);
+diff --git a/src/shared/bootspec.h b/src/shared/bootspec.h
+index bd6307603d..5c9d24e78a 100644
+--- a/src/shared/bootspec.h
++++ b/src/shared/bootspec.h
+@@ -102,7 +102,7 @@ const char* boot_entry_type_description_to_string(BootEntryType) _const_;
+ const char* boot_entry_type_to_string(BootEntryType) _const_;
+ BootEntryType boot_entry_type_from_string(const char *s) _pure_;
+ 
+-const char* boot_entry_source_to_string(BootEntrySource) _const_;
++const char* boot_entry_source_description_to_string(BootEntrySource) _const_;
+ const char* boot_entry_source_json_to_string(BootEntrySource) _const_;
+ 
+ BootEntry* boot_config_find_entry(BootConfig *config, const char *id);

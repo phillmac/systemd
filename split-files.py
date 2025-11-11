@@ -68,6 +68,7 @@ outputs = {suffix: open(f'.file-list-{suffix}', 'w')
                    'devel',
                    'container',
                    'oomd',
+                   'tests',
                    'remote',
                    'resolve',
                    'main',
@@ -101,6 +102,8 @@ for file in files(buildroot):
         o = outputs['pam']
     elif '/rpm/' in n:
         o = outputs['rpm-macros']
+    elif '/usr/lib/systemd/tests' in n:
+        o = outputs['tests']
     elif 'ukify' in n:
         o = outputs['ukify']
     elif re.search(r'/libsystemd-(shared|core)-.*\.so$', n):

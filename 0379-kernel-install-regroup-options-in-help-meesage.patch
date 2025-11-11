@@ -1,0 +1,42 @@
+From 73f380b7cda558a3ada56144bdc03baa1c497faa Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Fri, 11 Jul 2025 11:18:09 +0900
+Subject: [PATCH] kernel-install: regroup options in help meesage
+
+And slightly updates the description.
+
+Follow-up for b6d499768394297b1d313cdc72dab0720dc315f6.
+
+(cherry picked from commit 19d4040d71da15d0a91d0be854e5125fa6042870)
+
+Resolves: RHEL-103354
+---
+ src/kernel-install/kernel-install.c | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/kernel-install/kernel-install.c b/src/kernel-install/kernel-install.c
+index 4aecce20ff..a01be27129 100644
+--- a/src/kernel-install/kernel-install.c
++++ b/src/kernel-install/kernel-install.c
+@@ -1499,17 +1499,17 @@ static int help(void) {
+                "     --boot-path=PATH          Path to the $BOOT partition\n"
+                "     --make-entry-directory=yes|no|auto\n"
+                "                               Create $BOOT/ENTRY-TOKEN/ directory\n"
++               "     --entry-type=type1|type2|all\n"
++               "                               Operate only on the specified bootloader\n"
++               "                               entry type\n"
+                "     --entry-token=machine-id|os-id|os-image-id|auto|literal:…\n"
+-               "                               Entry token to use for this installation\n"
++               "                               Entry token to be used for this installation\n"
+                "     --no-pager                Do not pipe inspect output into a pager\n"
+                "     --json=pretty|short|off   Generate JSON output\n"
+                "     --no-legend               Do not show the headers and footers\n"
+                "     --root=PATH               Operate on an alternate filesystem root\n"
+                "     --image=PATH              Operate on disk image as filesystem root\n"
+                "     --image-policy=POLICY     Specify disk image dissection policy\n"
+-               "     --entry-type=type1|type2|all\n"
+-               "                               Operate only on the specified bootloader\n"
+-               "                               entry type\n"
+                "\n"
+                "This program may also be invoked as 'installkernel':\n"
+                "  installkernel  [OPTIONS...] VERSION VMLINUZ [MAP] [INSTALLATION-DIR]\n"

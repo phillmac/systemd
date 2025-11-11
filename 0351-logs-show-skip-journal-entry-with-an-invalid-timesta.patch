@@ -1,0 +1,76 @@
+From 93fa6d7512c97c87ae9023c3f4a7825865c70c1a Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 28 Dec 2024 14:09:22 +0900
+Subject: [PATCH] logs-show: skip journal entry with an invalid timestamp
+
+Follow-up for 275e6be052e690adcad5d2a557acb9dcb5bedbc6.
+Fixes oss-fuzz#385221809 (https://issues.oss-fuzz.com/issues/385221809).
+Fixes #35737.
+
+(cherry picked from commit f19f640513cf3ededdf1f5cc6f00efca27efc61f)
+
+Related: RHEL-79976
+---
+ src/shared/logs-show.c                          |   9 +++++----
+ .../fuzz/fuzz-journal-remote/oss-fuzz-385221809 | Bin 0 -> 10595 bytes
+ 2 files changed, 5 insertions(+), 4 deletions(-)
+ create mode 100644 test/fuzz/fuzz-journal-remote/oss-fuzz-385221809
+
+diff --git a/src/shared/logs-show.c b/src/shared/logs-show.c
+index 2289b83a15..3f3f4e628d 100644
+--- a/src/shared/logs-show.c
++++ b/src/shared/logs-show.c
+@@ -335,7 +335,7 @@ static int output_timestamp_monotonic(
+         assert(previous_boot_id);
+ 
+         if (!VALID_MONOTONIC(display_ts->monotonic))
+-                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No valid monotonic timestamp available");
++                return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "No valid monotonic timestamp available, skipping showing journal entry.");
+ 
+         written_chars += fprintf(f, "[%5"PRI_USEC".%06"PRI_USEC, display_ts->monotonic / USEC_PER_SEC, display_ts->monotonic % USEC_PER_SEC);
+ 
+@@ -375,15 +375,14 @@ static int output_timestamp_realtime(
+         assert(j);
+ 
+         if (!VALID_REALTIME(usec))
+-                return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "No valid realtime timestamp available.");
++                return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "No valid realtime timestamp available, skipping showing journal entry.");
+ 
+         switch (mode) {
+ 
+         case OUTPUT_SHORT_FULL:
+         case OUTPUT_WITH_UNIT: {
+                 if (!format_timestamp_style(buf, sizeof(buf), usec, flags & OUTPUT_UTC ? TIMESTAMP_UTC : TIMESTAMP_PRETTY))
+-                        return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+-                                               "Failed to format timestamp: %" PRIu64, usec);
++                        return log_debug_errno(SYNTHETIC_ERRNO(EINVAL), "Failed to format timestamp (%"PRIu64"), skipping showing journal entry.", usec);
+                 break;
+         }
+ 
+@@ -623,6 +622,8 @@ static int output_short(
+                 parse_display_realtime(j, realtime, monotonic, &usec);
+                 r = output_timestamp_realtime(f, j, mode, flags, usec);
+         }
++        if (r == -EINVAL)
++                return 0;
+         if (r < 0)
+                 return r;
+         n += r;
+diff --git a/test/fuzz/fuzz-journal-remote/oss-fuzz-385221809 b/test/fuzz/fuzz-journal-remote/oss-fuzz-385221809
+new file mode 100644
+index 0000000000000000000000000000000000000000..8bb473ac56adb97962da8894c0ca5bf70cd8c437
+GIT binary patch
+literal 10595
+zcmeI2zfQw25XLk60eFs!ojCRop;97Li8NIbkU*6zkjTW$2&`FnhQ0s`6JlWGJ^Cgn
+zZD{@wk`$$=3HKX3Sf}%McebaGDCIk&({SQCDp`VX<j!mzbfQ8P&TJs+$n!!qIkqFg
+z1p`Jw3T}dw*HL7dQru93S<#i$3DF5rfp_MQovNgaxK0p^P8@sQBJj2pxOo09bGwX9
+zM^krZ8yk&jBa$}Qkq`ikQT`{DH|b0U)EAw<na~~5PfDK%-Mppj4*@U$bVx8)>k3^^
+z!Gs0EB;>=^H0@E-h*GXM^+Int8Rvc`#(@e;TA&Ngr6scq288spZOD)~A5t+$6>%KL
+zRr?5nAcJB#sA~GgL*E2%!Q~dQ2!bF8f*=TjAP9o&KL`6Sv19H#&W9j-M!kzCv8e3c
+zCe+3(lX(Q%7?0Xy{IcKt=ym!J#W(u6^o;?e-1ozx-7Fo@MIobK;Y+KW<eb&o&hjb>
+z2UK~~^1;Qd)sl-%*oEYxiju`9*AHkL*g9iJfd+YbOCMFeMuSR2a?7A!ud8ud-Ivd^
+dD@#q2klLoMFU$LDPN(B2f4O){t%_?e<R?)ghLr#S
+
+literal 0
+HcmV?d00001
+

@@ -1,0 +1,87 @@
+From 720ab82b4b8d0a06ee6cae84d7b058c6827e53e7 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 4 Jul 2025 01:06:54 +0100
+Subject: [PATCH] ukify: when decompressing kernel before signing, call verify
+ on decompressed file
+
+Otherwise it will fail as it's an archive, not a PE file:
+
+Invalid DOS header magic
+Can't open image /boot/vmlinuz.old
+/boot/vmlinuz.old is compressed and cannot be loaded by UEFI, decompressing
++ sbverify --list /boot/vmlinuz.old
+=========================== short test summary info ============================
+FAILED ../src/ukify/test/test_ukify.py::test_efi_signing_sbsign[3650] - subprocess.CalledProcessError: Command '['sbverify', '--list', PosixPath('/boot/vmlinuz.old')]' returned non-zero exit status 1.
+FAILED ../src/ukify/test/test_ukify.py::test_efi_signing_sbsign[None] - subprocess.CalledProcessError: Command '['sbverify', '--list', PosixPath('/boot/vmlinuz.old')]' returned non-zero exit status 1.
+FAILED ../src/ukify/test/test_ukify.py::test_inspect - subprocess.CalledProcessError: Command '['sbverify', '--list', PosixPath('/boot/vmlinuz.old')]' returned non-zero exit status 1.
+
+Follow-up for 0dd03215f1e402092f6c6da213708045e445a9ed
+
+(cherry picked from commit 60bda55f5b407a258be79b28b3a826b5122aa8da)
+
+Related: RHEL-97625
+---
+ src/ukify/ukify.py | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index b9f2664031..da3ceeed24 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -467,7 +467,7 @@ class SignTool:
+         raise NotImplementedError()
+ 
+     @staticmethod
+-    def verify(opts: UkifyConfig) -> bool:
++    def verify(input_f: Path, opts: UkifyConfig) -> bool:
+         raise NotImplementedError()
+ 
+     @staticmethod
+@@ -503,11 +503,11 @@ class PeSign(SignTool):
+         subprocess.check_call(cmd)
+ 
+     @staticmethod
+-    def verify(opts: UkifyConfig) -> bool:
+-        assert opts.linux is not None
++    def verify(input_f: Path, opts: UkifyConfig) -> bool:
++        assert input_f is not None
+ 
+         tool = find_tool('pesign', opts=opts)
+-        cmd = [tool, '-i', opts.linux, '-S']
++        cmd = [tool, '-i', input_f, '-S']
+ 
+         print('+', shell_join(cmd), file=sys.stderr)
+         info = subprocess.check_output(cmd, text=True)
+@@ -535,11 +535,11 @@ class SbSign(SignTool):
+         subprocess.check_call(cmd)
+ 
+     @staticmethod
+-    def verify(opts: UkifyConfig) -> bool:
+-        assert opts.linux is not None
++    def verify(input_f: Path, opts: UkifyConfig) -> bool:
++        assert input_f is not None
+ 
+         tool = find_tool('sbverify', opts=opts)
+-        cmd = [tool, '--list', opts.linux]
++        cmd = [tool, '--list', input_f]
+ 
+         print('+', shell_join(cmd), file=sys.stderr)
+         info = subprocess.check_output(cmd, text=True)
+@@ -587,7 +587,7 @@ class SystemdSbSign(SignTool):
+         subprocess.check_call(cmd)
+ 
+     @staticmethod
+-    def verify(opts: UkifyConfig) -> bool:
++    def verify(input_f: Path, opts: UkifyConfig) -> bool:
+         raise NotImplementedError('systemd-sbsign cannot yet verify if existing PE binaries are signed')
+ 
+ 
+@@ -1135,7 +1135,7 @@ def make_uki(opts: UkifyConfig) -> None:
+ 
+         if sign_kernel is None:
+             # figure out if we should sign the kernel
+-            sign_kernel = signtool.verify(opts)
++            sign_kernel = signtool.verify(linux, opts)
+ 
+         if sign_kernel:
+             linux_signed = tempfile.NamedTemporaryFile(prefix='linux-signed')

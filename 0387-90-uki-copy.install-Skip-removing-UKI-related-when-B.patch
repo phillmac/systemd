@@ -1,0 +1,36 @@
+From ab7cce412e3cf91fbec08fc19454fe2964c0d26e Mon Sep 17 00:00:00 2001
+From: Li Tian <litian@redhat.com>
+Date: Sun, 13 Jul 2025 18:59:10 +0800
+Subject: [PATCH] 90-uki-copy.install: Skip removing UKI related when
+ BOOT_ENTRY_TYPE=type1
+
+Commit b6d499768394
+("Add --entry-type=type1|type2 option to kernel-install.")
+
+Skip removing UKI related contents when BOOT_ENTRY_TYPE=type1
+
+Signed-off-by: Li Tian <litian@redhat.com>
+
+(cherry picked from commit 9e3c496bd3c892c84c71610d10d3b481245522e8)
+
+Resolves: RHEL-103354
+---
+ src/kernel-install/90-uki-copy.install | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/src/kernel-install/90-uki-copy.install b/src/kernel-install/90-uki-copy.install
+index 04bf5d1752..ebc97c0028 100755
+--- a/src/kernel-install/90-uki-copy.install
++++ b/src/kernel-install/90-uki-copy.install
+@@ -33,6 +33,11 @@ UKI_DIR="$BOOT_ROOT/EFI/Linux"
+ 
+ case "$COMMAND" in
+     remove)
++        if [ "$KERNEL_INSTALL_BOOT_ENTRY_TYPE" = "type1" ]; then
++            [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
++                echo "BOOT_ENTRY_TYPE=type1, not removing UKI related."
++            exit 0
++        fi
+         [ "$KERNEL_INSTALL_VERBOSE" -gt 0 ] && \
+             echo "Removing $UKI_DIR/$ENTRY_TOKEN-$KERNEL_VERSION*.efi and extras"
+         exec rm -rf \

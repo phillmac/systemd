@@ -1,0 +1,63 @@
+From 26ad2bbf3555f03534b0ecf5f69bfeea22dcfb6f Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 9 Jul 2025 23:02:28 +0200
+Subject: [PATCH] ukify: fix version detection for aarch64 zboot kernels with
+ gzip or lzma compression
+
+Fixes https://github.com/systemd/systemd/issues/34780. The number in the header
+is the size of the *compressed* data, so for gzip we'd read the initial part of
+the decompressed data (equal to the size of the compressed data) and not find
+the version string. Later on, Fedora switched to zstd compression, and there we
+correctly use the number as the size of the compressed data, so we stopped
+hitting the issue, but we should still fix it for older kernels.
+
+I verified that the fix works for gzip-compressed kernels. I also made the same
+change for the code for lzma compression. I'm pretty sure it is the right thing,
+even though I don't have such a kernel at hand to test.
+
+>>> ukify.Uname.scrape('/lib/modules/6.12.0-0.rc2.24.fc42.aarch64/vmlinuz')
+Real-Mode Kernel Header magic not found
++ readelf --notes /lib/modules/6.12.0-0.rc2.24.fc42.aarch64/vmlinuz
+readelf: Error: Not an ELF file - it has the wrong magic bytes at the start
+Found uname version: 6.12.0-0.rc2.24.fc42.aarch64
+
+(cherry picked from commit 85830b0d62ac215952774cf07157c113f2f92cae)
+
+Resolves: RHEL-97625
+---
+ src/ukify/ukify.py | 12 ++++++++----
+ 1 file changed, 8 insertions(+), 4 deletions(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index 45ce8e017c..b9f2664031 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -164,20 +164,24 @@ def get_zboot_kernel(f: IO[bytes]) -> bytes:
+     f.seek(start)
+     if comp_type.startswith(b'gzip'):
+         gzip = try_import('gzip')
+-        return cast(bytes, gzip.open(f).read(size))
++        data = f.read(size)
++        return cast(bytes, gzip.decompress(data))
+     elif comp_type.startswith(b'lz4'):
+         lz4 = try_import('lz4.frame', 'lz4')
+-        return cast(bytes, lz4.frame.decompress(f.read(size)))
++        data = f.read(size)
++        return cast(bytes, lz4.frame.decompress(data))
+     elif comp_type.startswith(b'lzma'):
+         lzma = try_import('lzma')
+-        return cast(bytes, lzma.open(f).read(size))
++        data = f.read(size)
++        return cast(bytes, lzma.decompress(data))
+     elif comp_type.startswith(b'lzo'):
+         raise NotImplementedError('lzo decompression not implemented')
+     elif comp_type.startswith(b'xzkern'):
+         raise NotImplementedError('xzkern decompression not implemented')
+     elif comp_type.startswith(b'zstd'):
+         zstd = try_import('zstandard')
+-        return cast(bytes, zstd.ZstdDecompressor().stream_reader(f.read(size)).read())
++        data = f.read(size)
++        return cast(bytes, zstd.ZstdDecompressor().stream_reader(data).read())
+ 
+     raise NotImplementedError(f'unknown compressed type: {comp_type!r}')
+ 

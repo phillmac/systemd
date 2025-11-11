@@ -1,0 +1,68 @@
+From 03f89bc52b6e605d8de274576688bb1f0d10fed1 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 7 Jul 2025 15:52:17 +0200
+Subject: [PATCH] bootspec: rename boot_entry_type_to_string() to
+ boot_entry_type_description_to_string()
+
+This helper does not translate BootEntryType to a string matching the
+enum's value names, but instead returns a human readable descriptive
+string. Let's make it clearer what this, by including "description" in
+the name.
+
+(cherry picked from commit 199989e168ee070849e1c13ad3c450093c3ad64d)
+
+Resolves: RHEL-103354
+---
+ src/shared/bootspec.c | 4 ++--
+ src/shared/bootspec.h | 2 +-
+ src/vmspawn/vmspawn.c | 2 +-
+ 3 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/shared/bootspec.c b/src/shared/bootspec.c
+index 3c2388e56a..f19699ddda 100644
+--- a/src/shared/bootspec.c
++++ b/src/shared/bootspec.c
+@@ -26,7 +26,7 @@
+ #include "uki.h"
+ #include "unaligned.h"
+ 
+-static const char* const boot_entry_type_table[_BOOT_ENTRY_TYPE_MAX] = {
++static const char* const boot_entry_type_description_table[_BOOT_ENTRY_TYPE_MAX] = {
+         [BOOT_ENTRY_CONF]        = "Boot Loader Specification Type #1 (.conf)",
+         [BOOT_ENTRY_UNIFIED]     = "Boot Loader Specification Type #2 (.efi)",
+         [BOOT_ENTRY_LOADER]      = "Reported by Boot Loader",
+@@ -1810,7 +1810,7 @@ int show_boot_entry(
+         assert(e);
+ 
+         printf("         type: %s\n",
+-               boot_entry_type_to_string(e->type));
++               boot_entry_type_description_to_string(e->type));
+ 
+         printf("        title: %s%s%s",
+                ansi_highlight(), boot_entry_title(e), ansi_normal());
+diff --git a/src/shared/bootspec.h b/src/shared/bootspec.h
+index eb5ff915fb..0f0a015f1a 100644
+--- a/src/shared/bootspec.h
++++ b/src/shared/bootspec.h
+@@ -98,7 +98,7 @@ typedef struct BootConfig {
+                 .selected_entry = -1, \
+         }
+ 
+-const char* boot_entry_type_to_string(BootEntryType) _const_;
++const char* boot_entry_type_description_to_string(BootEntryType) _const_;
+ const char* boot_entry_type_json_to_string(BootEntryType) _const_;
+ BootEntryType boot_entry_type_from_string(const char *s) _pure_;
+ 
+diff --git a/src/vmspawn/vmspawn.c b/src/vmspawn/vmspawn.c
+index 70e5a31265..2a5bc4a8c4 100644
+--- a/src/vmspawn/vmspawn.c
++++ b/src/vmspawn/vmspawn.c
+@@ -1239,7 +1239,7 @@ static int discover_boot_entry(const char *root, char **ret_linux, char ***ret_i
+         if (!boot_entry)
+                 return log_error_errno(SYNTHETIC_ERRNO(ENOENT), "Failed to discover any boot entries.");
+ 
+-        log_debug("Discovered boot entry %s (%s)", boot_entry->id, boot_entry_type_to_string(boot_entry->type));
++        log_debug("Discovered boot entry %s (%s)", boot_entry->id, boot_entry_type_description_to_string(boot_entry->type));
+ 
+         _cleanup_free_ char *linux_kernel = NULL;
+         _cleanup_strv_free_ char **initrds = NULL;

@@ -1,0 +1,25 @@
+From e9542cd13edc7f2b326ffdc52f4e99acce3a4f7e Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 18 Jun 2025 11:51:45 +0200
+Subject: [PATCH] core: cast log_oom() got void
+
+(cherry picked from commit 6650e21349273a5274ce00d689ed881d2976a6e7)
+
+Related: RHEL-106260
+---
+ src/core/transaction.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/core/transaction.c b/src/core/transaction.c
+index 638367ebd4..cb5c59de5c 100644
+--- a/src/core/transaction.c
++++ b/src/core/transaction.c
+@@ -383,7 +383,7 @@ static int transaction_verify_order_one(Transaction *tr, Job *j, Job *from, unsi
+ 
+                         /* For logging below */
+                         if (strv_push_pair(&array, k->unit->id, (char*) job_type_to_string(k->type)) < 0)
+-                                log_oom();
++                                (void) log_oom_warning();
+ 
+                         if (!delete && hashmap_contains(tr->jobs, k->unit) && !job_matters_to_anchor(k))
+                                 /* Ok, we can drop this one, so let's do so. */

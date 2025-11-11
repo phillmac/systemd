@@ -1,0 +1,128 @@
+From 48720c2ac6e08330c2a6d8cfcf5e02218401d27d Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Fri, 11 Apr 2025 15:11:09 +0200
+Subject: [PATCH] mkosi: use C10S repo for building RPMs
+
+- switch to CentOS Stream repo for the RPM build
+- define 'rhel' to avoid python3(pillow) BR on CentOS
+- don't install systemd-standalone-* packages on CentOS, since we don't
+  ship them
+- ditto for systemd-networkd
+- reconfigure EPEL stuff and drop packages no longer shipped there
+
+rhel-only: ci
+Related: RHEL-79976
+---
+ mkosi.conf.d/10-centos-fedora/mkosi.conf                    | 2 --
+ mkosi.conf.d/10-centos-fedora/mkosi.conf.d/10-debug.conf    | 1 -
+ mkosi.conf.d/10-centos/mkosi.conf.d/10-epel.conf            | 3 +--
+ mkosi.conf.d/10-centos/mkosi.conf.d/20-epel-packages.conf   | 2 --
+ .../build/mkosi.conf.d/centos-fedora/mkosi.build.chroot     | 1 +
+ mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf    | 6 +++---
+ .../mkosi.conf.d/centos/mkosi.conf.d/epel-packages.conf     | 1 -
+ mkosi.images/exitrd/mkosi.conf.d/10-centos-fedora.conf      | 1 -
+ 8 files changed, 5 insertions(+), 12 deletions(-)
+
+diff --git a/mkosi.conf.d/10-centos-fedora/mkosi.conf b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+index 8004c089ad..90603bba14 100644
+--- a/mkosi.conf.d/10-centos-fedora/mkosi.conf
++++ b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+@@ -12,8 +12,6 @@ VolatilePackages=
+         systemd-devel
+         systemd-journal-remote
+         systemd-libs
+-        systemd-networkd
+-        systemd-networkd-defaults
+         systemd-oomd-defaults
+         systemd-pam
+         systemd-resolved
+diff --git a/mkosi.conf.d/10-centos-fedora/mkosi.conf.d/10-debug.conf b/mkosi.conf.d/10-centos-fedora/mkosi.conf.d/10-debug.conf
+index 0c3707b20b..e99190355a 100644
+--- a/mkosi.conf.d/10-centos-fedora/mkosi.conf.d/10-debug.conf
++++ b/mkosi.conf.d/10-centos-fedora/mkosi.conf.d/10-debug.conf
+@@ -10,7 +10,6 @@ VolatilePackages=
+         systemd-debugsource
+         systemd-journal-remote-debuginfo
+         systemd-libs-debuginfo
+-        systemd-networkd-debuginfo
+         systemd-pam-debuginfo
+         systemd-resolved-debuginfo
+         systemd-tests-debuginfo
+diff --git a/mkosi.conf.d/10-centos/mkosi.conf.d/10-epel.conf b/mkosi.conf.d/10-centos/mkosi.conf.d/10-epel.conf
+index 9e92a4f226..2073c1f085 100644
+--- a/mkosi.conf.d/10-centos/mkosi.conf.d/10-epel.conf
++++ b/mkosi.conf.d/10-centos/mkosi.conf.d/10-epel.conf
+@@ -1,9 +1,8 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
+ [Match]
+-Release=9
++Release=10
+ 
+ [Distribution]
+ Repositories=
+         epel
+-        epel-next
+diff --git a/mkosi.conf.d/10-centos/mkosi.conf.d/20-epel-packages.conf b/mkosi.conf.d/10-centos/mkosi.conf.d/20-epel-packages.conf
+index 11dc96918a..08826ca191 100644
+--- a/mkosi.conf.d/10-centos/mkosi.conf.d/20-epel-packages.conf
++++ b/mkosi.conf.d/10-centos/mkosi.conf.d/20-epel-packages.conf
+@@ -6,8 +6,6 @@ Repositories=epel
+ [Content]
+ Packages=
+         dfuzzer
+-        dhcp-server
+         erofs-utils
+         knot
+         qrencode
+-        sbsigntools
+diff --git a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
+index e41b9b1189..1605fa1c0f 100755
+--- a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
++++ b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.build.chroot
+@@ -96,6 +96,7 @@ CXX_LD="$( ((LLVM)) && echo lld)" \
+     --define "meson_build %{shrink:%{__meson} compile -C %{_vpath_builddir} -j %{_smp_build_ncpus} $( ((MESON_VERBOSE)) && echo --verbose) %{nil}}" \
+     --define "meson_install %{shrink:DESTDIR=%{buildroot} %{__meson} install -C %{_vpath_builddir} --no-rebuild --quiet %{nil}}" \
+     --define "meson_extra_configure_options $MKOSI_MESON_OPTIONS $MESON_OPTIONS" \
++    --define "rhel 10" \
+     $( ((WITH_DEBUG)) || echo "--define=__brp_strip %{nil}") \
+     --define "__brp_compress %{nil}" \
+     --define "__brp_mangle_shebangs %{nil}" \
+diff --git a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+index b81649feba..31f03ca120 100644
+--- a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+@@ -6,9 +6,9 @@ Distribution=|fedora
+ 
+ [Build]
+ Environment=
+-        GIT_URL=https://src.fedoraproject.org/rpms/systemd.git
+-        GIT_BRANCH=rawhide
+-        GIT_COMMIT=433efb38f49a016733c805b2dba914c39ed99ec8
++        GIT_URL=https://gitlab.com/redhat/centos-stream/rpms/systemd/
++        GIT_BRANCH=c10s
++        GIT_COMMIT=c10s
+         PKG_SUBDIR=fedora
+ 
+ [Content]
+diff --git a/mkosi.images/build/mkosi.conf.d/centos/mkosi.conf.d/epel-packages.conf b/mkosi.images/build/mkosi.conf.d/centos/mkosi.conf.d/epel-packages.conf
+index 15849c5145..1d9498bf41 100644
+--- a/mkosi.images/build/mkosi.conf.d/centos/mkosi.conf.d/epel-packages.conf
++++ b/mkosi.images/build/mkosi.conf.d/centos/mkosi.conf.d/epel-packages.conf
+@@ -6,4 +6,3 @@ Repositories=epel
+ [Content]
+ Packages=
+         erofs-utils
+-        rpmautospec-rpm-macros
+diff --git a/mkosi.images/exitrd/mkosi.conf.d/10-centos-fedora.conf b/mkosi.images/exitrd/mkosi.conf.d/10-centos-fedora.conf
+index a1fa32b786..1339ebce24 100644
+--- a/mkosi.images/exitrd/mkosi.conf.d/10-centos-fedora.conf
++++ b/mkosi.images/exitrd/mkosi.conf.d/10-centos-fedora.conf
+@@ -1,7 +1,6 @@
+ # SPDX-License-Identifier: LGPL-2.1-or-later
+ 
+ [Match]
+-Distribution=|centos
+ Distribution=|fedora
+ 
+ [Content]

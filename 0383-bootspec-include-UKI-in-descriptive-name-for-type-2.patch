@@ -1,0 +1,28 @@
+From b4f9fb5e51c13eb3e7abd75cfb9343fe23dafad6 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 7 Jul 2025 15:54:17 +0200
+Subject: [PATCH] bootspec: include 'UKI' in descriptive name for type #2
+
+I am pretty sure that "UKI" is the best known name for type #2 boot
+loader spec entries, hence we really should put it in the name.
+
+(cherry picked from commit a1c7aa6a95956f6827b250a9fec9d584077e2a37)
+
+Resolves: RHEL-103354
+---
+ src/shared/bootspec.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/shared/bootspec.c b/src/shared/bootspec.c
+index f19699ddda..0d52764f60 100644
+--- a/src/shared/bootspec.c
++++ b/src/shared/bootspec.c
+@@ -28,7 +28,7 @@
+ 
+ static const char* const boot_entry_type_description_table[_BOOT_ENTRY_TYPE_MAX] = {
+         [BOOT_ENTRY_CONF]        = "Boot Loader Specification Type #1 (.conf)",
+-        [BOOT_ENTRY_UNIFIED]     = "Boot Loader Specification Type #2 (.efi)",
++        [BOOT_ENTRY_UNIFIED]     = "Boot Loader Specification Type #2 (UKI, .efi)",
+         [BOOT_ENTRY_LOADER]      = "Reported by Boot Loader",
+         [BOOT_ENTRY_LOADER_AUTO] = "Automatic",
+ };

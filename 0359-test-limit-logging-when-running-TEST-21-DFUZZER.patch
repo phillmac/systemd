@@ -1,0 +1,24 @@
+From 3c3b5aab17ca6dbd94357c7abcebbd1011844553 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Tue, 15 Apr 2025 16:17:01 +0200
+Subject: [PATCH] test: limit logging when running TEST-21-DFUZZER
+
+To speed things up.
+
+rhel-only: ci
+Related: RHEL-79976
+---
+ test/TEST-21-DFUZZER/meson.build | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/test/TEST-21-DFUZZER/meson.build b/test/TEST-21-DFUZZER/meson.build
+index 932f0c5f0e..231915cb9c 100644
+--- a/test/TEST-21-DFUZZER/meson.build
++++ b/test/TEST-21-DFUZZER/meson.build
+@@ -6,5 +6,6 @@ integration_tests += [
+                 'timeout' : 3600,
+                 'priority' : 50,
+                 'vm' : true,
++                'cmdline' : integration_test_template['cmdline'] + ['systemd.log_level=info'],
+         },
+ ]
