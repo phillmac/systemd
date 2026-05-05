@@ -1,0 +1,24 @@
+From 41f7b831986b1eda992ea40081ec9d7fe6157e41 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Tue, 13 Jan 2026 17:45:45 +0100
+Subject: [PATCH] Revert "coredump: get rid of a bogus assertion"
+
+This reverts commit cee91ba610d7ae7b80d32e487c79ea10c8fb98bc.
+
+Reverts: RHEL-104135
+---
+ src/coredump/coredump.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 88cd1c394d..048eb53546 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -1027,6 +1027,7 @@ static int context_parse_iovw(Context *context, struct iovec_wrapper *iovw) {
+ 
+         assert(context);
+         assert(iovw);
++        assert(iovw->count >= _META_ARGV_MAX);
+ 
+         /* Converts the data in the iovec array iovw into separate fields. Fills in context->meta[] (for
+          * which no memory is allocated, it just contains direct pointers into the iovec array memory). */

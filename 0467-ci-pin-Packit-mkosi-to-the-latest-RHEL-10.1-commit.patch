@@ -1,0 +1,40 @@
+From 9c2aea3a3811a194bb3b9710cf521b68c5809b82 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <fsumsal@redhat.com>
+Date: Tue, 13 Jan 2026 18:26:48 +0100
+Subject: [PATCH] ci: pin Packit/mkosi to the latest RHEL 10.1 commit
+
+rhel-only: ci
+Related: RHEL-155394
+---
+ .packit.yml                                              | 3 ++-
+ mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf | 3 ++-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+
+diff --git a/.packit.yml b/.packit.yml
+index a5d9aca0e1..0c2b256102 100644
+--- a/.packit.yml
++++ b/.packit.yml
+@@ -24,7 +24,8 @@ actions:
+ 
+   post-upstream-clone:
+     # Use the CentOS Stream 10 specfile
+-    - "git clone -b c10s https://gitlab.com/redhat/centos-stream/rpms/systemd.git .packit_rpm --depth=1"
++    # Pin this to the latest 10.1 version (systemd-257-13)
++    - "git clone https://gitlab.com/redhat/centos-stream/rpms/systemd.git .packit_rpm --depth=1 --revision=8adcfa40b029b11bb2512c8cc7e6301ee3a77df9"
+     # Drop the "sources" file so rebase-helper doesn't think we're a dist-git
+     - "rm -fv .packit_rpm/sources"
+     # Drop all patches, since they're already included in the tarball
+diff --git a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+index 31f03ca120..ea922ec18c 100644
+--- a/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
++++ b/mkosi.images/build/mkosi.conf.d/centos-fedora/mkosi.conf
+@@ -8,7 +8,8 @@ Distribution=|fedora
+ Environment=
+         GIT_URL=https://gitlab.com/redhat/centos-stream/rpms/systemd/
+         GIT_BRANCH=c10s
+-        GIT_COMMIT=c10s
++        # Pin this to the latest 10.1 version (systemd-257-13)
++        GIT_COMMIT=8adcfa40b029b11bb2512c8cc7e6301ee3a77df9
+         PKG_SUBDIR=fedora
+ 
+ [Content]

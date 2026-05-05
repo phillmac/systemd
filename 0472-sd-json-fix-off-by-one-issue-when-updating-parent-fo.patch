@@ -1,0 +1,28 @@
+From 1f710e3d70ab5303adc27b61e2da86b039cd4caa Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Thu, 26 Feb 2026 11:07:39 +0100
+Subject: [PATCH] sd-json: fix off-by-one issue when updating parent for array
+ elements
+
+Follow-up for 8525bb369a09f488ec77f94e1557ecc2343eb4ab
+
+(cherry picked from commit 4e6e3b8707c84018051ae1885af20e06b2a5209e)
+
+Related: RHEL-155394
+---
+ src/libsystemd/sd-json/sd-json.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libsystemd/sd-json/sd-json.c b/src/libsystemd/sd-json/sd-json.c
+index 64b59e0f3f..97897122b8 100644
+--- a/src/libsystemd/sd-json/sd-json.c
++++ b/src/libsystemd/sd-json/sd-json.c
+@@ -2243,7 +2243,7 @@ _public_ int sd_json_variant_append_array(sd_json_variant **v, sd_json_variant *
+ 
+                         if (old != *v)
+                                 /* Readjust the parent pointers to the new address */
+-                                for (size_t i = 1; i < size; i++)
++                                for (size_t i = 0; i < size; i++)
+                                         (*v)[1 + i].parent = *v;
+ 
+                         return json_variant_array_put_element(*v, element);
