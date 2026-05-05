@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        13%{?dist}
+Release:        13%{?dist}.3
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -548,6 +548,42 @@ Patch0435: 0435-hwdb-Add-launch-emoji-keyboard-mapping-for-Asus-M160.patch
 Patch0436: 0436-Enable-KEY_PERFORMANCE-key-present-on-Linux-6.17.patch
 Patch0437: 0437-hwdb-add-HP-150-Wired-Mouse-37341.patch
 Patch0438: 0438-core-transaction-do-not-attempt-to-log-n-a-as-a-jour.patch
+Patch0439: 0439-coredump-verify-pidfd-after-parsing-data-in-usermode.patch
+Patch0440: 0440-coredump-restore-compatibility-with-older-patterns.patch
+Patch0441: 0441-coredump-wrap-long-lines-fix-grammar-in-comments.patch
+Patch0442: 0442-coredump-get-rid-of-_META_MANDATORY_MAX.patch
+Patch0443: 0443-coredump-use-d-in-kernel-core-pattern.patch
+Patch0444: 0444-coredump-also-stop-forwarding-non-dumpable-processes.patch
+Patch0445: 0445-coredump-get-rid-of-a-bogus-assertion.patch
+Patch0446: 0446-coredump-add-support-for-new-F-PIDFD-specifier.patch
+Patch0447: 0447-coredump-when-F-pidfd-is-used-again-allow-forwarding.patch
+Patch0448: 0448-coredump-introduce-an-enum-to-wrap-dumpable-constant.patch
+Patch0449: 0449-Define-helper-to-call-PR_SET_DUMPABLE.patch
+Patch0450: 0450-coredump-fix-0-passed-as-pointer-warning.patch
+Patch0451: 0451-Revert-coredump-fix-0-passed-as-pointer-warning.patch
+Patch0452: 0452-Revert-Define-helper-to-call-PR_SET_DUMPABLE.patch
+Patch0453: 0453-Revert-coredump-introduce-an-enum-to-wrap-dumpable-c.patch
+Patch0454: 0454-Revert-coredump-when-F-pidfd-is-used-again-allow-for.patch
+Patch0455: 0455-Revert-coredump-add-support-for-new-F-PIDFD-specifie.patch
+Patch0456: 0456-Revert-coredump-get-rid-of-a-bogus-assertion.patch
+Patch0457: 0457-Revert-coredump-also-stop-forwarding-non-dumpable-pr.patch
+Patch0458: 0458-Revert-coredump-use-d-in-kernel-core-pattern.patch
+Patch0459: 0459-Revert-coredump-get-rid-of-_META_MANDATORY_MAX.patch
+Patch0460: 0460-Revert-coredump-wrap-long-lines-fix-grammar-in-comme.patch
+Patch0461: 0461-Revert-coredump-restore-compatibility-with-older-pat.patch
+Patch0462: 0462-Revert-coredump-verify-pidfd-after-parsing-data-in-u.patch
+Patch0463: 0463-ci-re-enable-bpf-framework-option-for-build-and-unit.patch
+Patch0464: 0464-ci-add-bpftool-workaround-to-codeql-job-too.patch
+Patch0465: 0465-ci-fix-workaround-about-bpftool-for-codeql.patch
+Patch0466: 0466-ci-add-bpftool-workaround-to-coverity-too.patch
+Patch0467: 0467-ci-pin-Packit-mkosi-to-the-latest-RHEL-10.1-commit.patch
+Patch0468: 0468-ci-run-apt-get-update-before-running-mkosi.patch
+Patch0469: 0469-path-util-add-flavour-of-path_startswith-that-leaves.patch
+Patch0470: 0470-cgroup-port-some-code-over-to-path_startswith_full.patch
+Patch0471: 0471-path-util-invert-PATH_STARTSWITH_ACCEPT_DOT_DOT-flag.patch
+Patch0472: 0472-sd-json-fix-off-by-one-issue-when-updating-parent-fo.patch
+Patch0473: 0473-core-cgroup-avoid-one-unnecessary-strjoina.patch
+Patch0474: 0474-core-validate-input-cgroup-path-more-prudently.patch
 
 # Downstream-only patches (9000–9999)
 %endif
@@ -1494,6 +1530,48 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
+* Wed Apr 08 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-13.3
+- ci: re-enable bpf-framework option for build and unit test jobs (RHEL-155394)
+- ci: add bpftool workaround to codeql job too (RHEL-155394)
+- ci: fix workaround about bpftool for codeql (RHEL-155394)
+- ci: add bpftool workaround to coverity too (RHEL-155394)
+- ci: pin Packit/mkosi to the latest RHEL 10.1 commit (RHEL-155394)
+- ci: run apt-get update before running mkosi (RHEL-155394)
+- path-util: add flavour of path_startswith() that leaves a leading slash in place (RHEL-155394)
+- cgroup: port some code over to path_startswith_full() (RHEL-155394)
+- path-util: invert PATH_STARTSWITH_ACCEPT_DOT_DOT flag (RHEL-155394)
+- sd-json: fix off-by-one issue when updating parent for array elements (RHEL-155394)
+- core/cgroup: avoid one unnecessary strjoina() (RHEL-155394)
+- core: validate input cgroup path more prudently (RHEL-155394)
+
+* Thu Jan 22 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-13.2
+- Revert "coredump: fix 0-passed-as-pointer warning" (RHEL-104135)
+- Revert "Define helper to call PR_SET_DUMPABLE" (RHEL-104135)
+- Revert "coredump: introduce an enum to wrap dumpable constants" (RHEL-104135)
+- Revert "coredump: when %F/pidfd is used, again allow forwarding to containers" (RHEL-104135)
+- Revert "coredump: add support for new %F PIDFD specifier" (RHEL-104135)
+- Revert "coredump: get rid of a bogus assertion" (RHEL-104135)
+- Revert "coredump: also stop forwarding non-dumpable processes" (RHEL-104135)
+- Revert "coredump: use %d in kernel core pattern" (RHEL-104135)
+- Revert "coredump: get rid of _META_MANDATORY_MAX" (RHEL-104135)
+- Revert "coredump: wrap long lines, fix grammar in comments" (RHEL-104135)
+- Revert "coredump: restore compatibility with older patterns" (RHEL-104135)
+- Revert "coredump: verify pidfd after parsing data in usermode helper" (RHEL-104135)
+
+* Fri Nov 21 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-13.1
+- coredump: verify pidfd after parsing data in usermode helper (RHEL-104135)
+- coredump: restore compatibility with older patterns (RHEL-104135)
+- coredump: wrap long lines, fix grammar in comments (RHEL-104135)
+- coredump: get rid of _META_MANDATORY_MAX (RHEL-104135)
+- coredump: use %d in kernel core pattern (RHEL-104135)
+- coredump: also stop forwarding non-dumpable processes (RHEL-104135)
+- coredump: get rid of a bogus assertion (RHEL-104135)
+- coredump: add support for new %F PIDFD specifier (RHEL-104135)
+- coredump: when %F/pidfd is used, again allow forwarding to containers (RHEL-104135)
+- coredump: introduce an enum to wrap dumpable constants (RHEL-104135)
+- Define helper to call PR_SET_DUMPABLE (RHEL-104135)
+- coredump: fix 0-passed-as-pointer warning (RHEL-104135)
+
 * Fri Aug 15 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-13
 - core/transaction: do not attempt to log "n/a" as a journal field (RHEL-106260)
 

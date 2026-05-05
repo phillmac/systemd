@@ -1,0 +1,102 @@
+From 1e9bb0d1a4a8c4fba9bb2f9a4282c4f71a8475b7 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Tue, 13 Jan 2026 17:45:45 +0100
+Subject: [PATCH] Revert "coredump: restore compatibility with older patterns"
+
+This reverts commit 942d050f98cc0b6c89dbe30157163a8610cf7f78.
+
+Reverts: RHEL-104135
+---
+ src/coredump/coredump.c                  | 23 ++++++++---------------
+ test/units/TEST-74-AUX-UTILS.coredump.sh | 18 +++++++-----------
+ 2 files changed, 15 insertions(+), 26 deletions(-)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 58bcd4910f..db7f76f6c4 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -105,12 +105,8 @@ enum {
+         META_ARGV_SIGNAL,       /* %s: number of signal causing dump */
+         META_ARGV_TIMESTAMP,    /* %t: time of dump, expressed as seconds since the Epoch (we expand this to μs granularity) */
+         META_ARGV_RLIMIT,       /* %c: core file size soft resource limit */
+-        _META_ARGV_REQUIRED,
+-        /* The fields below were added to kernel/core_pattern at later points, so they might be missing. */
+-        META_ARGV_HOSTNAME = _META_ARGV_REQUIRED,  /* %h: hostname */
++        META_ARGV_HOSTNAME,     /* %h: hostname */
+         _META_ARGV_MAX,
+-        /* If new fields are added, they should be added here, to maintain compatibility
+-         * with callers which don't know about the new fields. */
+ 
+         /* The following indexes are cached for a couple of special fields we use (and
+          * thereby need to be retrieved quickly) for naming coredump files, and attaching
+@@ -121,7 +117,7 @@ enum {
+         _META_MANDATORY_MAX,
+ 
+         /* The rest are similar to the previous ones except that we won't fail if one of
+-         * them is missing in a message sent over the socket. */
++         * them is missing. */
+ 
+         META_EXE = _META_MANDATORY_MAX,
+         META_UNIT,
+@@ -1050,7 +1046,7 @@ static int context_parse_iovw(Context *context, struct iovec_wrapper *iovw) {
+         }
+ 
+         /* The basic fields from argv[] should always be there, refuse early if not */
+-        for (int i = 0; i < _META_ARGV_REQUIRED; i++)
++        for (int i = 0; i < _META_ARGV_MAX; i++)
+                 if (!context->meta[i])
+                         return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "A required (%s) has not been sent, aborting.", meta_field_names[i]);
+ 
+@@ -1318,17 +1314,14 @@ static int gather_pid_metadata_from_argv(
+         assert(context);
+ 
+         /* We gather all metadata that were passed via argv[] into an array of iovecs that
+-         * we'll forward to the socket unit.
+-         *
+-         * We require at least _META_ARGV_REQUIRED args, but will accept more.
+-         * We know how to parse _META_ARGV_MAX args. The rest will be ignored. */
++         * we'll forward to the socket unit */
+ 
+-        if (argc < _META_ARGV_REQUIRED)
++        if (argc < _META_ARGV_MAX)
+                 return log_error_errno(SYNTHETIC_ERRNO(EINVAL),
+-                                       "Not enough arguments passed by the kernel (%i, expected between %i and %i).",
+-                                       argc, _META_ARGV_REQUIRED, _META_ARGV_MAX);
++                                       "Not enough arguments passed by the kernel (%i, expected %i).",
++                                       argc, _META_ARGV_MAX);
+ 
+-        for (int i = 0; i < MIN(argc, _META_ARGV_MAX); i++) {
++        for (int i = 0; i < _META_ARGV_MAX; i++) {
+                 _cleanup_free_ char *buf = NULL;
+                 const char *t = argv[i];
+ 
+diff --git a/test/units/TEST-74-AUX-UTILS.coredump.sh b/test/units/TEST-74-AUX-UTILS.coredump.sh
+index 8173a23162..2c084f54d2 100755
+--- a/test/units/TEST-74-AUX-UTILS.coredump.sh
++++ b/test/units/TEST-74-AUX-UTILS.coredump.sh
+@@ -194,18 +194,14 @@ rm -f /tmp/core.{output,redirected}
+ (! "${UNPRIV_CMD[@]}" coredumpctl dump "$CORE_TEST_BIN" >/dev/null)
+ 
+ # --backtrace mode
+-# Pass one of the existing journal coredump records to systemd-coredump.
+-# Use our PID as the source to be able to create a PIDFD and to make matching easier.
+-# systemd-coredump args: PID UID GID SIGNUM TIMESTAMP CORE_SOFT_RLIMIT [HOSTNAME]
++# Pass one of the existing journal coredump records to systemd-coredump and
++# use our PID as the source to make matching the coredump later easier
++# systemd-coredump args: PID UID GID SIGNUM TIMESTAMP CORE_SOFT_RLIMIT HOSTNAME
+ journalctl -b -n 1 --output=export --output-fields=MESSAGE,COREDUMP COREDUMP_EXE="/usr/bin/test-dump" |
+-    /usr/lib/systemd/systemd-coredump --backtrace $$ 0 0 6 1679509900 12345
+-journalctl -b -n 1 --output=export --output-fields=MESSAGE,COREDUMP COREDUMP_EXE="/usr/bin/test-dump" |
+-    /usr/lib/systemd/systemd-coredump --backtrace $$ 0 0 6 1679509901 12345 mymachine
+-# Wait a bit for the coredumps to get processed
+-timeout 30 bash -c "while [[ \$(coredumpctl list -q --no-legend $$ | wc -l) -lt 2 ]]; do sleep 1; done"
+-coredumpctl info $$
+-coredumpctl info COREDUMP_TIMESTAMP=1679509900000000
+-coredumpctl info COREDUMP_TIMESTAMP=1679509901000000
++    /usr/lib/systemd/systemd-coredump --backtrace $$ 0 0 6 1679509994 12345 mymachine
++# Wait a bit for the coredump to get processed
++timeout 30 bash -c "while [[ \$(coredumpctl list -q --no-legend $$ | wc -l) -eq 0 ]]; do sleep 1; done"
++coredumpctl info "$$"
+ coredumpctl info COREDUMP_HOSTNAME="mymachine"
+ 
+ # This used to cause a stack overflow
