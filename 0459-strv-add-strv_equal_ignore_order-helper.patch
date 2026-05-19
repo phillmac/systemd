@@ -1,0 +1,89 @@
+From cdb2fd795861211f6e89b9156971677eb5e2ef70 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 20 Jan 2025 10:31:09 +0100
+Subject: [PATCH] strv: add strv_equal_ignore_order() helper
+
+(cherry picked from commit 5072f4268b89a71e47e59c434da0222f722c7f0e)
+
+Resolves: RHEL-109902
+---
+ src/basic/strv.c     | 20 ++++++++++++++++++++
+ src/basic/strv.h     |  2 ++
+ src/test/test-strv.c | 22 ++++++++++++++++++++++
+ 3 files changed, 44 insertions(+)
+
+diff --git a/src/basic/strv.c b/src/basic/strv.c
+index a92b1234a3..c9c4551cdc 100644
+--- a/src/basic/strv.c
++++ b/src/basic/strv.c
+@@ -861,6 +861,26 @@ int strv_compare(char * const *a, char * const *b) {
+         return 0;
+ }
+ 
++bool strv_equal_ignore_order(char **a, char **b) {
++
++        /* Just like strv_equal(), but doesn't care about the order of elements or about redundant entries
++         * (i.e. it's even ok if the number of entries in the array differ, as long as the difference just
++         * consists of repititions) */
++
++        if (a == b)
++                return true;
++
++        STRV_FOREACH(i, a)
++                if (!strv_contains(b, *i))
++                        return false;
++
++        STRV_FOREACH(i, b)
++                if (!strv_contains(a, *i))
++                        return false;
++
++        return true;
++}
++
+ void strv_print_full(char * const *l, const char *prefix) {
+         STRV_FOREACH(s, l)
+                 printf("%s%s\n", strempty(prefix), *s);
+diff --git a/src/basic/strv.h b/src/basic/strv.h
+index 49ef19dcb5..86ba06f835 100644
+--- a/src/basic/strv.h
++++ b/src/basic/strv.h
+@@ -96,6 +96,8 @@ static inline bool strv_equal(char * const *a, char * const *b) {
+         return strv_compare(a, b) == 0;
+ }
+ 
++bool strv_equal_ignore_order(char **a, char **b);
++
+ char** strv_new_internal(const char *x, ...) _sentinel_;
+ char** strv_new_ap(const char *x, va_list ap);
+ #define strv_new(...) strv_new_internal(__VA_ARGS__, NULL)
+diff --git a/src/test/test-strv.c b/src/test/test-strv.c
+index d641043c50..b1d30d73a5 100644
+--- a/src/test/test-strv.c
++++ b/src/test/test-strv.c
+@@ -1255,4 +1255,26 @@ TEST(strv_find_closest) {
+         ASSERT_NULL(strv_find_closest(l, "sfajosajfosdjaofjdsaf"));
+ }
+ 
++TEST(strv_equal_ignore_order) {
++
++        ASSERT_TRUE(strv_equal_ignore_order(NULL, NULL));
++        ASSERT_TRUE(strv_equal_ignore_order(NULL, STRV_MAKE(NULL)));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE(NULL), NULL));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE(NULL), STRV_MAKE(NULL)));
++
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("foo"), NULL));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("foo"), STRV_MAKE(NULL)));
++        ASSERT_FALSE(strv_equal_ignore_order(NULL, STRV_MAKE("foo")));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE(NULL), STRV_MAKE("foo")));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE("foo"), STRV_MAKE("foo")));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("foo"), STRV_MAKE("foo", "bar")));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("foo", "bar"), STRV_MAKE("foo")));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE("foo", "bar"), STRV_MAKE("foo", "bar")));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE("bar", "foo"), STRV_MAKE("foo", "bar")));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("bar", "foo"), STRV_MAKE("foo", "bar", "quux")));
++        ASSERT_FALSE(strv_equal_ignore_order(STRV_MAKE("bar", "foo", "quux"), STRV_MAKE("foo", "bar")));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE("bar", "foo", "quux"), STRV_MAKE("quux", "foo", "bar")));
++        ASSERT_TRUE(strv_equal_ignore_order(STRV_MAKE("bar", "foo"), STRV_MAKE("bar", "foo", "bar", "foo", "foo")));
++}
++
+ DEFINE_TEST_MAIN(LOG_INFO);

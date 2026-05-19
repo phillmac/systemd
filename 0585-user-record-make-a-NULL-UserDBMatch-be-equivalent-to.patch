@@ -1,0 +1,44 @@
+From 10ab6be5caf19592ebf487ff8075d5e0c17825b4 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 16:24:17 +0100
+Subject: [PATCH] user-record: make a NULL UserDBMatch be equivalent to no
+ filtering
+
+(cherry picked from commit 83eabe102a91d4c4ac0080c31252cd60476af7ca)
+
+Related: RHEL-143036
+---
+ src/shared/group-record.c | 4 +++-
+ src/shared/user-record.c  | 4 +++-
+ 2 files changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/src/shared/group-record.c b/src/shared/group-record.c
+index dcabdf634f..07bce7056d 100644
+--- a/src/shared/group-record.c
++++ b/src/shared/group-record.c
+@@ -345,7 +345,9 @@ bool group_record_matches_group_name(const GroupRecord *g, const char *group_nam
+ 
+ int group_record_match(GroupRecord *h, const UserDBMatch *match) {
+         assert(h);
+-        assert(match);
++
++        if (!match)
++                return true;
+ 
+         if (h->gid < match->gid_min || h->gid > match->gid_max)
+                 return false;
+diff --git a/src/shared/user-record.c b/src/shared/user-record.c
+index 75605f248b..bbf5c71849 100644
+--- a/src/shared/user-record.c
++++ b/src/shared/user-record.c
+@@ -2693,7 +2693,9 @@ bool user_name_fuzzy_match(const char *names[], size_t n_names, char **matches)
+ 
+ int user_record_match(UserRecord *u, const UserDBMatch *match) {
+         assert(u);
+-        assert(match);
++
++        if (!match)
++                return true;
+ 
+         if (u->uid < match->uid_min || u->uid > match->uid_max)
+                 return false;

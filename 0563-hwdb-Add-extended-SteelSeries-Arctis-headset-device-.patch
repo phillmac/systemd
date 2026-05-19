@@ -1,0 +1,85 @@
+From a0cd03e50b964a6642f9e03f76055393aa055497 Mon Sep 17 00:00:00 2001
+From: Sriman Achanta <68172138+srimanachanta@users.noreply.github.com>
+Date: Tue, 27 Jan 2026 01:11:35 -0500
+Subject: [PATCH] hwdb: Add extended SteelSeries Arctis headset device support
+ (#40479)
+
+Add USB device IDs for additional SteelSeries Arctis headset models to
+the sound card hardware database. This extends support for the complete
+Arctis lineup including newer models.
+
+Newly added device IDs:
+- Arctis 7 P (0x12d5)
+- Arctis Pro (0x1290)
+- Arctis Nova 3 (0x12ec)
+- Arctis Nova 3 P (0x2269)
+- Arctis Nova 3 X (0x226d)
+- Arctis Nova 5 (0x2232)
+- Arctis Nova 5 X (0x2253)
+- Arctis Nova 7 Rev2 (0x2258)
+- Arctis Nova 7 Diablo (0x223a)
+- Arctis Nova 7 WoW (0x227a)
+- Arctis Nova 7 2 (0x22a1)
+- Arctis Nova 7 Gen2 (0x227e)
+- Arctis Nova 7 X Gen2 (0x229e)
+- Arctis Nova Pro (0x12e0)
+- Arctis Nova Pro X (0x12e5)
+
+Also reordered existing entries for better organization.
+
+Note, steelseries [firmware release
+103.0.0](https://techblog.steelseries.com/2026/01/21/GG-notes-103.0.0.html)
+was a major update for all Nova 7 (Gen 1) Family headsets with new PIDs
+being issued for the devices. I only own the Nova 7 which is the only
+(previously unknown) PID being added. Additional PIDs will need to be
+added for those new identifiers (if any), but this should be basically
+every Steelseries Headset which the kernel supports/will eventually
+support.
+
+(cherry picked from commit 50caaf267b6ac6a83a0edaffbea232275372dfdb)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-sound-card.hwdb | 20 +++++++++++++++++---
+ 1 file changed, 17 insertions(+), 3 deletions(-)
+
+diff --git a/hwdb.d/70-sound-card.hwdb b/hwdb.d/70-sound-card.hwdb
+index 762993dbf0..4c53a861ec 100644
+--- a/hwdb.d/70-sound-card.hwdb
++++ b/hwdb.d/70-sound-card.hwdb
+@@ -43,18 +43,32 @@ usb:v045Ep091E*
+ # Arctis Headsets
+ usb:v1038p12B3*
+ usb:v1038p12B6*
+-usb:v1038p12D7*
+ usb:v1038p1260*
+-usb:v1038p12AD*
+ usb:v1038p1252*
+ usb:v1038p1280*
++usb:v1038p12D5*
++usb:v1038p12D7*
++usb:v1038p12AD*
+ usb:v1038p220E*
+ usb:v1038p2212*
+ usb:v1038p2216*
+ usb:v1038p2236*
+ usb:v1038p12C2*
++usb:v1038p1290*
++usb:v1038p12EC*
++usb:v1038p2269*
++usb:v1038p226D*
++usb:v1038p2232*
++usb:v1038p2253*
+ usb:v1038p2202*
+ usb:v1038p2206*
+ usb:v1038p220A*
+-usb:v1038p1290*
++usb:v1038p2258*
++usb:v1038p223A*
++usb:v1038p227A*
++usb:v1038p22A1*
++usb:v1038p227E*
++usb:v1038p229E*
++usb:v1038p12E0*
++usb:v1038p12E5*
+  SOUND_FORM_FACTOR=headset

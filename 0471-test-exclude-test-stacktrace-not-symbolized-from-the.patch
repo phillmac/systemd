@@ -1,0 +1,28 @@
+From b060529f5a896df4ee443ffc881bf7f61a645f25 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Thu, 9 Oct 2025 17:57:25 +0200
+Subject: [PATCH] test: exclude test-stacktrace(-not)?-symbolized from the
+ coredump check
+
+As they are expected coredumps from the EnterNamespace= feature test.
+
+(cherry picked from commit cfb604f8f7c83912648d69bd3ad89c2436b4b8ef)
+
+Related: RHEL-113920
+---
+ test/TEST-87-AUX-UTILS-VM/meson.build | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/test/TEST-87-AUX-UTILS-VM/meson.build b/test/TEST-87-AUX-UTILS-VM/meson.build
+index 8490139204..ae9e654032 100644
+--- a/test/TEST-87-AUX-UTILS-VM/meson.build
++++ b/test/TEST-87-AUX-UTILS-VM/meson.build
+@@ -5,7 +5,7 @@ integration_tests += [
+         integration_test_template + {
+                 'name' : fs.name(meson.current_source_dir()),
+                 'storage': 'persistent',
+-                'coredump-exclude-regex' : '/(test-usr-dump|test-dump|bash)$',
++                'coredump-exclude-regex' : '/(test-usr-dump|test-dump|test-stacktrace(-not)?-symbolized|bash)$',
+                 'vm' : true,
+         },
+ ]

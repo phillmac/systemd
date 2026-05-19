@@ -1,0 +1,36 @@
+From 967ecaaccf1a2095937881ea46ff9b7a5dfa9622 Mon Sep 17 00:00:00 2001
+From: Pranay Pawar <75427894+Bugaddr@users.noreply.github.com>
+Date: Mon, 17 Nov 2025 21:03:42 +0530
+Subject: [PATCH] hwdb: Fix keyboard backlight keys on Acer Nitro 5 AN515-58
+ (#39769)
+
+Pressing Fn+F10 on Acer Nitro 5 AN515-58 incorrectly triggers display
+brightness down (scancode 0xef) instead of keyboard backlight control,
+causing the screen to go completely dark. Similarly, Fn+F9 (scancode
+0xf0) has no function explictily stated in hwdb causing unknown keycode
+debug messages.
+
+Both keys should control the keyboard backlight as labeled on the
+keyboard. Map scancodes 0xef and 0xf0 to kbdillumup and kbdillumdown
+respectively to enable proper keyboard backlight control.
+
+(cherry picked from commit 7e8f6ece84fc8925ca71381903d05ab321f2fbb0)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index c2976deea4..715d67dbb0 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -237,6 +237,8 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnAcer*:pnNitro*AN*515-47:pvr*
+ 
+ # Nitro AN515-58
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnAcer*:pnNitro*AN*515-58:pvr*
++ KEYBOARD_KEY_ef=kbdillumup                             # Fn+F10
++ KEYBOARD_KEY_f0=kbdillumdown                           # Fn+F9
+  KEYBOARD_KEY_8a=micmute                                # Microphone mute button
+  KEYBOARD_KEY_55=power
+ 

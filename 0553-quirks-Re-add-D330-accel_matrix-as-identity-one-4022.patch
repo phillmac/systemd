@@ -1,0 +1,39 @@
+From 07854f48b03cb8dfb974f447b7d6e28b5dfacb42 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Thu, 1 Jan 2026 19:52:56 +0100
+Subject: [PATCH] quirks: Re-add D330 accel_matrix as identity one (#40226)
+
+When testing to correct accelerometer values I set locally the identity
+matrix to override the quirk. The values were fine but removing all the
+matrices give incorrect values.
+
+The mistake was thinking that identity matrix is the default one when no
+quirks are set. It is, but only when the ACPI doesn't have another one.
+
+Set identity matrix for this device to correct accelerometer values.
+
+Follow-up for a07b184e8ccbecafc1fce5a0cfffe87c6a497134.
+
+(cherry picked from commit 11adc8bad52b8860efe2c26b69f080707a69a748)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index e1ca6af48e..54182cb504 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -762,6 +762,11 @@ sensor:modalias:acpi:BMA250E*:dmi:bvnLENOVO:*:pvrLenovoMIIX3-1030:*
+ sensor:modalias:acpi:SMO8500*:dmi:bvnLENOVO:*:pvrLenovoMIIX3-830:*
+  ACCEL_MOUNT_MATRIX=-1, 0, 0; 0, 1, 0; 0, 0, 1
+ 
++# IdeaPad D330-10IGM (both 81H3 and 81MD product names)
++# ACPI in_mount_matrix is 0, -1, 0; 1, 0, 0; 0, 0, 1, but the correct one is identity matrix.
++sensor:modalias:acpi:BOSC0200*:dmi:*:svnLENOVO:*:pvrLenovoideapadD330-10IGM:*
++ ACCEL_MOUNT_MATRIX=1, 0, 0; 0, 1, 0; 0, 0, 1
++
+ # IdeaPad Miix 300
+ sensor:modalias:acpi:SMO8500*:dmi:bvnLENOVO:*:pvrMIIX300-*:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1

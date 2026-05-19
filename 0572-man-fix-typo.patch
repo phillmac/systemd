@@ -1,0 +1,36 @@
+From db7763fad428efea6ed76ce688e887342919a375 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 10 Mar 2025 03:23:44 +0900
+Subject: [PATCH] man: fix typo
+
+Follow-ups for fd0dd2d4bce00b69f8badab1a71b8929e392af5c.
+
+(cherry picked from commit e2ea2d134962f6841b29d58ac04a512277322dce)
+
+Related: RHEL-143029
+---
+ man/userdbctl.xml | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/man/userdbctl.xml b/man/userdbctl.xml
+index dd51226868..fb66ee2c0a 100644
+--- a/man/userdbctl.xml
++++ b/man/userdbctl.xml
+@@ -276,7 +276,7 @@
+         <listitem><para>List all known users records or show details of one or more specified user
+         records. Use <option>--output=</option> to tweak output mode.</para>
+ 
+-        <para>If used in conjuntion with <option>--from-file=</option> the user record data is read in JSON
++        <para>If used in conjunction with <option>--from-file=</option> the user record data is read in JSON
+         format from the specified file instead of querying it from the system. For details see above.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v245"/></listitem>
+@@ -288,7 +288,7 @@
+         <listitem><para>List all known group records or show details of one or more specified group
+         records. Use <option>--output=</option> to tweak output mode.</para>
+ 
+-        <para>If used in conjuntion with <option>--from-file=</option> the group record data is read in JSON
++        <para>If used in conjunction with <option>--from-file=</option> the group record data is read in JSON
+         format from the specified file instead of querying it from the system. For details see above.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v245"/></listitem>

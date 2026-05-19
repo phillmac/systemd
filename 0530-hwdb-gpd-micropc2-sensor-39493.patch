@@ -1,0 +1,31 @@
+From 3fc427e216a2ead5cd669800066c8e4bc6572191 Mon Sep 17 00:00:00 2001
+From: Moisticules <interknet@gmail.com>
+Date: Thu, 30 Oct 2025 05:44:01 +0000
+Subject: [PATCH] hwdb: gpd micropc2 sensor (#39493)
+
+This rule calibrates rotation of the screen display by adjusting matrix
+of sensor for the GPD MicroPC 2
+
+Co-authored-by: Moisticules <interknet@live.com>
+(cherry picked from commit f54d72c2b6463d3ba6d418cb710db5fed80e8fc0)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index c325697151..b7ae0892ff 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -601,6 +601,10 @@ sensor:modalias:acpi:MXC6655*:dmi:*:svnGPD:pnG1628-04:*
+ sensor:modalias:acpi:BMI0160*:dmi:*:svnGPD:pnG1619*:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1
+ 
++# GPD MicroPC 2
++sensor:modalias:acpi:MXC6655*:dmi:*:svnGPD:pnG1688-*:*
++ ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, -1
++
+ #########################################
+ # Hometech
+ ########################################

@@ -1,0 +1,41 @@
+From 536eac23913704e258ee8052cd45c0273804b8f9 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Thu, 16 Jan 2025 13:58:14 +0100
+Subject: [PATCH] update TODO
+
+(cherry picked from commit 3d3f27cd9a9d7ba325f0d6acc8526c86b938f09c)
+
+Resolves: RHEL-109902
+---
+ TODO | 11 -----------
+ 1 file changed, 11 deletions(-)
+
+diff --git a/TODO b/TODO
+index 99e8f1c723..a20eb2c61e 100644
+--- a/TODO
++++ b/TODO
+@@ -227,12 +227,6 @@ Features:
+   suffix the escape sequence with one more decimal digit, because compilers
+   think you might actually specify a value outside the 8bit range with that.
+ 
+-* homed: allow login via username + realm on getty/login prompt. Then rewrite
+-  the user name in the PAM stack
+-
+-* homed/userdb: add "aliases" field to user record, which can alternatively be
+-  used for logging in. Rewrite user name in the PAM stack once acquired.
+-
+ * confext/sysext: instead of mounting the overlayfs directly on /etc/ + /usr/,
+   insert an intermediary bind mount on itself there. This has the benefit that
+   services where mount propagation from the root fs is off, an still have
+@@ -354,11 +348,6 @@ Features:
+ * Clean up "reboot argument" handling, i.e. set it through some IPC service
+   instead of directly via /run/, so that it can be sensible set remotely.
+ 
+-* userdb: add concept for user "aliases", to cover for cases where you can log
+-  in under the name lennart@somenetworkfsserver, and it would automatically
+-  generate a local user, and from the one both names can be used to allow
+-  logins into the same account.
+-
+ * systemd-tpm2-support: add a some logic that detects if system is in DA
+   lockout mode, and queries the user for TPM recovery PIN then.
+ 

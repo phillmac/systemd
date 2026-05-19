@@ -1,0 +1,27 @@
+From bf6cdeda171f12b8a9e949de869dd2168ea7ee5f Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Wed, 8 Oct 2025 17:23:31 +0200
+Subject: [PATCH] man: fix a missing word
+
+Follow-up for 6d48c7cf736ced70c1c2fef1e1f03618911d04bc.
+
+(cherry picked from commit 67111e1bd918f9e1b4b542d1e0fe84f1d571876e)
+
+Resolves: RHEL-120277
+---
+ man/systemd.resource-control.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/systemd.resource-control.xml b/man/systemd.resource-control.xml
+index 5ad9793c7a..e4403e7274 100644
+--- a/man/systemd.resource-control.xml
++++ b/man/systemd.resource-control.xml
+@@ -583,7 +583,7 @@ CPUWeight=20   DisableControllers=cpu              /          \
+           an absolute number of tasks or a percentage value that is taken relative to the configured maximum
+           number of tasks on the system. If assigned the special value <literal>infinity</literal>, no tasks
+           limit is applied. This controls the <literal>pids.max</literal> control group attribute. For
+-          details about this control group attribute, the
++          details about this control group attribute, see the
+           <ulink url="https://docs.kernel.org/admin-guide/cgroup-v2.html#pid">pids controller
+           </ulink>.
+           The effective configuration is reported as <varname>EffectiveTasksMax=</varname>.</para>

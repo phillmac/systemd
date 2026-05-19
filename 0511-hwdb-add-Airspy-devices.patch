@@ -1,0 +1,34 @@
+From f4ee18b08a7dad5562ba3511f19881ee0cc9c5ca Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Tue, 9 Sep 2025 11:56:18 +0200
+Subject: [PATCH] hwdb: add Airspy devices
+
+(cherry picked from commit 8fadcd15d3c50145dec1ad49b742c2eb1a690369)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 61b0428363..43ea0f2588 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -21,6 +21,17 @@
+ # Allowed properties are:
+ #   ID_SOFTWARE_RADIO=0|1
+ 
++##########################################
++# Airspy
++##########################################
++# Airspy R2
++usb:v1D50p60A1*
++ ID_SOFTWARE_RADIO=1
++
++# Airspy HF+
++usb:v03EBp800C*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # Analog Devices
+ ##########################################

@@ -1,0 +1,25 @@
+From c818e6d1f90bc2f5f05f6c651b08b1a82cac6619 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Thu, 29 Jan 2026 22:03:02 +0100
+Subject: [PATCH] hwdb: keyboard: fix typo CAPSLOCK to NUMLOCK
+
+(cherry picked from commit 1c8cdfceb30ee69a722c08f51c20706543bba5f2)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 41879d981f..2dd8298cf7 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -2381,7 +2381,7 @@ evdev:input:b0003v05FEp1010*
+ ######################### LACK OF MODIFIER LEDS ############################
+ # This section lists keyboard which do not have their own LEDs for some
+ # modifiers. Only Caps-Lock (KEYBOARD_LED_CAPSLOCK) and Num-Lock
+-# (KEYBOARD_LED_CAPSLOCK) are currently handled and need their values set
++# (KEYBOARD_LED_NUMLOCK) are currently handled and need their values set
+ # to "0" to indicate the absence of LED.
+ #
+ # Presence of a LED is implicit when the property is absent.

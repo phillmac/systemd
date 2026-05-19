@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        13%{?dist}.3
+Release:        23%{?dist}.1
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -548,42 +548,187 @@ Patch0435: 0435-hwdb-Add-launch-emoji-keyboard-mapping-for-Asus-M160.patch
 Patch0436: 0436-Enable-KEY_PERFORMANCE-key-present-on-Linux-6.17.patch
 Patch0437: 0437-hwdb-add-HP-150-Wired-Mouse-37341.patch
 Patch0438: 0438-core-transaction-do-not-attempt-to-log-n-a-as-a-jour.patch
-Patch0439: 0439-coredump-verify-pidfd-after-parsing-data-in-usermode.patch
-Patch0440: 0440-coredump-restore-compatibility-with-older-patterns.patch
-Patch0441: 0441-coredump-wrap-long-lines-fix-grammar-in-comments.patch
-Patch0442: 0442-coredump-get-rid-of-_META_MANDATORY_MAX.patch
-Patch0443: 0443-coredump-use-d-in-kernel-core-pattern.patch
-Patch0444: 0444-coredump-also-stop-forwarding-non-dumpable-processes.patch
-Patch0445: 0445-coredump-get-rid-of-a-bogus-assertion.patch
-Patch0446: 0446-coredump-add-support-for-new-F-PIDFD-specifier.patch
-Patch0447: 0447-coredump-when-F-pidfd-is-used-again-allow-forwarding.patch
-Patch0448: 0448-coredump-introduce-an-enum-to-wrap-dumpable-constant.patch
-Patch0449: 0449-Define-helper-to-call-PR_SET_DUMPABLE.patch
-Patch0450: 0450-coredump-fix-0-passed-as-pointer-warning.patch
-Patch0451: 0451-Revert-coredump-fix-0-passed-as-pointer-warning.patch
-Patch0452: 0452-Revert-Define-helper-to-call-PR_SET_DUMPABLE.patch
-Patch0453: 0453-Revert-coredump-introduce-an-enum-to-wrap-dumpable-c.patch
-Patch0454: 0454-Revert-coredump-when-F-pidfd-is-used-again-allow-for.patch
-Patch0455: 0455-Revert-coredump-add-support-for-new-F-PIDFD-specifie.patch
-Patch0456: 0456-Revert-coredump-get-rid-of-a-bogus-assertion.patch
-Patch0457: 0457-Revert-coredump-also-stop-forwarding-non-dumpable-pr.patch
-Patch0458: 0458-Revert-coredump-use-d-in-kernel-core-pattern.patch
-Patch0459: 0459-Revert-coredump-get-rid-of-_META_MANDATORY_MAX.patch
-Patch0460: 0460-Revert-coredump-wrap-long-lines-fix-grammar-in-comme.patch
-Patch0461: 0461-Revert-coredump-restore-compatibility-with-older-pat.patch
-Patch0462: 0462-Revert-coredump-verify-pidfd-after-parsing-data-in-u.patch
-Patch0463: 0463-ci-re-enable-bpf-framework-option-for-build-and-unit.patch
-Patch0464: 0464-ci-add-bpftool-workaround-to-codeql-job-too.patch
-Patch0465: 0465-ci-fix-workaround-about-bpftool-for-codeql.patch
-Patch0466: 0466-ci-add-bpftool-workaround-to-coverity-too.patch
-Patch0467: 0467-ci-pin-Packit-mkosi-to-the-latest-RHEL-10.1-commit.patch
-Patch0468: 0468-ci-run-apt-get-update-before-running-mkosi.patch
-Patch0469: 0469-path-util-add-flavour-of-path_startswith-that-leaves.patch
-Patch0470: 0470-cgroup-port-some-code-over-to-path_startswith_full.patch
-Patch0471: 0471-path-util-invert-PATH_STARTSWITH_ACCEPT_DOT_DOT-flag.patch
-Patch0472: 0472-sd-json-fix-off-by-one-issue-when-updating-parent-fo.patch
-Patch0473: 0473-core-cgroup-avoid-one-unnecessary-strjoina.patch
-Patch0474: 0474-core-validate-input-cgroup-path-more-prudently.patch
+Patch0439: 0439-test-add-test-case-for-AddDependencyUnitFiles-assert.patch
+Patch0440: 0440-TEST-17-drop-unnecessary-PATH-setting.patch
+Patch0441: 0441-chase-check-the-result-is-a-directory-or-regular-fil.patch
+Patch0442: 0442-bootctl-stop-printing-Stub-Boot-loader-set-partition.patch
+Patch0443: 0443-ukify-rstrip-and-escape-binary-null-characters-from-.patch
+Patch0444: 0444-coredump-drop-RestrictSUIDSGID-option-38640.patch
+Patch0445: 0445-ukify-fix-insertion-of-padding-in-merged-sections.patch
+Patch0446: 0446-core-introduce-Unit.dependency_generation-counter-an.patch
+Patch0447: 0447-core-unit-use-UNIT_FOREACH_DEPENDENCY_SAFE-at-severa.patch
+Patch0448: 0448-test-rename-TEST-53-ISSUE-16347-to-TEST-53-TIMER.patch
+Patch0449: 0449-test-restarting-elapsed-timer-shouldn-t-trigger-the-.patch
+Patch0450: 0450-test-check-the-next-elapse-timer-timestamp-after-des.patch
+Patch0451: 0451-timer-don-t-run-service-immediately-after-restart-of.patch
+Patch0452: 0452-test-store-and-compare-just-the-property-value.patch
+Patch0453: 0453-pam_systemd-honor-session-class-provided-via-PAM-env.patch
+Patch0454: 0454-udev-net_id-introduce-naming-scheme-for-RHEL-10.2.patch
+Patch0455: 0455-udev-net_id-introduce-naming-scheme-for-RHEL-9.8.patch
+Patch0456: 0456-test-split-VM-only-subtests-from-TEST-74-AUX-UTILS-t.patch
+Patch0457: 0457-core-transaction-first-drop-unmergable-jobs-for-anch.patch
+Patch0458: 0458-test-add-test-case-for-issue-38765.patch
+Patch0459: 0459-strv-add-strv_equal_ignore_order-helper.patch
+Patch0460: 0460-pam-minor-coding-style-tweaks.patch
+Patch0461: 0461-user-record-add-helper-that-checks-if-a-provided-use.patch
+Patch0462: 0462-user-record-add-support-for-alias-user-names-to-user.patch
+Patch0463: 0463-pam_systemd_home-use-right-field-name-in-error-messa.patch
+Patch0464: 0464-pam_systemd_home-support-login-with-alias-names-user.patch
+Patch0465: 0465-homed-support-user-record-aliases.patch
+Patch0466: 0466-homectl-add-support-for-creating-users-with-alias-na.patch
+Patch0467: 0467-test-add-test-for-homed-alias-and-realm-user-resolut.patch
+Patch0468: 0468-update-TODO.patch
+Patch0469: 0469-udev-create-symlinks-for-s390-PTP-devices.patch
+Patch0470: 0470-test-build-the-crashing-test-binary-outside-of-the-t.patch
+Patch0471: 0471-test-exclude-test-stacktrace-not-symbolized-from-the.patch
+Patch0472: 0472-mkosi-install-test-dependencies-for-EnterNamespace-t.patch
+Patch0473: 0473-coredump-verify-pidfd-after-parsing-data-in-usermode.patch
+Patch0474: 0474-coredump-restore-compatibility-with-older-patterns.patch
+Patch0475: 0475-coredump-wrap-long-lines-fix-grammar-in-comments.patch
+Patch0476: 0476-coredump-get-rid-of-_META_MANDATORY_MAX.patch
+Patch0477: 0477-coredump-use-d-in-kernel-core-pattern.patch
+Patch0478: 0478-coredump-also-stop-forwarding-non-dumpable-processes.patch
+Patch0479: 0479-coredump-get-rid-of-a-bogus-assertion.patch
+Patch0480: 0480-coredump-add-support-for-new-F-PIDFD-specifier.patch
+Patch0481: 0481-coredump-when-F-pidfd-is-used-again-allow-forwarding.patch
+Patch0482: 0482-coredump-introduce-an-enum-to-wrap-dumpable-constant.patch
+Patch0483: 0483-Define-helper-to-call-PR_SET_DUMPABLE.patch
+Patch0484: 0484-coredump-fix-0-passed-as-pointer-warning.patch
+Patch0485: 0485-man-fix-a-missing-word.patch
+Patch0486: 0486-sd_bus_open_user_machine-Don-t-shortcut-without-nece.patch
+Patch0487: 0487-udev-set-clock-group-for-PTP-and-RTC-devices.patch
+Patch0488: 0488-coredump-handle-ENOBUFS-and-EMSGSIZE-the-same-way.patch
+Patch0489: 0489-strv-introduce-string_strv_hashmap_remove.patch
+Patch0490: 0490-unit-file-introduce-unit_file_remove_from_name_map.patch
+Patch0491: 0491-core-unit-remove-path-to-transient-unit-file-from-un.patch
+Patch0492: 0492-TEST-07-PID1-add-reprudcer-for-issue-35190.patch
+Patch0493: 0493-tools-check-version-history-avoid-DeprecationWarning.patch
+Patch0494: 0494-man-don-t-duplicate-version-in-History-section.patch
+Patch0495: 0495-tools-ignore-root-element-explicitly-in-check-versio.patch
+Patch0496: 0496-systemd-logind-Add-signal-section-in-man-systemd-log.patch
+Patch0497: 0497-timer-rebase-the-next-elapse-timestamp-only-if-timer.patch
+Patch0498: 0498-timer-rebase-last_trigger-timestamp-if-needed.patch
+Patch0499: 0499-fstab-generator-fix-options-in-systemd.mount-extra-a.patch
+Patch0500: 0500-hwdb-Add-Accelerometer-mount-matrix-for-Irbis-TW43.patch
+Patch0501: 0501-hwdb-map-FN-key-on-TongFang-X4SP4NAL-laptops.patch
+Patch0502: 0502-hwdb-update-rules.patch
+Patch0503: 0503-hwdb-update-autosuspend-rules.patch
+Patch0504: 0504-Add-Razer-Cobra-mouse-to-hwdb.patch
+Patch0505: 0505-hwdb-enable-autosuspend-for-Dell-DW5826e-WWAN-modem.patch
+Patch0506: 0506-hwdb-sort-SDR-devices-by-vendor-name.patch
+Patch0507: 0507-70-mouse.hwdb-Add-Razer-Basilisk-V3-Asus-Cerberus-2-.patch
+Patch0508: 0508-hwdb-run-update-hwdb.patch
+Patch0509: 0509-Add-Hantek-DSO-6022-oscilloscopes-and-compatible-dev.patch
+Patch0510: 0510-Update-60-sensor.hwdb-Add-support-for-Lenovo-Legion-.patch
+Patch0511: 0511-hwdb-add-Airspy-devices.patch
+Patch0512: 0512-hwdb-add-more-devices.patch
+Patch0513: 0513-hwdb-add-MiriSDR-MSi2500-devices.patch
+Patch0514: 0514-hwdb-add-missing-Ettus-Research-B200-rule.patch
+Patch0515: 0515-hwdb-add-LimeSDR-XTRX-devices.patch
+Patch0516: 0516-hwdb-add-HydraSDR-RFOne.patch
+Patch0517: 0517-hwdb-add-SDRplay-devices.patch
+Patch0518: 0518-hwdb-update.patch
+Patch0519: 0519-hwdb-fix-calibrate-rotation-sensor-for-Positivo-K116.patch
+Patch0520: 0520-Add-Nulea-M501-trackball-to-hwdb.patch
+Patch0521: 0521-add-comment-to-70-mouse.hwdb-regarding-generic-name-.patch
+Patch0522: 0522-remove-extra-space-from-new-hwdb.d-70-mouse.hwdb-ent.patch
+Patch0523: 0523-remove-bonus-line.patch
+Patch0524: 0524-hwdb-drop-trailing-whitespace.patch
+Patch0525: 0525-remove-Nulea-M501-usb-entry-from-hwdb.patch
+Patch0526: 0526-test-parse_hwdb-wrap-Or-inside-an-And-in-a-Group.patch
+Patch0527: 0527-rules-extend-60-input-id.rules-to-allow-for-bus-vid-.patch
+Patch0528: 0528-hwdb-don-t-tag-a-named-Mouse-device-as-pointingstick.patch
+Patch0529: 0529-hwdb-Add-V64x_V65xAU-to-list-of-Clevo-models-where-s.patch
+Patch0530: 0530-hwdb-gpd-micropc2-sensor-39493.patch
+Patch0531: 0531-hwdb-add-support-for-the-Logitech-MX-Master-4-39490.patch
+Patch0532: 0532-hwdb-add-entry-for-Acer-Switch-One-10-SW1-011-39716.patch
+Patch0533: 0533-keymap-Ignore-brightness-keys-on-Dell-Inspiron-3505-.patch
+Patch0534: 0534-Update-hwdb.patch
+Patch0535: 0535-hwdb-Add-Elecom-IST-Pro-trackball-39762.patch
+Patch0536: 0536-hwdb-Fix-keyboard-backlight-keys-on-Acer-Nitro-5-AN5.patch
+Patch0537: 0537-hwdb-Add-alternative-mode-for-Beacn-Mic-39868.patch
+Patch0538: 0538-Update-hwdb.patch
+Patch0539: 0539-hwdb-add-ProtoArc-EM01-NL-mouse-configuration.patch
+Patch0540: 0540-hwdb-add-Magic-Trackpad-v2-USB-C-2024-to-quirks-4003.patch
+Patch0541: 0541-hwdb-sensor-Remove-Lenovo-IdeaPad-D330-accel-mount-m.patch
+Patch0542: 0542-Update-hwdb.patch
+Patch0543: 0543-hwdb-update-autosuspend-rules.patch
+Patch0544: 0544-hwdb-Add-ACCEL_MOUNT_MATRIX-for-variant-of-TERRA-PAD.patch
+Patch0545: 0545-hwdb-sensor-Add-HP-OmniBook-Ultra-Flip-14-accel-moun.patch
+Patch0546: 0546-hwdb-sensor-Remove-Lenovo-IdeaPad-Duet-3-accel-mount.patch
+Patch0547: 0547-hwdb-Fix-ACCEL_MOUNT_MATRIX-for-Lenovo-Ideapad-MIIX-.patch
+Patch0548: 0548-hwdb-fix-unstable-button-triggering-on-Mipad-2-under.patch
+Patch0549: 0549-Update-hwdb.patch
+Patch0550: 0550-hwdb-touchpad-config-for-Apple-MacbookPro12-1-Early-.patch
+Patch0551: 0551-Add-Lenovo-Y50-70-touchpad-to-60-evdev.hwdb.patch
+Patch0552: 0552-quirks-sensor-add-info-about-ACPI-accel_matrix.patch
+Patch0553: 0553-quirks-Re-add-D330-accel_matrix-as-identity-one-4022.patch
+Patch0554: 0554-quirks-touchpad-Set-Duet-3-bt-touchpad-internal.patch
+Patch0555: 0555-hwdb-Add-missing-scancodes-for-Lenovo-Legion-devices.patch
+Patch0556: 0556-hwdb-Add-missing-vendor-names-for-older-AYANEO-devic.patch
+Patch0557: 0557-hwdb-add-matrix-for-ASUS-2-in-1-T101HA.patch
+Patch0558: 0558-hwdb-add-HP-EliteBoard-Mic-mute-key-mapping.patch
+Patch0559: 0559-hwdb-Add-GPD-Pocket-4-chassis-quirk.patch
+Patch0560: 0560-hwdb-make-three-more-hwdb-files-parsed-by-parse_hwdb.patch
+Patch0561: 0561-hwdb-set-touchpad-resolution-for-all-ThinkPad-T49x-c.patch
+Patch0562: 0562-hwdb-Update-Lenovo-Legion-Go-Models.patch
+Patch0563: 0563-hwdb-Add-extended-SteelSeries-Arctis-headset-device-.patch
+Patch0564: 0564-hwdb-keyboard-fix-typo-CAPSLOCK-to-NUMLOCK.patch
+Patch0565: 0565-hwdb-keyboard-uppercase-apple-id.patch
+Patch0566: 0566-integritysetup-Add-support-for-hmac-sha512.patch
+Patch0567: 0567-integritysetup-Add-PHMAC-algorithm-to-list-of-known-.patch
+Patch0568: 0568-core-increment-start-limit-counter-only-when-we-can-.patch
+Patch0569: 0569-TEST-07-PID1-wait-for-systemd-resolved-being-stopped.patch
+Patch0570: 0570-test-extend-start-limit-interval.patch
+Patch0571: 0571-userdbctl-optionally-show-user-group-data-from-JSON-.patch
+Patch0572: 0572-man-fix-typo.patch
+Patch0573: 0573-test-fix-test-with-Dnetworkd-false.patch
+Patch0574: 0574-ci-run-apt-get-update-before-running-mkosi.patch
+Patch0575: 0575-test-journal-dump-dump-the-headers-of-journal-files.patch
+Patch0576: 0576-journal-store-counts-not-byte-sizes-in-table-size-co.patch
+Patch0577: 0577-journal-treble-field-hash-table-size.patch
+Patch0578: 0578-nspawn-move-uid-shift-chown-code-into-shared.patch
+Patch0579: 0579-user-classification-add-new-foreign-UID-range.patch
+Patch0580: 0580-userdb-synthesize-stub-user-records-for-the-foreign-.patch
+Patch0581: 0581-dissect-add-new-shift-command.patch
+Patch0582: 0582-userdb-optionally-parse-numeric-UIDs-GIDs-where-a-us.patch
+Patch0583: 0583-userdbd-separate-parameter-structure-of-GetMembershi.patch
+Patch0584: 0584-userdb-move-setting-of-service-varlink-parameter-int.patch
+Patch0585: 0585-user-record-make-a-NULL-UserDBMatch-be-equivalent-to.patch
+Patch0586: 0586-sd-varlink-add-sd_varlink_get_description-call.patch
+Patch0587: 0587-user-record-add-helper-for-dispatching-a-disposition.patch
+Patch0588: 0588-user-record-rename-USER_DISPOSITION_MASK_MAX-USER_DI.patch
+Patch0589: 0589-user-record-add-some-helpers-for-working-with-UserDB.patch
+Patch0590: 0590-varlink-add-new-calls-for-server-side-user-record-fi.patch
+Patch0591: 0591-userdb-move-UserDBMatch-handling-from-userdbctl-into.patch
+Patch0592: 0592-userdbd-implement-server-side-filtering-in-the-Multi.patch
+Patch0593: 0593-homectl-port-has_regular_user-acquire_group_list-to-.patch
+Patch0594: 0594-update-TODO.patch
+Patch0595: 0595-JSON-User-Group-records-Add-properties-for-UUIDs.patch
+Patch0596: 0596-userdb-add-support-for-printing-the-UUID-from-user-a.patch
+Patch0597: 0597-userdb-add-support-for-looking-up-users-or-groups-by.patch
+Patch0598: 0598-userdbctl-add-uuid-filtering-option.patch
+Patch0599: 0599-userdbctl-add-missing-uuid-to-help-text.patch
+Patch0600: 0600-userdb-fix-typo.patch
+Patch0601: 0601-man-userdbctl-fixup-version-info.patch
+Patch0602: 0602-user-record-add-a-concept-of-inverting-per-host-matc.patch
+Patch0603: 0603-homectl-add-interface-for-controlling-storage-for-ne.patch
+Patch0604: 0604-logind-also-save-pidfdid-as-part-of-session-state-ev.patch
+Patch0605: 0605-logind-support-deserializing-session-leader-through-.patch
+Patch0606: 0606-TEST-35-LOGIN-test-coldplug-without-fdstore-on-kerne.patch
+Patch0607: 0607-logind-fix-potential-fd-leak-in-deliver_session_lead.patch
+Patch0608: 0608-Revert-coredump-lock-down-EnterNamespace-mount-even-.patch
+Patch0609: 0609-coredump-add-compat-support-for-SYSTEMD_COREDUMP_ALL.patch
+Patch0610: 0610-ci-re-enable-bpf-framework-option-for-build-and-unit.patch
+Patch0611: 0611-ci-add-bpftool-workaround-to-codeql-job-too.patch
+Patch0612: 0612-ci-fix-workaround-about-bpftool-for-codeql.patch
+Patch0613: 0613-ci-add-bpftool-workaround-to-coverity-too.patch
+Patch0614: 0614-path-util-add-flavour-of-path_startswith-that-leaves.patch
+Patch0615: 0615-cgroup-port-some-code-over-to-path_startswith_full.patch
+Patch0616: 0616-path-util-invert-PATH_STARTSWITH_ACCEPT_DOT_DOT-flag.patch
+Patch0617: 0617-sd-json-fix-off-by-one-issue-when-updating-parent-fo.patch
+Patch0618: 0618-core-cgroup-avoid-one-unnecessary-strjoina.patch
+Patch0619: 0619-core-validate-input-cgroup-path-more-prudently.patch
 
 # Downstream-only patches (9000–9999)
 %endif
@@ -915,7 +1060,7 @@ Requires:       (systemd-boot if %{shrink:(
         filesystem(riscv64)
 )})
 Requires:       python3dist(pefile)
-Requires:       python3dist(zstd)
+Requires:       python3dist(zstandard)
 Requires:       python3dist(cryptography)
 %if %{undefined rhel}
 Recommends:     python3dist(pillow)
@@ -1034,6 +1179,10 @@ useful to test systemd internals.
 %prep
 %autosetup -S git
 
+# Disable user lockdown until rpm implements it natively.
+# https://github.com/rpm-software-management/rpm/issues/3450
+sed -r -i 's/^u!/u/' sysusers.d/*.conf*
+
 %build
 %global ntpvendor %(source /etc/os-release; echo ${ID})
 %{!?ntpvendor: echo 'NTP vendor zone is not set!'; exit 1}
@@ -1124,6 +1273,7 @@ CONFIGURE_OPTS=(
         -Dvideo-gid=39
         -Daudio-gid=63
         -Dusers-gid=100
+        -Dclock-gid=103
         -Dinput-gid=104
         -Drender-gid=105
         -Dsgx-gid=106
@@ -1530,35 +1680,178 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
-* Wed Apr 08 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-13.3
-- ci: re-enable bpf-framework option for build and unit test jobs (RHEL-155394)
-- ci: add bpftool workaround to codeql job too (RHEL-155394)
-- ci: fix workaround about bpftool for codeql (RHEL-155394)
-- ci: add bpftool workaround to coverity too (RHEL-155394)
-- ci: pin Packit/mkosi to the latest RHEL 10.1 commit (RHEL-155394)
-- ci: run apt-get update before running mkosi (RHEL-155394)
-- path-util: add flavour of path_startswith() that leaves a leading slash in place (RHEL-155394)
-- cgroup: port some code over to path_startswith_full() (RHEL-155394)
-- path-util: invert PATH_STARTSWITH_ACCEPT_DOT_DOT flag (RHEL-155394)
-- sd-json: fix off-by-one issue when updating parent for array elements (RHEL-155394)
-- core/cgroup: avoid one unnecessary strjoina() (RHEL-155394)
-- core: validate input cgroup path more prudently (RHEL-155394)
+* Wed Apr 08 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-23.1
+- ci: re-enable bpf-framework option for build and unit test jobs (RHEL-152080)
+- ci: add bpftool workaround to codeql job too (RHEL-152080)
+- ci: fix workaround about bpftool for codeql (RHEL-152080)
+- ci: add bpftool workaround to coverity too (RHEL-152080)
+- path-util: add flavour of path_startswith() that leaves a leading slash in place (RHEL-152080)
+- cgroup: port some code over to path_startswith_full() (RHEL-152080)
+- path-util: invert PATH_STARTSWITH_ACCEPT_DOT_DOT flag (RHEL-152080)
+- sd-json: fix off-by-one issue when updating parent for array elements (RHEL-152080)
+- core/cgroup: avoid one unnecessary strjoina() (RHEL-152080)
+- core: validate input cgroup path more prudently (RHEL-152080)
 
-* Thu Jan 22 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-13.2
-- Revert "coredump: fix 0-passed-as-pointer warning" (RHEL-104135)
-- Revert "Define helper to call PR_SET_DUMPABLE" (RHEL-104135)
-- Revert "coredump: introduce an enum to wrap dumpable constants" (RHEL-104135)
-- Revert "coredump: when %F/pidfd is used, again allow forwarding to containers" (RHEL-104135)
-- Revert "coredump: add support for new %F PIDFD specifier" (RHEL-104135)
-- Revert "coredump: get rid of a bogus assertion" (RHEL-104135)
-- Revert "coredump: also stop forwarding non-dumpable processes" (RHEL-104135)
-- Revert "coredump: use %d in kernel core pattern" (RHEL-104135)
-- Revert "coredump: get rid of _META_MANDATORY_MAX" (RHEL-104135)
-- Revert "coredump: wrap long lines, fix grammar in comments" (RHEL-104135)
-- Revert "coredump: restore compatibility with older patterns" (RHEL-104135)
-- Revert "coredump: verify pidfd after parsing data in usermode helper" (RHEL-104135)
+* Tue Feb 17 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-23
+- test-journal-dump: dump the headers of journal files (RHEL-106795)
+- journal: store counts, not byte sizes, in table size constants (RHEL-106795)
+- journal: treble field hash table size (RHEL-106795)
+- nspawn: move uid shift/chown() code into shared/ (RHEL-143036)
+- user-classification: add new "foreign" UID range (RHEL-143036)
+- userdb: synthesize stub user records for the foreign UID (RHEL-143036)
+- dissect: add new --shift command (RHEL-143036)
+- userdb: optionally parse numeric UIDs/GIDs where a username is expected (RHEL-143036)
+- userdbd: separate parameter structure of GetMemberships() varlink call from the GetUserRecord() one (RHEL-143036)
+- userdb: move setting of 'service' varlink parameter into userdb_connect() (RHEL-143036)
+- user-record: make a NULL UserDBMatch be equivalent to no filtering (RHEL-143036)
+- sd-varlink: add sd_varlink_get_description() call (RHEL-143036)
+- user-record: add helper for dispatching a disposition mask (RHEL-143036)
+- user-record: rename USER_DISPOSITION_MASK_MAX → USER_DISPOSITION_MASK_ALL (RHEL-143036)
+- user-record: add some helpers for working with UserDBMatch (RHEL-143036)
+- varlink: add new calls for server-side user record filtering to varlink IDL + to spec (RHEL-143036)
+- userdb: move UserDBMatch handling from userdbctl into generic userdb code to allow it to be done server side (RHEL-143036)
+- userdbd: implement server side filtering in the Multiplexer API (RHEL-143036)
+- homectl: port has_regular_user() + acquire_group_list() to use server-side filtering (RHEL-143036)
+- update TODO (RHEL-143036)
+- JSON User/Group records: Add properties for UUIDs (RHEL-143036)
+- userdb: add support for printing the UUID from user and group records (RHEL-143036)
+- userdb: add support for looking up users or groups by uuid. (RHEL-143036)
+- userdbctl: add --uuid filtering option (RHEL-143036)
+- userdbctl: add missing --uuid= to --help text (RHEL-143036)
+- userdb: fix typo (RHEL-143036)
+- man/userdbctl: fixup version info (RHEL-143036)
+- user-record: add a concept of inverting per-host matching sections in user record (RHEL-143034)
+- homectl: add interface for controlling storage for negative machine ID matches (RHEL-143034)
+- logind: also save pidfdid as part of session state, even if we don't parse it (RHEL-53112)
+- logind: support deserializing session leader through pidfdid (RHEL-53112)
+- TEST-35-LOGIN: test coldplug without fdstore on kernels with pidfd id (RHEL-53112)
+- logind: fix potential fd leak in deliver_session_leader_fd_consume() (RHEL-53112)
+- Revert "coredump: lock down EnterNamespace= mount even more" (RHEL-95219)
+- coredump: add compat support for SYSTEMD_COREDUMP_ALLOW_NAMESPACE_CHANGE (RHEL-95219)
 
-* Fri Nov 21 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-13.1
+* Fri Feb 06 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-22
+- fstab-generator: fix options in systemd.mount-extra= arg (RHEL-125822)
+- hwdb: Add Accelerometer mount matrix for Irbis TW43 (RHEL-72702)
+- hwdb: map FN key on TongFang X4SP4NAL laptops (RHEL-72702)
+- hwdb: update rules (RHEL-72702)
+- hwdb: update autosuspend rules (RHEL-72702)
+- Add Razer Cobra mouse to hwdb (RHEL-72702)
+- hwdb: enable autosuspend for Dell DW5826e WWAN modem (RHEL-72702)
+- hwdb: sort SDR devices by vendor name (RHEL-72702)
+- 70-mouse.hwdb: Add Razer Basilisk V3, Asus Cerberus, +2 more (RHEL-72702)
+- hwdb: run "update-hwdb" (RHEL-72702)
+- Add Hantek DSO-6022 oscilloscopes and compatible devices (RHEL-72702)
+- Update 60-sensor.hwdb - Add support for Lenovo Legion Go (RHEL-72702)
+- hwdb: add Airspy devices (RHEL-72702)
+- hwdb: add more devices (RHEL-72702)
+- hwdb: add MiriSDR MSi2500 devices (RHEL-72702)
+- hwdb: add missing Ettus Research B200 rule (RHEL-72702)
+- hwdb: add LimeSDR XTRX devices (RHEL-72702)
+- hwdb: add HydraSDR RFOne (RHEL-72702)
+- hwdb: add SDRplay devices (RHEL-72702)
+- hwdb: update (RHEL-72702)
+- hwdb: fix calibrate rotation sensor for Positivo K116J (#39189) (RHEL-72702)
+- Add Nulea M501 trackball to hwdb (RHEL-72702)
+- add comment to 70-mouse.hwdb regarding generic name for Nulea M501 USB dongle (RHEL-72702)
+- remove extra space from new hwdb.d/70-mouse.hwdb entries to fix failing test (RHEL-72702)
+- remove bonus line (RHEL-72702)
+- hwdb: drop trailing whitespace (RHEL-72702)
+- remove Nulea M501 usb entry from hwdb (RHEL-72702)
+- test/parse_hwdb: wrap Or inside an And in a Group (RHEL-72702)
+- rules: extend 60-input-id.rules to allow for bus/vid/pid/name matches (RHEL-72702)
+- hwdb: don't tag a named Mouse device as pointingstick (RHEL-72702)
+- hwdb: Add V64x_V65xAU to list of Clevo models where scancode f7+f8 get mapped to touchpad-toggle (RHEL-72702)
+- hwdb: gpd micropc2 sensor (#39493) (RHEL-72702)
+- hwdb: add support for the Logitech MX Master 4 (#39490) (RHEL-72702)
+- hwdb: add entry for Acer Switch One 10 (SW1-011) (#39716) (RHEL-72702)
+- keymap: Ignore brightness keys on Dell Inspiron 3505 to avoid double events (RHEL-72702)
+- Update hwdb (RHEL-72702)
+- hwdb: Add Elecom IST Pro trackball (#39762) (RHEL-72702)
+- hwdb: Fix keyboard backlight keys on Acer Nitro 5 AN515-58 (#39769) (RHEL-72702)
+- hwdb: Add alternative mode for Beacn Mic (#39868) (RHEL-72702)
+- Update hwdb (RHEL-72702)
+- hwdb: add ProtoArc EM01 NL mouse configuration (RHEL-72702)
+- hwdb: add Magic Trackpad v2 USB-C (2024) to quirks (#40032) (RHEL-72702)
+- hwdb: sensor: Remove Lenovo IdeaPad D330 accel mount matrix (RHEL-72702)
+- Update hwdb (RHEL-72702)
+- hwdb: update autosuspend rules (RHEL-72702)
+- hwdb: Add ACCEL_MOUNT_MATRIX for variant of TERRA PAD 1061 (RHEL-72702)
+- hwdb: sensor: Add HP OmniBook Ultra Flip 14 accel mount matrix (#40076) (RHEL-72702)
+- hwdb: sensor: Remove Lenovo IdeaPad Duet 3 accel mount matrix (#40075) (RHEL-72702)
+- hwdb: Fix ACCEL_MOUNT_MATRIX for Lenovo Ideapad MIIX 310-ICR (#40067) (RHEL-72702)
+- hwdb: fix unstable button triggering on Mipad 2 under GNOME (#40071) (RHEL-72702)
+- Update hwdb (RHEL-72702)
+- hwdb: touchpad config for Apple MacbookPro12,1 Early 2015 (RHEL-72702)
+- Add Lenovo Y50-70 touchpad to 60-evdev.hwdb (RHEL-72702)
+- quirks: sensor: add info about ACPI accel_matrix (RHEL-72702)
+- quirks: Re-add D330 accel_matrix as identity one (#40226) (RHEL-72702)
+- quirks: touchpad: Set Duet 3 bt touchpad internal (RHEL-72702)
+- hwdb: Add missing scancodes for Lenovo Legion devices (RHEL-72702)
+- hwdb: Add missing vendor names for older AYANEO devices Adds AYADEVICE and AYA NEO vendor names. Early founders editon and 2021 models used these DMI values instead of AYANEO (RHEL-72702)
+- hwdb: add matrix for ASUS 2-in-1 T101HA (RHEL-72702)
+- hwdb: add HP EliteBoard Mic mute key mapping (RHEL-72702)
+- hwdb: Add GPD Pocket 4 chassis quirk (RHEL-72702)
+- hwdb: make three more hwdb files parsed by parse_hwdb.py (RHEL-72702)
+- hwdb: set touchpad resolution for all ThinkPad T49x chassis laptops (RHEL-72702)
+- hwdb: Update Lenovo Legion Go Models - Different BIOS versions of the Legion Go 2 can init the keyboard   device as set 1 (appears as raw set 2) or as set 2 (appears as   translated set 2). Add the Legion Go 2 to the Translated list. - While at it, specify the models in a more verbose manner for   posterity. (RHEL-72702)
+- hwdb: Add extended SteelSeries Arctis headset device support (#40479) (RHEL-72702)
+- hwdb: keyboard: fix typo CAPSLOCK to NUMLOCK (RHEL-72702)
+- hwdb: keyboard: uppercase apple id (RHEL-72702)
+- integritysetup: Add support for hmac-sha512 (RHEL-27852)
+- integritysetup: Add PHMAC algorithm to list of known algorithms (RHEL-27852)
+- core: increment start limit counter only when we can start the unit (RHEL-115032)
+- TEST-07-PID1: wait for systemd-resolved being stopped (RHEL-115032)
+- test: extend start limit interval (RHEL-115032)
+- userdbctl: optionally show user/group data from JSON filerather than from system (RHEL-143029)
+- man: fix typo (RHEL-143029)
+- test: fix test with -Dnetworkd=false (RHEL-143029)
+- ci: run apt-get update before running mkosi (RHEL-115001)
+
+* Wed Dec 17 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-21
+- add GUID for clock group (RHEL-113051)
+
+* Thu Nov 27 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-20
+- tools/check-version-history: avoid DeprecationWarning with newer lxml (RHEL-128767)
+- man: don't duplicate version in History section (RHEL-128767)
+- tools: ignore root element explicitly in check-version-history (RHEL-128767)
+- systemd-logind: Add signal section in man systemd-logind (RHEL-128767)
+- timer: rebase the next elapse timestamp only if timer didn't already run (RHEL-118216)
+- timer: rebase last_trigger timestamp if needed (RHEL-118216)
+
+* Fri Nov 21 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-19
+- man: fix a missing word (RHEL-120277)
+- sd_bus_open_user_machine(): Don't shortcut without necessary env (RHEL-129179)
+- udev: set clock group for PTP and RTC devices (RHEL-113051)
+- coredump: handle ENOBUFS and EMSGSIZE the same way (RHEL-126122)
+- strv: introduce string_strv_hashmap_remove() (RHEL-126937)
+- unit-file: introduce unit_file_remove_from_name_map() (RHEL-126937)
+- core/unit: remove path to transient unit file from unit name maps on stop (RHEL-126937)
+- TEST-07-PID1: add reprudcer for issue #35190 (RHEL-126937)
+
+* Thu Nov 20 2025 Lukáš Zaoral <lzaoral@redhat.com> - 257-18
+- spec: ukify: require python3-zstandard (RHEL-103523)
+
+* Wed Nov 05 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-17
+- pam_systemd: honor session class provided via PAM environment (RHEL-109832)
+- udev/net_id: introduce naming scheme for RHEL-10.2 (RHEL-72813)
+- udev/net_id: introduce naming scheme for RHEL-9.8 (RHEL-72813)
+- test: split VM-only subtests from TEST-74-AUX-UTILS to new VM-only test (RHEL-112205)
+- core/transaction: first drop unmergable jobs for anchor jobs (RHEL-112205)
+- test: add test case for issue #38765 (RHEL-112205)
+- strv: add strv_equal_ignore_order() helper (RHEL-109902)
+- pam: minor coding style tweaks (RHEL-109902)
+- user-record: add helper that checks if a provided user name matches a record (RHEL-109902)
+- user-record: add support for alias user names to user record (RHEL-109902)
+- pam_systemd_home: use right field name in error message (RHEL-109902)
+- pam_systemd_home: support login with alias names + user names with realms (RHEL-109902)
+- homed: support user record aliases (RHEL-109902)
+- homectl: add support for creating users with alias names (RHEL-109902)
+- test: add test for homed alias and realm user resolution (RHEL-109902)
+- update TODO (RHEL-109902)
+- udev: create symlinks for s390 PTP devices (RHEL-120177)
+- test: build the crashing test binary outside of the test (RHEL-113920)
+- test: exclude test-stacktrace(-not)?-symbolized from the coredump check (RHEL-113920)
+- mkosi: install test dependencies for EnterNamespace= test (RHEL-113920)
 - coredump: verify pidfd after parsing data in usermode helper (RHEL-104135)
 - coredump: restore compatibility with older patterns (RHEL-104135)
 - coredump: wrap long lines, fix grammar in comments (RHEL-104135)
@@ -1571,6 +1864,26 @@ rm -f %{name}.lang
 - coredump: introduce an enum to wrap dumpable constants (RHEL-104135)
 - Define helper to call PR_SET_DUMPABLE (RHEL-104135)
 - coredump: fix 0-passed-as-pointer warning (RHEL-104135)
+
+* Thu Oct 02 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-16
+- test: rename TEST-53-ISSUE-16347 to TEST-53-TIMER (RHEL-118216)
+- test: restarting elapsed timer shouldn't trigger the corresponding service (RHEL-118216)
+- test: check the next elapse timer timestamp after deserialization (RHEL-118216)
+- timer: don't run service immediately after restart of a timer (RHEL-118216)
+- test: store and compare just the property value (RHEL-118216)
+
+* Mon Sep 29 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-15
+- coredump: drop RestrictSUIDSGID= option (#38640) (RHEL-113920)
+- ukify: fix insertion of padding in merged sections (RHEL-114414)
+- core: introduce Unit.dependency_generation counter and restart loop when dependency is updated in the loop (RHEL-112203)
+- core/unit: use UNIT_FOREACH_DEPENDENCY_SAFE() at several more places (RHEL-112203)
+
+* Mon Sep 15 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-14
+- test: add test case for AddDependencyUnitFiles assert (RHEL-108257)
+- TEST-17: drop unnecessary $PATH setting (RHEL-108242)
+- chase: check the result is a directory or regular file only when the resolved path exists (RHEL-108006)
+- bootctl: stop printing "Stub/Boot loader set partition information" (RHEL-108251)
+- ukify: rstrip and escape binary null characters from 'inspect' output (#38607) (RHEL-109552)
 
 * Fri Aug 15 2025 systemd maintenance team <systemd-maint@redhat.com> - 257-13
 - core/transaction: do not attempt to log "n/a" as a journal field (RHEL-106260)

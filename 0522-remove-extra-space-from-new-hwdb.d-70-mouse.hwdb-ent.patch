@@ -1,0 +1,31 @@
+From 3b3177fd1ab1e93f01362433f75c18a2ef416b73 Mon Sep 17 00:00:00 2001
+From: Daniel Brackenbury <daniel.brackenbury@gmail.com>
+Date: Tue, 7 Oct 2025 18:55:57 -0400
+Subject: [PATCH] remove extra space from new hwdb.d/70-mouse.hwdb entries to
+ fix failing test
+
+(cherry picked from commit 2dc0e6cd734ac60b21d561bed1edc0cbb8c8d10d)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index b0099ece96..6bee17080a 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -830,11 +830,11 @@ mouse:usb:v0e8fp00a7:name:DaKai 2.4G RX:*
+ # as such this could require revisiting if it causes issues with other mice
+ # Nulea M501 Wireless Trackball (USB Receiver)
+ mouse:usb:v25a7pfa61:name:Compx 2.4G Receiver Mouse:*
+-  ID_INPUT_TRACKBALL=1
++ ID_INPUT_TRACKBALL=1
+ 
+ # Nulea M501 Wireless Trackball (Bluetooth)
+ mouse:bluetooth:v000ep3412:name:Nulea BT5.0 Mouse:*
+-  ID_INPUT_TRACKBALL=1
++ ID_INPUT_TRACKBALL=1
+ 
+ ##########################################
+ # Oklick

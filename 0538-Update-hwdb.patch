@@ -1,0 +1,2257 @@
+From 872d24e461077712505f959895d5f8e4c2025d6c Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 26 Nov 2025 01:13:40 +0000
+Subject: [PATCH] Update hwdb
+
+ninja -C build update-hwdb
+
+(cherry picked from commit 0a2970898ac086444aa80253e4b6907d169fc085)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/20-OUI.hwdb               | 292 +++++++++++++++++-
+ hwdb.d/20-acpi-vendor.hwdb.patch |   4 +-
+ hwdb.d/20-pci-vendor-model.hwdb  |  89 +++++-
+ hwdb.d/ma-large.txt              | 504 ++++++++++++++++++++++++++-----
+ hwdb.d/ma-medium.txt             | 108 ++++++-
+ hwdb.d/ma-small.txt              | 160 ++++++++--
+ hwdb.d/pci.ids                   |  35 ++-
+ 7 files changed, 1086 insertions(+), 106 deletions(-)
+
+diff --git a/hwdb.d/20-OUI.hwdb b/hwdb.d/20-OUI.hwdb
+index cb4916bfb3..b40c5340f9 100644
+--- a/hwdb.d/20-OUI.hwdb
++++ b/hwdb.d/20-OUI.hwdb
+@@ -43316,6 +43316,9 @@ OUI:0C0ADF*
+ OUI:0C0E76*
+  ID_OUI_FROM_DATABASE=D-Link International
+ 
++OUI:0C0ECB*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:0C1105*
+  ID_OUI_FROM_DATABASE=AKUVOX (XIAMEN) NETWORKS CO., LTD
+ 
+@@ -44063,6 +44066,9 @@ OUI:0C86C7*
+ OUI:0C8772*
+  ID_OUI_FROM_DATABASE=FUJIAN STAR-NET COMMUNICATION CO.,LTD
+ 
++OUI:0C8832*
++ ID_OUI_FROM_DATABASE=Nokia Solutions and Networks India Private Limited
++
+ OUI:0C8910*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
+@@ -44604,7 +44610,7 @@ OUI:0CE67C*
+  ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+ 
+ OUI:0CE709*
+- ID_OUI_FROM_DATABASE=Fox Crypto B.V.
++ ID_OUI_FROM_DATABASE=Sentyron B.V
+ 
+ OUI:0CE725*
+  ID_OUI_FROM_DATABASE=Microsoft Corporation
+@@ -45926,6 +45932,9 @@ OUI:10BAA5*
+ OUI:10BBF3*
+  ID_OUI_FROM_DATABASE=HUNAN FN-LINK TECHNOLOGY LIMITED
+ 
++OUI:10BC36*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:10BC97*
+  ID_OUI_FROM_DATABASE=vivo Mobile Communication Co., Ltd.
+ 
+@@ -46418,6 +46427,9 @@ OUI:14169E*
+ OUI:14172A*
+  ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
+ 
++OUI:141826*
++ ID_OUI_FROM_DATABASE=Nokia
++
+ OUI:141844*
+  ID_OUI_FROM_DATABASE=Xenon Smart Teknoloji Ltd.
+ 
+@@ -47414,6 +47426,9 @@ OUI:14D5C6*
+ OUI:14D64D*
+  ID_OUI_FROM_DATABASE=D-Link International
+ 
++OUI:14D67C*
++ ID_OUI_FROM_DATABASE=Uncord Technologies Private Limited
++
+ OUI:14D725*
+  ID_OUI_FROM_DATABASE=Barrot Technology Co.,Ltd.
+ 
+@@ -48053,6 +48068,9 @@ OUI:185B00*
+ OUI:185BB3*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
++OUI:185CA1*
++ ID_OUI_FROM_DATABASE=Jiangxi Risound Electronics Co.,LTD
++
+ OUI:185D6F*
+  ID_OUI_FROM_DATABASE=N3com
+ 
+@@ -50105,6 +50123,9 @@ OUI:1C8E5C*
+ OUI:1C8E8E*
+  ID_OUI_FROM_DATABASE=DB Communication & Systems Co., ltd.
+ 
++OUI:1C8EE6*
++ ID_OUI_FROM_DATABASE=VTECH TELECOMMUNICATIONS LIMITED
++
+ OUI:1C8F8A*
+  ID_OUI_FROM_DATABASE=Phase Motion Control SpA
+ 
+@@ -50597,6 +50618,9 @@ OUI:1CCDE5*
+ OUI:1CCE51*
+  ID_OUI_FROM_DATABASE=AzureWave Technology Inc.
+ 
++OUI:1CCF82*
++ ID_OUI_FROM_DATABASE=Palo Alto Networks
++
+ OUI:1CD107*
+  ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+ 
+@@ -52019,6 +52043,9 @@ OUI:20E52A*
+ OUI:20E564*
+  ID_OUI_FROM_DATABASE=Commscope
+ 
++OUI:20E59B*
++ ID_OUI_FROM_DATABASE=Panasonic Automotive Systems
++
+ OUI:20E6DF*
+  ID_OUI_FROM_DATABASE=eero inc.
+ 
+@@ -52319,6 +52346,9 @@ OUI:2418C6*
+ OUI:241972*
+  ID_OUI_FROM_DATABASE=Quectel Wireless Solutions Co.,Ltd.
+ 
++OUI:2419A5*
++ ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
++
+ OUI:241A8C*
+  ID_OUI_FROM_DATABASE=Squarehead Technology AS
+ 
+@@ -52733,6 +52763,9 @@ OUI:246278*
+ OUI:2462AB*
+  ID_OUI_FROM_DATABASE=Espressif Inc.
+ 
++OUI:2462C6*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:2462CE*
+  ID_OUI_FROM_DATABASE=Hewlett Packard Enterprise
+ 
+@@ -53729,6 +53762,9 @@ OUI:281B04*
+ OUI:281D21*
+  ID_OUI_FROM_DATABASE=IN ONE SMART TECHNOLOGY(H,K,)LIMITED
+ 
++OUI:281DAA*
++ ID_OUI_FROM_DATABASE=ASTI India Private Limited
++
+ OUI:281DFB*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -58028,6 +58064,9 @@ OUI:30EB5A*
+ OUI:30EC7C*
+  ID_OUI_FROM_DATABASE=Shenzhen Along Electronics Co., Ltd
+ 
++OUI:30ECA3*
++ ID_OUI_FROM_DATABASE=Alfatron Electronics INC
++
+ OUI:30ED96*
+  ID_OUI_FROM_DATABASE=LS Mecapion
+ 
+@@ -58709,6 +58748,9 @@ OUI:345506*
+ OUI:345594*
+  ID_OUI_FROM_DATABASE=FUJIAN STAR-NET COMMUNICATION CO.,LTD
+ 
++OUI:3455E5*
++ ID_OUI_FROM_DATABASE=SJIT Co., Ltd.
++
+ OUI:3456FE*
+  ID_OUI_FROM_DATABASE=Cisco Meraki
+ 
+@@ -61856,6 +61898,9 @@ OUI:3C479B*
+ OUI:3C4937*
+  ID_OUI_FROM_DATABASE=ASSMANN Electronic GmbH
+ 
++OUI:3C49FF*
++ ID_OUI_FROM_DATABASE=UNIONMAN TECHNOLOGY CO.,LTD
++
+ OUI:3C4A92*
+  ID_OUI_FROM_DATABASE=Hewlett Packard
+ 
+@@ -63152,6 +63197,9 @@ OUI:4036B7*
+ OUI:4037AD*
+  ID_OUI_FROM_DATABASE=Macro Image Technology, Inc.
+ 
++OUI:403802*
++ ID_OUI_FROM_DATABASE=Silicon Laboratories
++
+ OUI:403B7B*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
+@@ -64475,6 +64523,9 @@ OUI:44237C*
+ OUI:4423AA*
+  ID_OUI_FROM_DATABASE=Farmage Co., Ltd.
+ 
++OUI:442538*
++ ID_OUI_FROM_DATABASE=WNC Corporation
++
+ OUI:4425BB*
+  ID_OUI_FROM_DATABASE=Bamboo Entertainment Corporation
+ 
+@@ -65024,6 +65075,9 @@ OUI:44917C*
+ OUI:4491DB*
+  ID_OUI_FROM_DATABASE=Shanghai Huaqin Telecom Technology Co.,Ltd
+ 
++OUI:44938D*
++ ID_OUI_FROM_DATABASE=Innolux Corporation
++
+ OUI:4494FC*
+  ID_OUI_FROM_DATABASE=NETGEAR
+ 
+@@ -70691,6 +70745,9 @@ OUI:5454CF*
+ OUI:5455D5*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
++OUI:545618*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:545925*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -70877,6 +70934,9 @@ OUI:5481AD*
+ OUI:54833A*
+  ID_OUI_FROM_DATABASE=Zyxel Communications Corporation
+ 
++OUI:5483BB*
++ ID_OUI_FROM_DATABASE=Honda Motor Co., Ltd
++
+ OUI:548450*
+  ID_OUI_FROM_DATABASE=Tiinlab Corporation
+ 
+@@ -72155,15 +72215,51 @@ OUI:5873D8*
+ OUI:587521*
+  ID_OUI_FROM_DATABASE=CJSC RTSoft
+ 
++OUI:5876070*
++ ID_OUI_FROM_DATABASE=HARDWARIO a.s.
++
++OUI:5876071*
++ ID_OUI_FROM_DATABASE=Shing Chong International Co., Ltd.
++
+ OUI:5876072*
+  ID_OUI_FROM_DATABASE=Controlway(Suzhou) Electric Co., Ltd.
+ 
++OUI:5876073*
++ ID_OUI_FROM_DATABASE=Shenzhen HANSWELL Technology Co., Ltd.
++
++OUI:5876074*
++ ID_OUI_FROM_DATABASE=Beijing FHZX Science and Technology Co., Ltd.
++
++OUI:5876075*
++ ID_OUI_FROM_DATABASE=RealSense Inc.
++
+ OUI:5876076*
+  ID_OUI_FROM_DATABASE=Shade Innovations
+ 
++OUI:5876077*
++ ID_OUI_FROM_DATABASE=Oceansbio
++
+ OUI:5876078*
+  ID_OUI_FROM_DATABASE=Olte Climate sp. z o.o.
+ 
++OUI:5876079*
++ ID_OUI_FROM_DATABASE=Suprock Technologies
++
++OUI:587607A*
++ ID_OUI_FROM_DATABASE=INP Technologies Ltd
++
++OUI:587607B*
++ ID_OUI_FROM_DATABASE=Rwaytech
++
++OUI:587607C*
++ ID_OUI_FROM_DATABASE=BOE Technology Group Co., Ltd.
++
++OUI:587607D*
++ ID_OUI_FROM_DATABASE=Hubcom Techno System LLP
++
++OUI:587607E*
++ ID_OUI_FROM_DATABASE=SHENZHEN GAGO ELECTRONICS CO.,LTD
++
+ OUI:587675*
+  ID_OUI_FROM_DATABASE=Beijing ECHO Technologies Co.,Ltd
+ 
+@@ -73406,6 +73502,18 @@ OUI:5C5B35*
+ OUI:5C5BC2*
+  ID_OUI_FROM_DATABASE=YIK Corporation
+ 
++OUI:5C5C752*
++ ID_OUI_FROM_DATABASE=youyeetoo
++
++OUI:5C5C753*
++ ID_OUI_FROM_DATABASE=O-cubes Shanghai Microelectronics Technology Co., Ltd
++
++OUI:5C5C758*
++ ID_OUI_FROM_DATABASE=hassoun Gulf Industrial Company
++
++OUI:5C5C759*
++ ID_OUI_FROM_DATABASE=Spectrum FiftyNine BV
++
+ OUI:5C5DEC*
+  ID_OUI_FROM_DATABASE=JiangSu Newcom Optical&Electrical Communication CO Ltd
+ 
+@@ -76676,6 +76784,9 @@ OUI:64A28A*
+ OUI:64A2F9*
+  ID_OUI_FROM_DATABASE=OnePlus Technology (Shenzhen) Co., Ltd
+ 
++OUI:64A337*
++ ID_OUI_FROM_DATABASE=Garmin International
++
+ OUI:64A341*
+  ID_OUI_FROM_DATABASE=Wonderlan (Beijing) Technology Co., Ltd.
+ 
+@@ -78878,6 +78989,9 @@ OUI:6C3C7C*
+ OUI:6C3C8C*
+  ID_OUI_FROM_DATABASE=Dell Inc.
+ 
++OUI:6C3E51*
++ ID_OUI_FROM_DATABASE=Mindray North America
++
+ OUI:6C3E6D*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -79205,6 +79319,9 @@ OUI:6C7660*
+ OUI:6C76F7*
+  ID_OUI_FROM_DATABASE=MainStreaming SpA
+ 
++OUI:6C77F0*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:6C78C1*
+  ID_OUI_FROM_DATABASE=Juniper Networks
+ 
+@@ -79496,6 +79613,9 @@ OUI:6CAEF6*
+ OUI:6CAF15*
+  ID_OUI_FROM_DATABASE=Webasto SE
+ 
++OUI:6CAFAB*
++ ID_OUI_FROM_DATABASE=UAB Teltonika Telematics
++
+ OUI:6CB077*
+  ID_OUI_FROM_DATABASE=ALL Winner (Hong Kong) Limited
+ 
+@@ -80921,6 +81041,9 @@ OUI:70A741*
+ OUI:70A84C*
+  ID_OUI_FROM_DATABASE=MONAD., Inc.
+ 
++OUI:70A8A5*
++ ID_OUI_FROM_DATABASE=Microsoft Corporation
++
+ OUI:70A8D3*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
+@@ -81063,7 +81186,7 @@ OUI:70B3D501C*
+  ID_OUI_FROM_DATABASE=Kumu Networks
+ 
+ OUI:70B3D501D*
+- ID_OUI_FROM_DATABASE=Weigl Elektronik & Mediaprojekte
++ ID_OUI_FROM_DATABASE=Weigl GmbH & Co KG
+ 
+ OUI:70B3D501E*
+  ID_OUI_FROM_DATABASE=ePOINT Embedded Computing Limited
+@@ -93860,6 +93983,9 @@ OUI:742344*
+ OUI:74238D*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:742435*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:74249F*
+  ID_OUI_FROM_DATABASE=TIBRO Corp.
+ 
+@@ -97172,6 +97298,9 @@ OUI:7C2302*
+ OUI:7C240C*
+  ID_OUI_FROM_DATABASE=Telechips, Inc.
+ 
++OUI:7C246A*
++ ID_OUI_FROM_DATABASE=Scita Solutions
++
+ OUI:7C2499*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -99572,6 +99701,9 @@ OUI:80B709*
+ OUI:80B745*
+  ID_OUI_FROM_DATABASE=The Silk Technologies ILC LTD
+ 
++OUI:80B82A*
++ ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++
+ OUI:80B946*
+  ID_OUI_FROM_DATABASE=Nokia
+ 
+@@ -100397,6 +100529,9 @@ OUI:845A3E*
+ OUI:845A81*
+  ID_OUI_FROM_DATABASE=ffly4u
+ 
++OUI:845B0C*
++ ID_OUI_FROM_DATABASE=eFAB P.S.A.
++
+ OUI:845B12*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -103172,6 +103307,9 @@ OUI:8C1F64028*
+ OUI:8C1F64029*
+  ID_OUI_FROM_DATABASE=Hunan Shengyun Photoelectric Technology Co.,LTD
+ 
++OUI:8C1F6402D*
++ ID_OUI_FROM_DATABASE=Shenzhen Tezesk Energy Technology Co.,LTD
++
+ OUI:8C1F6402F*
+  ID_OUI_FROM_DATABASE=SOLIDpower SpA
+ 
+@@ -103556,6 +103694,9 @@ OUI:8C1F640F9*
+ OUI:8C1F640FA*
+  ID_OUI_FROM_DATABASE=Nautel LTD
+ 
++OUI:8C1F640FD*
++ ID_OUI_FROM_DATABASE=CEI Ptd Ltd
++
+ OUI:8C1F640FE*
+  ID_OUI_FROM_DATABASE=Indra Heera Technology LLP
+ 
+@@ -103772,6 +103913,9 @@ OUI:8C1F64176*
+ OUI:8C1F64177*
+  ID_OUI_FROM_DATABASE=Emcom Systems
+ 
++OUI:8C1F64178*
++ ID_OUI_FROM_DATABASE=Attack do Brasil Ind Com Apar de Som LTDA
++
+ OUI:8C1F64179*
+  ID_OUI_FROM_DATABASE=Agrowtek Inc.
+ 
+@@ -103850,6 +103994,9 @@ OUI:8C1F641A8*
+ OUI:8C1F641AD*
+  ID_OUI_FROM_DATABASE=Nexxto Servicos Em Tecnologia da Informacao SA
+ 
++OUI:8C1F641AE*
++ ID_OUI_FROM_DATABASE=Bounce Imaging
++
+ OUI:8C1F641AF*
+  ID_OUI_FROM_DATABASE=EnviroNode IoT Solutions
+ 
+@@ -104771,6 +104918,9 @@ OUI:8C1F6439B*
+ OUI:8C1F6439E*
+  ID_OUI_FROM_DATABASE=Abbott Diagnostics Technologies AS
+ 
++OUI:8C1F6439F*
++ ID_OUI_FROM_DATABASE=Guangzhou Beizeng Information Technology Co.,Ltd
++
+ OUI:8C1F643A2*
+  ID_OUI_FROM_DATABASE=Kron Medidores
+ 
+@@ -104837,6 +104987,9 @@ OUI:8C1F643C5*
+ OUI:8C1F643C6*
+  ID_OUI_FROM_DATABASE=Wavestream Corp
+ 
++OUI:8C1F643C7*
++ ID_OUI_FROM_DATABASE=RESMED PTY LTD
++
+ OUI:8C1F643C8*
+  ID_OUI_FROM_DATABASE=BTG Instruments AB
+ 
+@@ -105062,6 +105215,9 @@ OUI:8C1F64444*
+ OUI:8C1F64445*
+  ID_OUI_FROM_DATABASE=Figment Design Laboratories
+ 
++OUI:8C1F64447*
++ ID_OUI_FROM_DATABASE=MARVAUS TECHNOLOGIES PRIVATE LIMITED
++
+ OUI:8C1F64448*
+  ID_OUI_FROM_DATABASE=Förster-Technik GmbH
+ 
+@@ -105083,6 +105239,9 @@ OUI:8C1F64451*
+ OUI:8C1F64454*
+  ID_OUI_FROM_DATABASE=KJ Klimateknik A/S
+ 
++OUI:8C1F64455*
++ ID_OUI_FROM_DATABASE=Weigl GmbH & Co KG
++
+ OUI:8C1F64457*
+  ID_OUI_FROM_DATABASE=SHANGHAI ANGWEI INFORMATION TECHNOLOGY CO.,LTD.
+ 
+@@ -105782,6 +105941,9 @@ OUI:8C1F645CD*
+ OUI:8C1F645CE*
+  ID_OUI_FROM_DATABASE=Packetalk LLC
+ 
++OUI:8C1F645CF*
++ ID_OUI_FROM_DATABASE=YUYAMA MFG Co.,Ltd
++
+ OUI:8C1F645D0*
+  ID_OUI_FROM_DATABASE=Image Engineering
+ 
+@@ -105896,6 +106058,9 @@ OUI:8C1F6460B*
+ OUI:8C1F6460E*
+  ID_OUI_FROM_DATABASE=ICT International
+ 
++OUI:8C1F6460F*
++ ID_OUI_FROM_DATABASE=SAEL SRL
++
+ OUI:8C1F64610*
+  ID_OUI_FROM_DATABASE=Beijing Zhongzhi Huida Technology Co., Ltd
+ 
+@@ -106361,6 +106526,9 @@ OUI:8C1F6470C*
+ OUI:8C1F6470E*
+  ID_OUI_FROM_DATABASE=OvercomTech
+ 
++OUI:8C1F64710*
++ ID_OUI_FROM_DATABASE=Zengar Institute Inc
++
+ OUI:8C1F64712*
+  ID_OUI_FROM_DATABASE=Nexion Data Systems P/L
+ 
+@@ -106811,6 +106979,9 @@ OUI:8C1F647F3*
+ OUI:8C1F647F4*
+  ID_OUI_FROM_DATABASE=G.M. International srl
+ 
++OUI:8C1F647F6*
++ ID_OUI_FROM_DATABASE=Abbott Diagnostics Technologies AS
++
+ OUI:8C1F647F8*
+  ID_OUI_FROM_DATABASE=FleetSafe India Private Limited
+ 
+@@ -106937,6 +107108,9 @@ OUI:8C1F6483D*
+ OUI:8C1F6483E*
+  ID_OUI_FROM_DATABASE=Sicon srl
+ 
++OUI:8C1F64840*
++ ID_OUI_FROM_DATABASE=InfoMac Sp. z o.o. Sp.k.
++
+ OUI:8C1F64842*
+  ID_OUI_FROM_DATABASE=Potter Electric Signal Co. LLC
+ 
+@@ -108287,6 +108461,9 @@ OUI:8C1F64B2F*
+ OUI:8C1F64B30*
+  ID_OUI_FROM_DATABASE=Fujian ONETHING Technology Co.,Ltd.
+ 
++OUI:8C1F64B31*
++ ID_OUI_FROM_DATABASE=RSC
++
+ OUI:8C1F64B32*
+  ID_OUI_FROM_DATABASE=Plug Power
+ 
+@@ -109307,6 +109484,9 @@ OUI:8C1F64D53*
+ OUI:8C1F64D54*
+  ID_OUI_FROM_DATABASE=Grupo Epelsa S.L.
+ 
++OUI:8C1F64D55*
++ ID_OUI_FROM_DATABASE=Fairwinds Technologies
++
+ OUI:8C1F64D56*
+  ID_OUI_FROM_DATABASE=Wisdom Audio
+ 
+@@ -109490,6 +109670,9 @@ OUI:8C1F64DBF*
+ OUI:8C1F64DC0*
+  ID_OUI_FROM_DATABASE=Pigs Can Fly Labs LLC
+ 
++OUI:8C1F64DC1*
++ ID_OUI_FROM_DATABASE=SEGRON Automation, s.r.o.
++
+ OUI:8C1F64DC2*
+  ID_OUI_FROM_DATABASE=Procon Electronics Pty Ltd
+ 
+@@ -109868,6 +110051,9 @@ OUI:8C1F64E8F*
+ OUI:8C1F64E90*
+  ID_OUI_FROM_DATABASE=MHE Electronics
+ 
++OUI:8C1F64E91*
++ ID_OUI_FROM_DATABASE=RADIC Technologies, Inc.
++
+ OUI:8C1F64E92*
+  ID_OUI_FROM_DATABASE=EA Elektro-Automatik GmbH
+ 
+@@ -109985,6 +110171,9 @@ OUI:8C1F64ED9*
+ OUI:8C1F64EDA*
+  ID_OUI_FROM_DATABASE=DEUTA-WERKE GmbH
+ 
++OUI:8C1F64EDC*
++ ID_OUI_FROM_DATABASE=Infosoft Digital Design and Services P L
++
+ OUI:8C1F64EDD*
+  ID_OUI_FROM_DATABASE=OnDis Solutions Ltd
+ 
+@@ -110090,6 +110279,9 @@ OUI:8C1F64F1D*
+ OUI:8C1F64F20*
+  ID_OUI_FROM_DATABASE=Thermaco Incorporated
+ 
++OUI:8C1F64F21*
++ ID_OUI_FROM_DATABASE=nanoTRONIX Computing Inc.
++
+ OUI:8C1F64F22*
+  ID_OUI_FROM_DATABASE=Voyage Audio LLC
+ 
+@@ -110126,6 +110318,9 @@ OUI:8C1F64F32*
+ OUI:8C1F64F33*
+  ID_OUI_FROM_DATABASE=Sicon srl
+ 
++OUI:8C1F64F37*
++ ID_OUI_FROM_DATABASE=Polarity Inc
++
+ OUI:8C1F64F39*
+  ID_OUI_FROM_DATABASE=Weinan Wins Future Technology Co.,Ltd
+ 
+@@ -110402,6 +110597,9 @@ OUI:8C1F64FC5*
+ OUI:8C1F64FC6*
+  ID_OUI_FROM_DATABASE=Invertek Drives Ltd
+ 
++OUI:8C1F64FCA*
++ ID_OUI_FROM_DATABASE=Elektrotechnik & Elektronik Oltmann GmbH
++
+ OUI:8C1F64FCC*
+  ID_OUI_FROM_DATABASE=GREDMANN TAIWAN LTD.
+ 
+@@ -111362,6 +111560,9 @@ OUI:8CA399*
+ OUI:8CA401*
+  ID_OUI_FROM_DATABASE=Shenzhen New Chip Intelligence Co.,LTD
+ 
++OUI:8CA454*
++ ID_OUI_FROM_DATABASE=Private
++
+ OUI:8CA5A1*
+  ID_OUI_FROM_DATABASE=Oregano Systems - Design & Consulting GmbH
+ 
+@@ -112580,6 +112781,9 @@ OUI:907A28*
+ OUI:907A58*
+  ID_OUI_FROM_DATABASE=Zegna-Daidong Limited
+ 
++OUI:907ABE*
++ ID_OUI_FROM_DATABASE=GSD VIET NAM TECHNOLOGY COMPANY LIMITED
++
+ OUI:907AF1*
+  ID_OUI_FROM_DATABASE=Wally
+ 
+@@ -112931,6 +113135,9 @@ OUI:90ADFC*
+ OUI:90AE1B*
+  ID_OUI_FROM_DATABASE=TP-LINK TECHNOLOGIES CO.,LTD.
+ 
++OUI:90AF59*
++ ID_OUI_FROM_DATABASE=Choice IT Global LLC
++
+ OUI:90AFD1*
+  ID_OUI_FROM_DATABASE=netKTI Co., Ltd
+ 
+@@ -113072,6 +113279,9 @@ OUI:90C792*
+ OUI:90C7D8*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:90C952*
++ ID_OUI_FROM_DATABASE=Durin, Inc
++
+ OUI:90C99B*
+  ID_OUI_FROM_DATABASE=Tesorion Nederland B.V.
+ 
+@@ -113753,6 +113963,9 @@ OUI:943A91*
+ OUI:943AF0*
+  ID_OUI_FROM_DATABASE=Nokia Corporation
+ 
++OUI:943B22*
++ ID_OUI_FROM_DATABASE=NETGEAR
++
+ OUI:943BB0*
+  ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
+ 
+@@ -115079,6 +115292,9 @@ OUI:9811CC*
+ OUI:981223*
+  ID_OUI_FROM_DATABASE=Tarmoc Network LTD
+ 
++OUI:9812B7*
++ ID_OUI_FROM_DATABASE=KARST.AI
++
+ OUI:9812E0*
+  ID_OUI_FROM_DATABASE=Xiaomi Communications Co Ltd
+ 
+@@ -116507,6 +116723,9 @@ OUI:9C039E*
+ OUI:9C0473*
+  ID_OUI_FROM_DATABASE=Tecmobile (International) Ltd.
+ 
++OUI:9C04B6*
++ ID_OUI_FROM_DATABASE=Quectel Wireless Solutions Co.,Ltd.
++
+ OUI:9C04EB*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -119399,6 +119618,9 @@ OUI:A0FBC5*
+ OUI:A0FC6E*
+  ID_OUI_FROM_DATABASE=Telegrafia a.s.
+ 
++OUI:A0FDD9*
++ ID_OUI_FROM_DATABASE=UNIONMAN TECHNOLOGY CO.,LTD
++
+ OUI:A0FE61*
+  ID_OUI_FROM_DATABASE=Vivint Wireless Inc.
+ 
+@@ -120668,6 +120890,9 @@ OUI:A4CD23*
+ OUI:A4CEDA*
+  ID_OUI_FROM_DATABASE=Arcadyan Corporation
+ 
++OUI:A4CF03*
++ ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++
+ OUI:A4CF12*
+  ID_OUI_FROM_DATABASE=Espressif Inc.
+ 
+@@ -120959,6 +121184,9 @@ OUI:A4F465*
+ OUI:A4F4C2*
+  ID_OUI_FROM_DATABASE=VNPT TECHNOLOGY
+ 
++OUI:A4F4CA*
++ ID_OUI_FROM_DATABASE=Private
++
+ OUI:A4F522*
+  ID_OUI_FROM_DATABASE=CHOFU SEISAKUSHO CO.,LTD
+ 
+@@ -121073,6 +121301,9 @@ OUI:A8130B*
+ OUI:A81374*
+  ID_OUI_FROM_DATABASE=Panasonic Corporation AVC Networks Company
+ 
++OUI:A81378*
++ ID_OUI_FROM_DATABASE=Nokia
++
+ OUI:A8154D*
+  ID_OUI_FROM_DATABASE=TP-LINK TECHNOLOGIES CO.,LTD.
+ 
+@@ -122552,6 +122783,9 @@ OUI:AC3D94*
+ OUI:AC3DCB*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
++OUI:AC3DFA*
++ ID_OUI_FROM_DATABASE=Hangzhou Huacheng Network Technology Co.,Ltd
++
+ OUI:AC3EB1*
+  ID_OUI_FROM_DATABASE=Google, Inc.
+ 
+@@ -124268,6 +124502,9 @@ OUI:B08184*
+ OUI:B081D8*
+  ID_OUI_FROM_DATABASE=I-sys Corp
+ 
++OUI:B082E2*
++ ID_OUI_FROM_DATABASE=ASUSTek COMPUTER INC.
++
+ OUI:B083D6*
+  ID_OUI_FROM_DATABASE=Commscope
+ 
+@@ -126362,6 +126599,9 @@ OUI:B4F2E8*
+ OUI:B4F323*
+  ID_OUI_FROM_DATABASE=PETATEL INC.
+ 
++OUI:B4F49B*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:B4F58E*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -127856,6 +128096,9 @@ OUI:BC2A33*
+ OUI:BC2B02*
+  ID_OUI_FROM_DATABASE=CHINA DRAGON TECHNOLOGY LIMITED
+ 
++OUI:BC2B1E*
++ ID_OUI_FROM_DATABASE=Cresyn Co., Ltd.
++
+ OUI:BC2B6B*
+  ID_OUI_FROM_DATABASE=Beijing Haier IC Design Co.,Ltd
+ 
+@@ -128669,6 +128912,9 @@ OUI:BCA993*
+ OUI:BCA9D6*
+  ID_OUI_FROM_DATABASE=Cyber-Rain, Inc.
+ 
++OUI:BCAA82*
++ ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
++
+ OUI:BCAB7C*
+  ID_OUI_FROM_DATABASE=TRnP KOREA Co Ltd
+ 
+@@ -128744,6 +128990,9 @@ OUI:BCBBC9*
+ OUI:BCBC46*
+  ID_OUI_FROM_DATABASE=SKS Welding Systems GmbH
+ 
++OUI:BCBCCA*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:BCBD84*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
+@@ -129146,6 +129395,9 @@ OUI:C01850*
+ OUI:C01885*
+  ID_OUI_FROM_DATABASE=Hon Hai Precision Ind. Co.,Ltd.
+ 
++OUI:C0188C*
++ ID_OUI_FROM_DATABASE=Altus Sistemas de Automação S.A.
++
+ OUI:C01944*
+  ID_OUI_FROM_DATABASE=Juniper Networks
+ 
+@@ -132824,6 +133076,9 @@ OUI:C8727E*
+ OUI:C87324*
+  ID_OUI_FROM_DATABASE=Sow Cheng Technology Co. Ltd.
+ 
++OUI:C8741B*
++ ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
++
+ OUI:C8755B*
+  ID_OUI_FROM_DATABASE=Quantify Technology Pty. Ltd.
+ 
+@@ -133205,6 +133460,9 @@ OUI:C8AACC*
+ OUI:C8AC35*
+  ID_OUI_FROM_DATABASE=PiLink Co., Ltd.
+ 
++OUI:C8ADE7*
++ ID_OUI_FROM_DATABASE=Shenzhen Shengxi Industrial Co.,Ltd
++
+ OUI:C8AE9C*
+  ID_OUI_FROM_DATABASE=Shanghai TYD Elecronic Technology Co. Ltd
+ 
+@@ -134027,6 +134285,9 @@ OUI:CC3540*
+ OUI:CC355A*
+  ID_OUI_FROM_DATABASE=SecuGen Corporation
+ 
++OUI:CC36BB*
++ ID_OUI_FROM_DATABASE=Silicon Laboratories
++
+ OUI:CC36CF*
+  ID_OUI_FROM_DATABASE=Cisco Systems, Inc
+ 
+@@ -134393,6 +134654,9 @@ OUI:CC75E2*
+ OUI:CC763A*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:CC7645*
++ ID_OUI_FROM_DATABASE=Microsoft Corporation
++
+ OUI:CC7669*
+  ID_OUI_FROM_DATABASE=SEETECH
+ 
+@@ -139454,6 +139718,9 @@ OUI:D8D723*
+ OUI:D8D775*
+  ID_OUI_FROM_DATABASE=Sagemcom Broadband SAS
+ 
++OUI:D8D7F3*
++ ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
++
+ OUI:D8D866*
+  ID_OUI_FROM_DATABASE=SHENZHEN TOZED TECHNOLOGIES CO.,LTD.
+ 
+@@ -141821,6 +142088,9 @@ OUI:E09579*
+ OUI:E095FF*
+  ID_OUI_FROM_DATABASE=Infinix mobility limited
+ 
++OUI:E096E8*
++ ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
++
+ OUI:E09796*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -142970,6 +143240,9 @@ OUI:E472E2*
+ OUI:E47305*
+  ID_OUI_FROM_DATABASE=Shenzhen INVT Electric CO.,Ltd
+ 
++OUI:E47319*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:E47450*
+  ID_OUI_FROM_DATABASE=Shenzhen Grandsun Electronic Co.,Ltd.
+ 
+@@ -144314,6 +144587,9 @@ OUI:E88088*
+ OUI:E880D8*
+  ID_OUI_FROM_DATABASE=GNTEK Electronics Co.,Ltd.
+ 
++OUI:E880E7*
++ ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
++
+ OUI:E88152*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -145205,6 +145481,9 @@ OUI:EC1A02*
+ OUI:EC1A59*
+  ID_OUI_FROM_DATABASE=Belkin International Inc.
+ 
++OUI:EC1AC3*
++ ID_OUI_FROM_DATABASE=Ugreen Group Limited
++
+ OUI:EC1B5F*
+  ID_OUI_FROM_DATABASE=Hewlett Packard Enterprise
+ 
+@@ -147614,6 +147893,9 @@ OUI:F0C814*
+ OUI:F0C850*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
++OUI:F0C88B*
++ ID_OUI_FROM_DATABASE=Wyze Labs Inc
++
+ OUI:F0C88C*
+  ID_OUI_FROM_DATABASE=LeddarTech Inc.
+ 
+@@ -149360,6 +149642,9 @@ OUI:F4E1FC*
+ OUI:F4E204*
+  ID_OUI_FROM_DATABASE=COYOTE SYSTEM
+ 
++OUI:F4E25D*
++ ID_OUI_FROM_DATABASE=AltoBeam Inc.
++
+ OUI:F4E2C6*
+  ID_OUI_FROM_DATABASE=Ubiquiti Inc
+ 
+@@ -152426,6 +152711,9 @@ OUI:FCE557*
+ OUI:FCE66A*
+  ID_OUI_FROM_DATABASE=Industrial Software Co
+ 
++OUI:FCE6C6*
++ ID_OUI_FROM_DATABASE=China Mobile Group Device Co.,Ltd.
++
+ OUI:FCE806*
+  ID_OUI_FROM_DATABASE=Edifier International
+ 
+diff --git a/hwdb.d/20-acpi-vendor.hwdb.patch b/hwdb.d/20-acpi-vendor.hwdb.patch
+index c8f26dd493..a67b91b2e5 100644
+--- a/hwdb.d/20-acpi-vendor.hwdb.patch
++++ b/hwdb.d/20-acpi-vendor.hwdb.patch
+@@ -1,5 +1,5 @@
+---- 20-acpi-vendor.hwdb.base	2025-11-17 08:52:58.715288152 +0000
+-+++ 20-acpi-vendor.hwdb	2025-11-17 08:52:58.719288089 +0000
++--- 20-acpi-vendor.hwdb.base	2025-11-26 01:12:05.447760939 +0000
+++++ 20-acpi-vendor.hwdb	2025-11-26 01:12:05.459761232 +0000
+ @@ -3,6 +3,8 @@
+  # Data imported from:
+  #     https://uefi.org/uefi-pnp-export
+diff --git a/hwdb.d/20-pci-vendor-model.hwdb b/hwdb.d/20-pci-vendor-model.hwdb
+index 8a7eb20366..7af0900c18 100644
+--- a/hwdb.d/20-pci-vendor-model.hwdb
++++ b/hwdb.d/20-pci-vendor-model.hwdb
+@@ -176,6 +176,9 @@ pci:v0000001Cd00000001sv0000001Csd00000004*
+ pci:v0000001Cd00000001sv0000001Csd00000005*
+  ID_MODEL_FROM_DATABASE=PCAN-PCI CAN-Bus controller (2 Channel CAN Bus SJC1000 (Optically Isolated))
+ 
++pci:v00000029*
++ ID_VENDOR_FROM_DATABASE=MICROCHIP
++
+ pci:v0000003D*
+  ID_VENDOR_FROM_DATABASE=Lockheed Martin-Marietta Corp
+ 
+@@ -203,6 +206,9 @@ pci:v00000100*
+ pci:v00000123*
+  ID_VENDOR_FROM_DATABASE=General Dynamics
+ 
++pci:v00000127*
++ ID_VENDOR_FROM_DATABASE=MIPS
++
+ pci:v00000128*
+  ID_VENDOR_FROM_DATABASE=Dell (wrong ID)
+ 
+@@ -362,6 +368,9 @@ pci:v00000308*
+ pci:v00000315*
+  ID_VENDOR_FROM_DATABASE=SK-Electronics Co., Ltd.
+ 
++pci:v0000031E*
++ ID_VENDOR_FROM_DATABASE=ANDES
++
+ pci:v00000357*
+  ID_VENDOR_FROM_DATABASE=TTTech Computertechnik AG (Wrong ID)
+ 
+@@ -374,9 +383,15 @@ pci:v00000432*
+ pci:v00000432d00000001*
+  ID_MODEL_FROM_DATABASE=Pluto2 DVB-T Receiver for PCMCIA [EasyWatch MobilSet]
+ 
++pci:v00000489*
++ ID_VENDOR_FROM_DATABASE=SIFIVE
++
+ pci:v00000497*
+  ID_VENDOR_FROM_DATABASE=Dell Inc. (wrong ID)
+ 
++pci:v000005B7*
++ ID_VENDOR_FROM_DATABASE=THEAD
++
+ pci:v0000060E*
+  ID_VENDOR_FROM_DATABASE=Lightelligence
+ 
+@@ -2390,6 +2405,9 @@ pci:v00001000d000000A5sv000015D9sd00001D07*
+ pci:v00001000d000000A5sv000015D9sd00001D08*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24GSAS/PCIe SAS40xx/41xx (AOC-S4016L-L16IR Storage Adapter)
+ 
++pci:v00001000d000000A5sv000017AAsd00007855*
++ ID_MODEL_FROM_DATABASE=Fusion-MPT 24GSAS/PCIe SAS40xx/41xx (ThinkSystem RAID 950W-16i 8GB Flash PCIe Gen4 24Gb Adapter)
++
+ pci:v00001000d000000A5sv00001D49sd0000020A*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24GSAS/PCIe SAS40xx/41xx (ThinkSystem 450W-16e SAS/SATA PCIe Gen4 24Gb HBA)
+ 
+@@ -2495,6 +2513,9 @@ pci:v00001000d000000B3sv00001028sd000023CD*
+ pci:v00001000d000000B3sv00001028sd00002446*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx (PERC H976i Front)
+ 
++pci:v00001000d000000B3sv000017AAsd0000784C*
++ ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx (ThinkSystem RAID 960W PCIe Gen5 Adapter)
++
+ pci:v00001000d000000B3sv00001D49sd0000020B*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx (ThinkSystem 460-16e SAS/SATA PCIe Gen5 24Gb HBA)
+ 
+@@ -2534,6 +2555,9 @@ pci:v00001000d000000B5sv00001028sd000023CB*
+ pci:v00001000d000000B5sv00001028sd000023CD*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx (PERC H975i Adapter - Virtual)
+ 
++pci:v00001000d000000B5sv000017AAsd0000784C*
++ ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx (ThinkSystem RAID 960W PCIe Gen5 Adapter)
++
+ pci:v00001000d000000B6*
+  ID_MODEL_FROM_DATABASE=Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx
+ 
+@@ -39299,6 +39323,9 @@ pci:v000010DEd000022EC*
+ pci:v000010DEd00002302*
+  ID_MODEL_FROM_DATABASE=GH100
+ 
++pci:v000010DEd0000230C*
++ ID_MODEL_FROM_DATABASE=GH100 [H20 NVL16]
++
+ pci:v000010DEd0000230E*
+  ID_MODEL_FROM_DATABASE=GH100 [H20 NVL16]
+ 
+@@ -40044,7 +40071,7 @@ pci:v000010DEd00003182*
+  ID_MODEL_FROM_DATABASE=GB110 [B300 SXM6 AC]
+ 
+ pci:v000010DEd000031A1*
+- ID_MODEL_FROM_DATABASE=GB110
++ ID_MODEL_FROM_DATABASE=GB110 [GB300 MaxQ]
+ 
+ pci:v000010DEd000031C0*
+  ID_MODEL_FROM_DATABASE=GB110 [Reserved Dev ID B]
+@@ -67910,6 +67937,9 @@ pci:v000015CF*
+ pci:v000015CFd00000000*
+  ID_MODEL_FROM_DATABASE=CIFX PCI/PCIe
+ 
++pci:v000015CFd00000090*
++ ID_MODEL_FROM_DATABASE=CIFX PCI/PCIe
++
+ pci:v000015D1*
+  ID_VENDOR_FROM_DATABASE=Infineon Technologies AG
+ 
+@@ -85076,6 +85106,45 @@ pci:v00001F99d00001F88*
+ pci:v00001F99d00003420*
+  ID_MODEL_FROM_DATABASE=PCIe Gen3 x4 M.2 2280
+ 
++pci:v00001F99d00006100*
++ ID_MODEL_FROM_DATABASE=TE3420 Series NVMe PCIe Gen3x4 SSD
++
++pci:v00001F99d00006101*
++ ID_MODEL_FROM_DATABASE=XE3420 Series NVMe PCIe Gen3x4 SSD
++
++pci:v00001F99d00006102*
++ ID_MODEL_FROM_DATABASE=TE4407 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006103*
++ ID_MODEL_FROM_DATABASE=XE4407 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006104*
++ ID_MODEL_FROM_DATABASE=TE4408 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006105*
++ ID_MODEL_FROM_DATABASE=XE4408 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006106*
++ ID_MODEL_FROM_DATABASE=TE4402 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006107*
++ ID_MODEL_FROM_DATABASE=XE4402 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006108*
++ ID_MODEL_FROM_DATABASE=TE4405 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d00006109*
++ ID_MODEL_FROM_DATABASE=XE4405 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d0000610A*
++ ID_MODEL_FROM_DATABASE=TE4406 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d0000610B*
++ ID_MODEL_FROM_DATABASE=XE4406 Series NVMe PCIe Gen4x4 SSD
++
++pci:v00001F99d0000610C*
++ ID_MODEL_FROM_DATABASE=TE3410 Series NVMe PCIe Gen3x4 SSD
++
+ pci:v00001F9D*
+  ID_VENDOR_FROM_DATABASE=Axelera AI
+ 
+@@ -85085,6 +85154,9 @@ pci:v00001F9Dd00001100*
+ pci:v00001F9Dd000011AA*
+  ID_MODEL_FROM_DATABASE=Metis AIPU (rev 01)
+ 
++pci:v00001FA4*
++ ID_VENDOR_FROM_DATABASE=Shandong SinoChip Semiconductors Co., Ltd
++
+ pci:v00001FAA*
+  ID_VENDOR_FROM_DATABASE=Hexaflake (Shanghai) Information Technology Co., Ltd.
+ 
+@@ -86129,6 +86201,21 @@ pci:v000020D8d00002201*
+ pci:v000020D8d00002201sv000020D8sd00002201*
+  ID_MODEL_FROM_DATABASE=TUNAN-7 2x25GbE Controller
+ 
++pci:v000020D8d00002201sv000020D8sd00002211*
++ ID_MODEL_FROM_DATABASE=TUNAN-7 2x25GbE Controller (TUNAN-7V 2x25GbE Controller)
++
++pci:v000020D8d00003201*
++ ID_MODEL_FROM_DATABASE=TUNAN-7 2x200GbE Controller
++
++pci:v000020D8d00003201sv000020D8sd00003201*
++ ID_MODEL_FROM_DATABASE=TUNAN-7 2x200GbE Controller
++
++pci:v000020D8d00004201*
++ ID_MODEL_FROM_DATABASE=TUNAN-7 1x400GbE Controller
++
++pci:v000020D8d00004201sv000020D8sd00004201*
++ ID_MODEL_FROM_DATABASE=TUNAN-7 1x400GbE Controller (TUNAN-7V 1x400GbE Controller)
++
+ pci:v000020DC*
+  ID_VENDOR_FROM_DATABASE=Sharetronic Data Technology Co., Ltd.
+ 
+diff --git a/hwdb.d/ma-large.txt b/hwdb.d/ma-large.txt
+index 72f95d8bfb..1175af27c1 100644
+--- a/hwdb.d/ma-large.txt
++++ b/hwdb.d/ma-large.txt
+@@ -41558,12 +41558,6 @@ B43D6B     (base 16)		NXP Semiconductor (Tianjin) LTD.
+ 				Tianjin    300385
+ 				CN
+ 
+-4C-D7-C8   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-4CD7C8     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-				601,Building B2,No.162,Science Avenue,Science City,Guangzhou High-tech Industrial Development Zone,Guangdong Province,China
+-				Guangzhou  Guangdong  510663
+-				CN
+-
+ A4-29-02   (hex)		Hangzhou Hikvision Digital Technology Co.,Ltd.
+ A42902     (base 16)		Hangzhou Hikvision Digital Technology Co.,Ltd.
+ 				No.555 Qianmo Road 
+@@ -46334,18 +46328,78 @@ DC045A     (base 16)		Nanjing Qinheng Microelectronics Co., Ltd.
+ 				Cupertino  CA  95014
+ 				US
+ 
++E8-6E-3E   (hex)		Sichuan Tianyi Comheart Telecom Co.,LTD
++E86E3E     (base 16)		Sichuan Tianyi Comheart Telecom Co.,LTD
++				No.198,First Section,Snow Mountain Avenue, Jinyuan Town, Dayi County
++				Chengdu  Sichuan  611330
++				CN
++
++D8-D7-F3   (hex)		New H3C Technologies Co., Ltd
++D8D7F3     (base 16)		New H3C Technologies Co., Ltd
++				466 Changhe Road, Binjiang District
++				Hangzhou  Zhejiang  310052
++				CN
++
++44-25-38   (hex)		WNC Corporation
++442538     (base 16)		WNC Corporation
++				No.20,Park Avenue II,Hsinchu Science Park
++				Hsin-Chu  R.O.C.  308
++				TW
++
++1C-CF-82   (hex)		Palo Alto Networks
++1CCF82     (base 16)		Palo Alto Networks
++				3000 Tannery Way
++				Santa Clara  CA  95054
++				US
++
+ B0-43-5D   (hex)		MechoShade
+ B0435D     (base 16)		MechoShade
+ 				1497 Poinsettia Ave.
+ 				Vista  CA  92081
+ 				US
+ 
+-E8-6E-3E   (hex)		Sichuan Tianyi Comheart Telecom Co.,LTD
+-E86E3E     (base 16)		Sichuan Tianyi Comheart Telecom Co.,LTD
+-				No.198,First Section,Snow Mountain Avenue, Jinyuan Town, Dayi County
+-				Chengdu  Sichuan  611330
++80-B8-2A   (hex)		Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++80B82A     (base 16)		Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++				No.178 Yulong Avenue, Yufengshan, Yubei District, Chongqing.
++				Chongqing   China  401120
++				CN
++
++9C-04-B6   (hex)		Quectel Wireless Solutions Co.,Ltd.
++9C04B6     (base 16)		Quectel Wireless Solutions Co.,Ltd.
++				7th Floor, Hongye Building, No.1801 Hongmei Road, Xuhui District
++				Shanghai    200233
+ 				CN
+ 
++34-55-E5   (hex)		SJIT Co., Ltd.
++3455E5     (base 16)		SJIT Co., Ltd.
++				54-33 Dongtanhana 1-gil
++				Hwaseong-si  Gyeonggi-do  18423
++				KR
++
++BC-AA-82   (hex)		Fiberhome Telecommunication Technologies Co.,LTD
++BCAA82     (base 16)		Fiberhome Telecommunication Technologies Co.,LTD
++				No.5 DongXin Road
++				Wuhan  Hubei  430074
++				CN
++
++4C-D7-C8   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++4CD7C8     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++				13/F, Building 1, No.13 Bohua 4th Road,  Huangpu District
++				Guangzhou  Guangdong  510663
++				CN
++
++18-5C-A1   (hex)		Jiangxi Risound Electronics Co.,LTD
++185CA1     (base 16)		Jiangxi Risound Electronics Co.,LTD
++				No 271,innovation Avenue, Jinggangshan economic and Technological Development Zone
++				Ji'an  Jiangxi  343100
++				CN
++
++44-93-8D   (hex)		Innolux Corporation
++44938D     (base 16)		Innolux Corporation
++				No. 160, Kexue Rd., Zhunan Township
++				Miaoli County    35053
++				TW
++
+ 00-01-30   (hex)		Extreme Networks Headquarters
+ 000130     (base 16)		Extreme Networks Headquarters
+ 				2121 RDU Center Drive 
+@@ -89330,12 +89384,6 @@ BC3E0B     (base 16)		Panasonic Connect Co., Ltd.
+ 				Fukuoka-shi  Fukuoka  812-8531
+ 				JP
+ 
+-B4-64-15   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-B46415     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-				601,Building B2,No.162,Science Avenue,Science City,Guangzhou High-tech Industrial Development Zone,Guangdong Province,China
+-				Guangzhou  Guangdong  510663
+-				CN
+-
+ 30-BD-13   (hex)		Zyxel Communications Corporation
+ 30BD13     (base 16)		Zyxel Communications Corporation
+ 				No. 6 Innovation Road II, Science Park
+@@ -91868,46 +91916,130 @@ A0B53C     (base 16)		Vantiva Technologies Belgium
+ 				Cedarburg  WI  53012
+ 				US
+ 
++0C-88-32   (hex)		Nokia Solutions and Networks India Private Limited
++0C8832     (base 16)		Nokia Solutions and Networks India Private Limited
++				Plot 45, Fathima NagarNemilicherry,Chrompet
++				Chennai  Taminadu  600044
++				IN
++
++94-3B-22   (hex)		NETGEAR
++943B22     (base 16)		NETGEAR
++				3553 N. First Street
++				San Jose  CA  95134
++				US
++
++30-0E-43   (hex)		Apple, Inc.
++300E43     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++74-3F-8E   (hex)		Apple, Inc.
++743F8E     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
+ 88-3B-DC   (hex)		 CJ intelligent technology LTD.
+ 883BDC     (base 16)		 CJ intelligent technology LTD.
+ 				4F, No. 16, Zhongxin St., Shulin Dist.
+ 				New Taipei City    238035
+ 				TW
+ 
++B8-A7-92   (hex)		Sichuan Tianyi Comheart Telecom Co.,LTD
++B8A792     (base 16)		Sichuan Tianyi Comheart Telecom Co.,LTD
++				No.198,First Section,Snow Mountain Avenue, Jinyuan Town, Dayi County
++				Chengdu  Sichuan  611330
++				CN
++
+ C8-E7-13   (hex)		Bouffalo Lab (Nanjing) Co., Ltd.
+ C8E713     (base 16)		Bouffalo Lab (Nanjing) Co., Ltd.
+ 				5F, Gongxiang Space, No.100 Tuanjie Road, Nanjing, China
+ 				Nanjing  Jiangsu  211800
+ 				CN
+ 
++1C-8E-2A   (hex)		Apple, Inc.
++1C8E2A     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
+ 58-76-07   (hex)		IEEE Registration Authority
+ 587607     (base 16)		IEEE Registration Authority
+ 				445 Hoes Lane
+ 				Piscataway  NJ  08554
+ 				US
+ 
+-1C-8E-2A   (hex)		Apple, Inc.
+-1C8E2A     (base 16)		Apple, Inc.
+-				1 Infinite Loop
+-				Cupertino  CA  95014
+-				US
++24-19-A5   (hex)		New H3C Technologies Co., Ltd
++2419A5     (base 16)		New H3C Technologies Co., Ltd
++				466 Changhe Road, Binjiang District
++				Hangzhou  Zhejiang  310052
++				CN
+ 
+-30-0E-43   (hex)		Apple, Inc.
+-300E43     (base 16)		Apple, Inc.
+-				1 Infinite Loop
+-				Cupertino  CA  95014
++6C-AF-AB   (hex)		UAB Teltonika Telematics
++6CAFAB     (base 16)		UAB Teltonika Telematics
++				Saltoniskiu  str. 9B-1
++				Vilnius    LT-08105
++				LT
++
++54-83-BB   (hex)		Honda Motor Co., Ltd
++5483BB     (base 16)		Honda Motor Co., Ltd
++				Toranomon Alcea Tower, 2-2-3 Toranomon, Minato-ku, 
++				Tokyo    105-8404
++				JP
++
++A8-13-78   (hex)		Nokia
++A81378     (base 16)		Nokia
++				600 March Road
++				Kanata  Ontario  K2K 2E6
++				CA
++
++1C-8E-E6   (hex)		VTECH TELECOMMUNICATIONS LIMITED
++1C8EE6     (base 16)		VTECH TELECOMMUNICATIONS LIMITED
++				BLOCK 01 23-24/F TAT PING INDUSTRIAL CENTRE 57 TING KOK ROAD TAI PONT
++				DONG GUAN  GUANG ZHOU  52300
++				CN
++
++E0-96-E8   (hex)		Fiberhome Telecommunication Technologies Co.,LTD
++E096E8     (base 16)		Fiberhome Telecommunication Technologies Co.,LTD
++				No.5 DongXin Road
++				Wuhan  Hubei  430074
++				CN
++
++84-5B-0C   (hex)		eFAB P.S.A.
++845B0C     (base 16)		eFAB P.S.A.
++				al. Solidarości 129/131/197VATID: PL5272968735
++				Warsaw  Mazowieckie  00-898
++				PL
++
++90-AF-59   (hex)		Choice IT Global LLC
++90AF59     (base 16)		Choice IT Global LLC
++				14900 James Rd #200
++				Rogers  MN  55374
+ 				US
+ 
+-74-3F-8E   (hex)		Apple, Inc.
+-743F8E     (base 16)		Apple, Inc.
+-				1 Infinite Loop
+-				Cupertino  CA  95014
++F0-C8-8B   (hex)		Wyze Labs Inc
++F0C88B     (base 16)		Wyze Labs Inc
++				 22522 29TH DR SE L101
++				BOTHELL  WA  98021
+ 				US
+ 
+-B8-A7-92   (hex)		Sichuan Tianyi Comheart Telecom Co.,LTD
+-B8A792     (base 16)		Sichuan Tianyi Comheart Telecom Co.,LTD
+-				No.198,First Section,Snow Mountain Avenue, Jinyuan Town, Dayi County
+-				Chengdu  Sichuan  611330
++B4-64-15   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++B46415     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++				13/F, Building 1, No.13 Bohua 4th Road,  Huangpu District
++				Guangzhou  Guangdong  510663
++				CN
++
++6C-77-F0   (hex)		Huawei Device Co., Ltd.
++6C77F0     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++24-62-C6   (hex)		Huawei Device Co., Ltd.
++2462C6     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
+ 				CN
+ 
+ 6C-87-20   (hex)		New H3C Technologies Co., Ltd
+@@ -92258,12 +92390,6 @@ D8097F     (base 16)		zte corporation
+ 				HongKong  HongKong  999077
+ 				HK
+ 
+-6C-68-A4   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-6C68A4     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
+-				601,Building B2,No.162,Science Avenue,Science City,Guangzhou High-tech Industrial Development Zone,Guangdong Province,China
+-				Guangzhou  Guangdong  510663
+-				CN
+-
+ 44-B5-9C   (hex)		Tenet Networks Private Limited
+ 44B59C     (base 16)		Tenet Networks Private Limited
+ 				15 B, HIG Flats,Swarnim Vihar,Sector 82
+@@ -118463,12 +118589,6 @@ A893E6     (base 16)		JIANGXI JINGGANGSHAN CKING COMMUNICATION TECHNOLOGY CO.,LT
+ 14-6E-0A   (hex)		Private
+ 146E0A     (base 16)		Private
+ 
+-0C-E7-09   (hex)		Fox Crypto B.V.
+-0CE709     (base 16)		Fox Crypto B.V.
+-				P.O. box 638
+-				Delft  ZH  2600 AP
+-				NL
+-
+ 6C-0F-6A   (hex)		JDC Tech Co., Ltd.
+ 6C0F6A     (base 16)		JDC Tech Co., Ltd.
+ 				370-12 Daemyung-ri Daegot-myun
+@@ -137660,6 +137780,54 @@ ECC07A     (base 16)		Ezurio, LLC
+ 				Round Rock   TX  78682
+ 				US
+ 
++A4-CF-03   (hex)		Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++A4CF03     (base 16)		Realme Chongqing Mobile Telecommunications Corp.,Ltd.
++				No.178 Yulong Avenue, Yufengshan, Yubei District, Chongqing.
++				Chongqing   China  401120
++				CN
++
++FC-E6-C6   (hex)		China Mobile Group Device Co.,Ltd.
++FCE6C6     (base 16)		China Mobile Group Device Co.,Ltd.
++				32 Xuanwumen West Street,Xicheng District 
++				Beijing    100053
++				CN
++
++6C-3E-51   (hex)		Mindray North America
++6C3E51     (base 16)		Mindray North America
++				800 MacArthur Blvd
++				Mahwah  NJ  07430
++				US
++
++14-18-26   (hex)		Nokia
++141826     (base 16)		Nokia
++				600 March Road
++				Kanata  Ontario  K2K 2E6
++				CA
++
++20-E5-9B   (hex)		Panasonic Automotive Systems
++20E59B     (base 16)		Panasonic Automotive Systems
++				1578-5 , Uegawa-chou
++				Matsusaka  Mie  5150041
++				JP
++
++0C-E7-09   (hex)		Sentyron B.V
++0CE709     (base 16)		Sentyron B.V
++				P.O. box 638
++				Delft  ZH  2600 AP
++				NL
++
++B0-82-E2   (hex)		ASUSTek COMPUTER INC.
++B082E2     (base 16)		ASUSTek COMPUTER INC.
++				15,Li-Te Rd., Peitou, Taipei 112, Taiwan
++				Taipei  Taiwan  112
++				TW
++
++3C-49-FF   (hex)		UNIONMAN TECHNOLOGY CO.,LTD
++3C49FF     (base 16)		UNIONMAN TECHNOLOGY CO.,LTD
++				No.5,Huitai Road,Huinan High-Tech Park,Huiao Highway
++				Huizhou  Guangdong  516025
++				CN
++
+ 24-55-9A   (hex)		Apple, Inc.
+ 24559A     (base 16)		Apple, Inc.
+ 				1 Infinite Loop
+@@ -137672,6 +137840,48 @@ ECC07A     (base 16)		Ezurio, LLC
+ 				Cupertino  CA  95014
+ 				US
+ 
++6C-68-A4   (hex)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++6C68A4     (base 16)		Guangzhou V-Solution Telecommunication Technology Co.,Ltd.
++				13/F, Building 1, No.13 Bohua 4th Road,  Huangpu District
++				Guangzhou  Guangdong  510663
++				CN
++
++90-C9-52   (hex)		Durin, Inc
++90C952     (base 16)		Durin, Inc
++				440 N Wolfe Rd
++				Sunnyvale  CA  94085
++				US
++
++A0-FD-D9   (hex)		UNIONMAN TECHNOLOGY CO.,LTD
++A0FDD9     (base 16)		UNIONMAN TECHNOLOGY CO.,LTD
++				No.5,Huitai Road,Huinan High-Tech Park,Huiao Highway
++				Huizhou  Guangdong  516025
++				CN
++
++BC-2B-1E   (hex)		Cresyn Co., Ltd.
++BC2B1E     (base 16)		Cresyn Co., Ltd.
++				CRESYN B/D, Gangnam-daero 107-gil, Seocho-gu, Seoul
++				Seoul  CRESYN B/D, Gangnam-daero 107-gil  06254
++				KR
++
++EC-1A-C3   (hex)		Ugreen Group Limited
++EC1AC3     (base 16)		Ugreen Group Limited
++				4F, Plant 6, 1F-6/F, Block 7, YuAn Zone, Gaofeng Community, Dalang Street, Longhua District
++				Shenzhen  Guangdong  518109
++				CN
++
++E4-73-19   (hex)		Huawei Device Co., Ltd.
++E47319     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++BC-BC-CA   (hex)		Huawei Device Co., Ltd.
++BCBCCA     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
+ B0-0C-9D   (hex)		Quectel Wireless Solutions Co.,Ltd.
+ B00C9D     (base 16)		Quectel Wireless Solutions Co.,Ltd.
+ 				7th Floor, Hongye Building, No.1801 Hongmei Road, Xuhui District
+@@ -183959,11 +184169,17 @@ A4B1E9     (base 16)		Vantiva Technologies Belgium
+ 				Edegem - Belgium    B-2650
+ 				BE
+ 
+-F4-64-B6   (hex)		Sercomm Corporation.
+-F464B6     (base 16)		Sercomm Corporation.
+-				3F,No.81,Yu-Yih Rd.,Chu-Nan Chen
+-				Miao-Lih Hsuan    115
+-				TW
++64-F6-4D   (hex)		CELESTICA INC.
++64F64D     (base 16)		CELESTICA INC.
++				1900-5140 Yonge Street PO Box 42   
++				Toronto  Ontario  M2N 6L7
++				CA
++
++48-FC-7C   (hex)		Shenzhen Huidu Technology Co., Ltd.
++48FC7C     (base 16)		Shenzhen Huidu Technology Co., Ltd.
++				18F, No. 196 Tangtou Street, Shiyan Town, Baoan District, Shenzhen
++				Shenzhen    518000
++				CN
+ 
+ 9C-DF-8A   (hex)		HUAWEI TECHNOLOGIES CO.,LTD
+ 9CDF8A     (base 16)		HUAWEI TECHNOLOGIES CO.,LTD
+@@ -183989,22 +184205,22 @@ FCA27E     (base 16)		HUAWEI TECHNOLOGIES CO.,LTD
+ 				Dongguan    523808
+ 				CN
+ 
+-C0-EE-40   (hex)		Ezurio, LLC
+-C0EE40     (base 16)		Ezurio, LLC
+-				50 South Main St
+-				Akron    44308
++00-92-35   (hex)		Apple, Inc.
++009235     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
+ 				US
+ 
+-64-F6-4D   (hex)		CELESTICA INC.
+-64F64D     (base 16)		CELESTICA INC.
+-				1900-5140 Yonge Street PO Box 42   
+-				Toronto  Ontario  M2N 6L7
+-				CA
++F0-2F-BA   (hex)		Apple, Inc.
++F02FBA     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
+ 
+-48-FC-7C   (hex)		Shenzhen Huidu Technology Co., Ltd.
+-48FC7C     (base 16)		Shenzhen Huidu Technology Co., Ltd.
+-				18F, No. 196 Tangtou Street, Shiyan Town, Baoan District, Shenzhen
+-				Shenzhen    518000
++E4-CE-58   (hex)		Anhui Realloong Automotive Electronics Co.,Ltd
++E4CE58     (base 16)		Anhui Realloong Automotive Electronics Co.,Ltd
++				Anhui Realloong Automotive Electronics Co.,Ltd
++				Hefei  Anhui  230088
+ 				CN
+ 
+ 74-14-D0   (hex)		Apple, Inc.
+@@ -184037,22 +184253,79 @@ F478AC     (base 16)		Apple, Inc.
+ 				Cupertino  CA  95014
+ 				US
+ 
+-00-92-35   (hex)		Apple, Inc.
+-009235     (base 16)		Apple, Inc.
+-				1 Infinite Loop
+-				Cupertino  CA  95014
++7C-24-6A   (hex)		Scita Solutions
++7C246A     (base 16)		Scita Solutions
++				218, 2nd Cross, ISRO Layout
++				Bangalore  Karnataka  560078
++				IN
++
++F4-64-B6   (hex)		Sercomm Corporation.
++F464B6     (base 16)		Sercomm Corporation.
++				3F,No.81,Yu-Yih Rd.,Chu-Nan Chen
++				Miao-Lih Hsuan    115
++				TW
++
++C0-EE-40   (hex)		Ezurio, LLC
++C0EE40     (base 16)		Ezurio, LLC
++				50 South Main St
++				Akron    44308
+ 				US
+ 
+-F0-2F-BA   (hex)		Apple, Inc.
+-F02FBA     (base 16)		Apple, Inc.
+-				1 Infinite Loop
+-				Cupertino  CA  95014
++C8-AD-E7   (hex)		Shenzhen Shengxi Industrial Co.,Ltd
++C8ADE7     (base 16)		Shenzhen Shengxi Industrial Co.,Ltd
++				Unit 402, Building 10, Yuanling New Village, Yuanling Community
++				Yuanling Street  Futian District  518028
++				CN
++
++AC-3D-FA   (hex)		Hangzhou Huacheng Network Technology Co.,Ltd
++AC3DFA     (base 16)		Hangzhou Huacheng Network Technology Co.,Ltd
++				13th Floor, Building 3, No. 582, Liye Road, Changhe Street, Binjiang District, Hangzhou, China (Zhejiang) Pilot Free Trade Zone
++				Hangzhou    311200
++				CN
++
++8C-A4-54   (hex)		Private
++8CA454     (base 16)		Private
++
++C8-74-1B   (hex)		Fiberhome Telecommunication Technologies Co.,LTD
++C8741B     (base 16)		Fiberhome Telecommunication Technologies Co.,LTD
++				No.5 DongXin Road
++				Wuhan  Hubei  430074
++				CN
++
++F4-E2-5D   (hex)		AltoBeam Inc.
++F4E25D     (base 16)		AltoBeam Inc.
++				B808, Tsinghua Tongfang Hi-Tech Plaza, Haidian
++				Beijing  Beijing  100083
++				CN
++
++CC-36-BB   (hex)		Silicon Laboratories
++CC36BB     (base 16)		Silicon Laboratories
++				 400 West Cesar Chavez
++				Austin  TX  78701
+ 				US
+ 
+-E4-CE-58   (hex)		Anhui Realloong Automotive Electronics Co.,Ltd
+-E4CE58     (base 16)		Anhui Realloong Automotive Electronics Co.,Ltd
+-				Anhui Realloong Automotive Electronics Co.,Ltd
+-				Hefei  Anhui  230088
++CC-76-45   (hex)		Microsoft Corporation
++CC7645     (base 16)		Microsoft Corporation
++				One Microsoft Way
++				REDMOND  WA  98052
++				US
++
++98-12-B7   (hex)		KARST.AI
++9812B7     (base 16)		KARST.AI
++				112 ROBINSON ROAD#03-01ROBINSON 112
++				Singapore    068902
++				SG
++
++64-A3-37   (hex)		Garmin International
++64A337     (base 16)		Garmin International
++				1200 E. 151st St
++				Olathe  KS  66062
++				US
++
++54-56-18   (hex)		Huawei Device Co., Ltd.
++545618     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
+ 				CN
+ 
+ C8-5C-E2   (hex)		IEEE Registration Authority
+@@ -229850,6 +230123,24 @@ E40177     (base 16)		SafeOwl, Inc.
+ 				Dallas  TX  75206
+ 				US
+ 
++28-1D-AA   (hex)		ASTI India Private Limited
++281DAA     (base 16)		ASTI India Private Limited
++				Plot No. 75, Ukardi,Japanese Industrial Zone,Ukardi, Taluka-Mandal,Ahmedabad
++				Ahmedabad  Gujarat  382120
++				IN
++
++C0-18-8C   (hex)		Altus Sistemas de Automação S.A.
++C0188C     (base 16)		Altus Sistemas de Automação S.A.
++				Av. Theodomiro Porto da Fonseca, 3101 - lote 01 - Cristo Rei
++				São Leopoldo  Rio Grande do Sul  93022-715
++				BR
++
++90-7A-BE   (hex)		GSD VIET NAM TECHNOLOGY COMPANY LIMITED
++907ABE     (base 16)		GSD VIET NAM TECHNOLOGY COMPANY LIMITED
++				PART OF FACTORY 2, LOT C2.10, D1 STREET, DONG AN 2 INDUSTRIAL PARK, BINHDUONG WARD
++				HO CHI MINH CITY  HO CHI MINH  820000
++				VN
++
+ FC-88-27   (hex)		Apple, Inc.
+ FC8827     (base 16)		Apple, Inc.
+ 				1 Infinite Loop
+@@ -229868,8 +230159,71 @@ FC8827     (base 16)		Apple, Inc.
+ 				Cupertino  CA  95014
+ 				US
+ 
++30-EC-A3   (hex)		Alfatron Electronics INC
++30ECA3     (base 16)		Alfatron Electronics INC
++				6518 Old Wake Forest Road STE A
++				Raleigh  NC  27616
++				US
++
++40-38-02   (hex)		Silicon Laboratories
++403802     (base 16)		Silicon Laboratories
++				 400 West Cesar Chavez
++				Austin  TX  78701
++				US
++
+ 00-89-C9   (hex)		Extreme Networks Headquarters
+ 0089C9     (base 16)		Extreme Networks Headquarters
+ 				2121 RDU Center Drive 
+ 				Morrisville    27560
+ 				US
++
++70-A8-A5   (hex)		Microsoft Corporation
++70A8A5     (base 16)		Microsoft Corporation
++				One Microsoft Way
++				REDMOND  WA  98052
++				US
++
++A4-F4-CA   (hex)		Private
++A4F4CA     (base 16)		Private
++
++74-24-35   (hex)		Huawei Device Co., Ltd.
++742435     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++0C-0E-CB   (hex)		Huawei Device Co., Ltd.
++0C0ECB     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++E8-80-E7   (hex)		Huawei Device Co., Ltd.
++E880E7     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++10-BC-36   (hex)		Huawei Device Co., Ltd.
++10BC36     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++B4-F4-9B   (hex)		Huawei Device Co., Ltd.
++B4F49B     (base 16)		Huawei Device Co., Ltd.
++				No.2 of Xincheng Road, Songshan Lake Zone
++				Dongguan  Guangdong  523808
++				CN
++
++14-D6-7C   (hex)		Uncord Technologies Private Limited
++14D67C     (base 16)		Uncord Technologies Private Limited
++				101, Corporate Arena, Sitaram Patkar Road, Goregaon West
++				Mumbai  Maharashtra  400104
++				IN
++
++5C-5C-75   (hex)		IEEE Registration Authority
++5C5C75     (base 16)		IEEE Registration Authority
++				445 Hoes Lane
++				Piscataway  NJ  08554
++				US
+diff --git a/hwdb.d/ma-medium.txt b/hwdb.d/ma-medium.txt
+index 5d1a804afb..e49988f32c 100644
+--- a/hwdb.d/ma-medium.txt
++++ b/hwdb.d/ma-medium.txt
+@@ -7457,6 +7457,18 @@ A00000-AFFFFF     (base 16)		Shenzhen Jooan Technology  Co., Ltd
+ 				SUZHOU  JiangSu  215124
+ 				CN
+ 
++58-76-07   (hex)		Suprock Technologies
++900000-9FFFFF     (base 16)		Suprock Technologies
++				45 Scott Hill Rd
++				Warren  NH  03279
++				US
++
++5C-5C-75   (hex)		Spectrum FiftyNine BV
++900000-9FFFFF     (base 16)		Spectrum FiftyNine BV
++				Middelweg 8a
++				Molenhoek  Limb  6584ah
++				NL
++
+ B8-4C-87   (hex)		Shenzhen Link-all Technology Co., Ltd
+ 300000-3FFFFF     (base 16)		Shenzhen Link-all Technology Co., Ltd
+ 				Floor 5th, Block 9th, Sunny Industrial Zone, Xili Town, Nanshan District, Shenzhen, China 
+@@ -14426,6 +14438,18 @@ A00000-AFFFFF     (base 16)		IRTEYA LLC
+ 				Austin  TX  78758
+ 				US
+ 
++58-76-07   (hex)		Hubcom Techno System LLP
++D00000-DFFFFF     (base 16)		Hubcom Techno System LLP
++				Level 4 Ceejay House, Dr. Annie Besant Road, Worli, Mumbai City
++				mumbai  Maharashtra  400018
++				IN
++
++5C-5C-75   (hex)		hassoun Gulf Industrial Company
++800000-8FFFFF     (base 16)		hassoun Gulf Industrial Company
++				Building NO:9273Al Shihabi Street3rd Industrial CityJeddah- KSA
++				jeddah    000
++				SA
++
+ B8-4C-87   (hex)		Altronix , Corp
+ A00000-AFFFFF     (base 16)		Altronix , Corp
+ 				140 58th St. Bldg A, Ste 2N
+@@ -21926,6 +21950,42 @@ E00000-EFFFFF     (base 16)		ZhuoYu Technology
+ 				Nanshan District,  Shenzhen  518054
+ 				CN
+ 
++58-76-07   (hex)		RealSense Inc.
++500000-5FFFFF     (base 16)		RealSense Inc.
++				20400 Stevens Creek Boulevard Suite 290
++				Cupertino  CA  95014
++				US
++
++58-76-07   (hex)		Shenzhen HANSWELL Technology Co., Ltd.
++300000-3FFFFF     (base 16)		Shenzhen HANSWELL Technology Co., Ltd.
++				17th Floor, Block A, Building 6, International Innovation Valley, Dashi 1st Road, Nanshan District
++				Shenzhen  Guangdong   518051
++				CN
++
++58-76-07   (hex)		Beijing FHZX Science and Technology Co., Ltd.
++400000-4FFFFF     (base 16)		Beijing FHZX Science and Technology Co., Ltd.
++				‌Room 120-6 & 120-8, 1st Floor, Building A, Fengyu Office Building, No. 115 Fucheng Road, Haidian District
++				Beijing  Beijing  100048
++				CN
++
++58-76-07   (hex)		Oceansbio
++700000-7FFFFF     (base 16)		Oceansbio
++				345, Cheongpa-ro, Yongsan-gu, Seoul
++				Yongsan-gu  Seoul  04303
++				KR
++
++58-76-07   (hex)		Rwaytech
++B00000-BFFFFF     (base 16)		Rwaytech
++				231 Rue Douglas Engelbart
++				Archamps  Haute-Savoie  74160
++				FR
++
++58-76-07   (hex)		HARDWARIO a.s.
++000000-0FFFFF     (base 16)		HARDWARIO a.s.
++				U Jezu 525/4
++				Liberec    460 01
++				CZ
++
+ D0-14-11   (hex)		P.B. Elettronica srl
+ 100000-1FFFFF     (base 16)		P.B. Elettronica srl
+ 				Via Santorelli, 8
+@@ -29123,12 +29183,6 @@ B00000-BFFFFF     (base 16)		Arvind Limited
+ 				Pune  Maharastra  411060
+ 				IN
+ 
+-20-2B-DA   (hex)		Industrial Connections & Solutions LLC
+-A00000-AFFFFF     (base 16)		Industrial Connections & Solutions LLC
+-				6801 Industrial Dr
+-				Mebane  NC  27302
+-				US
+-
+ 20-2B-DA   (hex)		Shenzhen FeiCheng Technology Co.,Ltd
+ 600000-6FFFFF     (base 16)		Shenzhen FeiCheng Technology Co.,Ltd
+ 				Room 402, Building B, Huafeng Internet Creative Park, No. 107 Gongye Road, Gonge Community, Xixiang Street, Bao'an District, Shenzhen
+@@ -29141,6 +29195,24 @@ A00000-AFFFFF     (base 16)		Industrial Connections & Solutions LLC
+ 				Krakow  malopolska  30-021
+ 				PL
+ 
++20-2B-DA   (hex)		Industrial Connections & Solutions LLC
++A00000-AFFFFF     (base 16)		Industrial Connections & Solutions LLC
++				6801 Industrial Dr
++				Mebane  NC  27302
++				US
++
++58-76-07   (hex)		Shing Chong International Co., Ltd.
++100000-1FFFFF     (base 16)		Shing Chong International Co., Ltd.
++				8 F., No. 268, Sec. 2, Zhonghua Rd., Xinzhuang Dist.
++				New Taipei City    242
++				TW
++
++5C-5C-75   (hex)		O-cubes Shanghai Microelectronics Technology Co., Ltd
++300000-3FFFFF     (base 16)		O-cubes Shanghai Microelectronics Technology Co., Ltd
++				NO. 294 , Taiyuan Rd
++				shanghai    200031
++				CN
++
+ C8-5C-E2   (hex)		Fela Management AG 
+ 000000-0FFFFF     (base 16)		Fela Management AG 
+ 				Basadingerstrasse 18
+@@ -36505,3 +36577,27 @@ D00000-DFFFFF     (base 16)		Transit Solutions, LLC.
+ 				Amerikalaan 59
+ 				Maastricht-Airport    6199 AE
+ 				NL
++
++58-76-07   (hex)		BOE Technology Group Co., Ltd.
++C00000-CFFFFF     (base 16)		BOE Technology Group Co., Ltd.
++				No.12 Xihuanzhong RD, BDA
++				Beijing  Beijing  100176
++				CN
++
++58-76-07   (hex)		INP Technologies Ltd
++A00000-AFFFFF     (base 16)		INP Technologies Ltd
++				202 Grand Edifice, Akurli Road
++				Mumbai  Maharashtra (MH)  400101
++				IN
++
++58-76-07   (hex)		SHENZHEN GAGO ELECTRONICS CO.,LTD
++E00000-EFFFFF     (base 16)		SHENZHEN GAGO ELECTRONICS CO.,LTD
++				ROOM 301,1ST BUILDING,GEYA TECHNOLOGY PARK,GONGMING TOWN,GUANGMING DISTRICT
++				SHENZHEN  GUANGDONG  518107
++				CN
++
++5C-5C-75   (hex)		youyeetoo
++200000-2FFFFF     (base 16)		youyeetoo
++				Room 601, Building 17, No. A3, Fourth Industrial Zone, HeWan Community, Matian Street, Guangming District
++				Shenzhen  Guangdong  518100
++				CN
+diff --git a/hwdb.d/ma-small.txt b/hwdb.d/ma-small.txt
+index cd8bc6fc19..6c24b087b7 100644
+--- a/hwdb.d/ma-small.txt
++++ b/hwdb.d/ma-small.txt
+@@ -8099,6 +8099,30 @@ DB4000-DB4FFF     (base 16)		MB connect line GmbH
+ 				MINATO-KU  TOKYO  108-0073
+ 				JP
+ 
++8C-1F-64   (hex)		SEGRON Automation, s.r.o.
++DC1000-DC1FFF     (base 16)		SEGRON Automation, s.r.o.
++				Tomasikova 19
++				Bratislava    82101
++				SK
++
++8C-1F-64   (hex)		Abbott Diagnostics Technologies AS
++7F6000-7F6FFF     (base 16)		Abbott Diagnostics Technologies AS
++				P. O.  Box 6863 Rodeløkka
++				Oslo  Oslo  0504
++				NO
++
++8C-1F-64   (hex)		Zengar Institute Inc
++710000-710FFF     (base 16)		Zengar Institute Inc
++				1007 Fort St, 4th FL
++				Victoria  BC  V8V 3K5
++				CA
++
++8C-1F-64   (hex)		RESMED PTY LTD
++3C7000-3C7FFF     (base 16)		RESMED PTY LTD
++				1 Elizabeth Macarthur Drive, Bella Vista NSW 2153 Australia
++				NSW    2153
++				AT
++
+ 8C-1F-64   (hex)		Jacobs Technology, Inc.
+ A98000-A98FFF     (base 16)		Jacobs Technology, Inc.
+ 				7765 Old Telegraph Road
+@@ -16235,6 +16259,18 @@ B1E000-B1EFFF     (base 16)		Aidhom
+ 				Acacias_geneva  Geneva  1227
+ 				CH
+ 
++8C-1F-64   (hex)		Elektrotechnik & Elektronik Oltmann GmbH
++FCA000-FCAFFF     (base 16)		Elektrotechnik & Elektronik Oltmann GmbH
++				Gartenfelder Str. 29
++				Berlin    D-13599
++				DE
++
++8C-1F-64   (hex)		ETM CO LTD
++AB0000-AB0FFF     (base 16)		ETM CO LTD
++				Room 803, B-dong, Woolim Lions Valley 5, 302, Galmachi-ro, Jungwon-gu
++				Gyeonggi-do    13201
++				KR
++
+ 8C-1F-64   (hex)		Daniele Saladino
+ 515000-515FFF     (base 16)		Daniele Saladino
+ 				Via G. B. Sala, 13
+@@ -16247,11 +16283,29 @@ A10000-A10FFF     (base 16)		ZJU-Hangzhou Global Scientific and Technological In
+ 				Hangzhou  Zhejiang  311200
+ 				CN
+ 
+-8C-1F-64   (hex)		ETM CO LTD
+-AB0000-AB0FFF     (base 16)		ETM CO LTD
+-				Room 803, B-dong, Woolim Lions Valley 5, 302, Galmachi-ro, Jungwon-gu
+-				Gyeonggi-do    13201
+-				KR
++8C-1F-64   (hex)		YUYAMA MFG Co.,Ltd
++5CF000-5CFFFF     (base 16)		YUYAMA MFG Co.,Ltd
++				1-4-30
++				MEISHINGUCHI,TOYONAKA  OSAKA  561-0841
++				JP
++
++8C-1F-64   (hex)		nanoTRONIX Computing Inc.
++F21000-F21FFF     (base 16)		nanoTRONIX Computing Inc.
++				1, Wood Road
++				Wilmington  DE   19806
++				US
++
++8C-1F-64   (hex)		RADIC Technologies, Inc.
++E91000-E91FFF     (base 16)		RADIC Technologies, Inc.
++				1625 The Alameda, Suite 708
++				SAN JOSE    95126
++				US
++
++8C-1F-64   (hex)		Fairwinds Technologies
++D55000-D55FFF     (base 16)		Fairwinds Technologies
++				6165 Guardian Gateway, Suites A-C 
++				Aberdeen Proving Ground  MD  21005
++				US
+ 
+ 8C-1F-64   (hex)		Vision Systems Safety Tech
+ E6F000-E6FFFF     (base 16)		Vision Systems Safety Tech
+@@ -24389,6 +24443,42 @@ BA4000-BA4FFF     (base 16)		Buckeye Mountain
+ 				suwon-si  gyeonggi-do  16623
+ 				KR
+ 
++8C-1F-64   (hex)		Shenzhen Tezesk Energy Technology Co.,LTD
++02D000-02DFFF     (base 16)		Shenzhen Tezesk Energy Technology Co.,LTD
++				12AB, Building AB, New Energy Building, No.2239 Nanhai Avenue, Nanguang Community, Nanshan Subdistrict
++				 Shenzhen  Guangdong  518067
++				CN
++
++8C-1F-64   (hex)		MARVAUS TECHNOLOGIES PRIVATE LIMITED
++447000-447FFF     (base 16)		MARVAUS TECHNOLOGIES PRIVATE LIMITED
++				P-6095 Devender Vihar Sector 56
++				Gurugram  Haryana  122011
++				IN
++
++8C-1F-64   (hex)		Polarity Inc
++F37000-F37FFF     (base 16)		Polarity Inc
++				11294 Sunrise Park Dr
++				RANCHO CORDOVA  CA  95742-6599
++				US
++
++8C-1F-64   (hex)		Attack do Brasil Ind Com Apar de Som LTDA
++178000-178FFF     (base 16)		Attack do Brasil Ind Com Apar de Som LTDA
++				AV AYRTON SENNA DA SILVA, 400 – PQ INDL ZONA OESTE
++				Apucarana  Parana  86803-570
++				BR
++
++8C-1F-64   (hex)		Infosoft Digital Design and Services P L
++EDC000-EDCFFF     (base 16)		Infosoft Digital Design and Services P L
++				484, SECTOR-8 ,IMT MANESER,GURGAONMANESER
++				GURGAON  Haryana  122050
++				IN
++
++8C-1F-64   (hex)		Guangzhou Beizeng Information Technology Co.,Ltd
++39F000-39FFFF     (base 16)		Guangzhou Beizeng Information Technology Co.,Ltd
++				Room 714, Building D3, No. 197, Shuixi Road, Huangpu District, Guangzhou City, China
++				Guangzhou    510530
++				CN
++
+ 8C-1F-64   (hex)		Flow Power
+ 82B000-82BFFF     (base 16)		Flow Power
+ 				Suite 2, Level 3, 18 - 20 York St
+@@ -30215,12 +30305,6 @@ E21000-E21FFF     (base 16)		LLVISION TECHNOLOGY CO.,LTD
+ 				Beijing  Beijing  100026
+ 				CN
+ 
+-70-B3-D5   (hex)		AML Oceanographic
+-0CD000-0CDFFF     (base 16)		AML Oceanographic
+-				2071 Malaview Avenue
+-				Sidney  British Columbia  V8L 5X6
+-				CA
+-
+ 70-B3-D5   (hex)		Twoway Communications, Inc.
+ 4AA000-4AAFFF     (base 16)		Twoway Communications, Inc.
+ 				41 Wu Kung 6 Rd., New Taipei Industrial Park, New Taipei City,24891,Taiwan,R.O.C.
+@@ -32468,6 +32552,30 @@ F99000-F99FFF     (base 16)		Sysinno Technology Inc.
+ 				Hsinchu    300
+ 				TW
+ 
++8C-1F-64   (hex)		InfoMac Sp. z o.o. Sp.k.
++840000-840FFF     (base 16)		InfoMac Sp. z o.o. Sp.k.
++				UL. WOJSKA POLSKIEGO 6
++				Szczecinek  zachodniopomorskie  78-400
++				PL
++
++8C-1F-64   (hex)		RSC
++B31000-B31FFF     (base 16)		RSC
++				36 27th Street, Umm Suqeim 3
++				Dubai  Dubai  00000
++				AE
++
++8C-1F-64   (hex)		Bounce Imaging
++1AE000-1AEFFF     (base 16)		Bounce Imaging
++				247 Cayuga Rd., Suite 15e
++				Cheektowaga  NY  14225
++				US
++
++70-B3-D5   (hex)		AML Oceanographic
++0CD000-0CDFFF     (base 16)		AML Oceanographic
++				121 ILSLEY AVE UNIT 112
++				DARTMOUTH  NS   B3B 1S4
++				CA
++
+ 8C-1F-64   (hex)		Mobileye
+ D63000-D63FFF     (base 16)		Mobileye
+ 				13 Hartom st.
+@@ -38510,12 +38618,6 @@ DC5000-DC5FFF     (base 16)		Excel Medical Electronics LLC
+ 				Jupiter  Florida  33458
+ 				US
+ 
+-70-B3-D5   (hex)		Weigl Elektronik & Mediaprojekte
+-01D000-01DFFF     (base 16)		Weigl Elektronik & Mediaprojekte
+-				Limberg 3
+-				Gramastetten  Oberoesterreich  4201
+-				AT
+-
+ 70-B3-D5   (hex)		christmann informationstechnik + medien GmbH & Co. KG
+ 564000-564FFF     (base 16)		christmann informationstechnik + medien GmbH & Co. KG
+ 				Ilseder Huette 10c
+@@ -40457,6 +40559,12 @@ DDD000-DDDFFF     (base 16)		Irmos Technologies AG
+ 				Backnang    71540
+ 				DE
+ 
++8C-1F-64   (hex)		SAEL SRL
++60F000-60FFFF     (base 16)		SAEL SRL
++				Via Dei Genieri, 31
++				Torri di Quartesolo  Vicenza  36040
++				IT
++
+ 8C-1F-64   (hex)		Kyowakiden Industry Co.,Ltd.
+ 3D6000-3D6FFF     (base 16)		Kyowakiden Industry Co.,Ltd.
+ 				10-2 Kawaguchi-machi
+@@ -40468,3 +40576,21 @@ DDD000-DDDFFF     (base 16)		Irmos Technologies AG
+ 				Sensing House, Shannon Free Zone East
+ 				Shannon  Co. Clare  V14 V99
+ 				IE
++
++8C-1F-64   (hex)		CEI Ptd Ltd
++0FD000-0FDFFF     (base 16)		CEI Ptd Ltd
++				2 Ang Mo Kio Ave 12
++				Singapore    569707
++				SG
++
++70-B3-D5   (hex)		Weigl GmbH & Co KG
++01D000-01DFFF     (base 16)		Weigl GmbH & Co KG
++				Limberg 3
++				Gramastetten  Oberoesterreich  4201
++				AT
++
++8C-1F-64   (hex)		Weigl GmbH & Co KG
++455000-455FFF     (base 16)		Weigl GmbH & Co KG
++				Weingartenstrasse 14/1/9-11
++				Ottensheim  Upper Austria  4100
++				AT
+diff --git a/hwdb.d/pci.ids b/hwdb.d/pci.ids
+index 5446eaaaca..8971a86961 100644
+--- a/hwdb.d/pci.ids
++++ b/hwdb.d/pci.ids
+@@ -1,8 +1,8 @@
+ #
+ #	List of PCI ID's
+ #
+-#	Version: 2025.11.16
+-#	Date:    2025-11-16 03:15:02
++#	Version: 2025.11.24
++#	Date:    2025-11-24 03:15:01
+ #
+ #	Maintained by Albert Pool, Martin Mares, and other volunteers from
+ #	the PCI ID Project at https://pci-ids.ucw.cz/.
+@@ -84,6 +84,7 @@
+ 	0001  PCAN-PCI CAN-Bus controller
+ 		001c 0004  2 Channel CAN Bus SJC1000
+ 		001c 0005  2 Channel CAN Bus SJC1000 (Optically Isolated)
++0029  MICROCHIP
+ 003d  Lockheed Martin-Marietta Corp
+ # Real TJN ID is e159, but they got it wrong several times --mj
+ 0059  Tiger Jet Network Inc. (Wrong ID)
+@@ -95,6 +96,7 @@
+ 00a7  Teles AG (Wrong ID)
+ 0100  nCipher Security
+ 0123  General Dynamics
++0127  MIPS
+ 0128  Dell (wrong ID)
+ # 018a is not LevelOne but there is a board misprogrammed
+ 018a  LevelOne
+@@ -152,11 +154,14 @@
+ 0303  Hewlett-Packard Company (Wrong ID)
+ 0308  ZyXEL Communications Corporation (Wrong ID)
+ 0315  SK-Electronics Co., Ltd.
++031e  ANDES
+ 0357  TTTech Computertechnik AG (Wrong ID)
+ 	000a  TTP-Monitoring Card V2.0
+ 0432  SCM Microsystems, Inc.
+ 	0001  Pluto2 DVB-T Receiver for PCMCIA [EasyWatch MobilSet]
++0489  SIFIVE
+ 0497  Dell Inc. (wrong ID)
++05b7  THEAD
+ 060e  Lightelligence
+ 	0001  Hummingbird ES
+ 0675  Dynalink
+@@ -832,6 +837,7 @@
+ 		15d9 1d03  AOC-S4116L-H16IR (16DD/96DD) RAID Adapter
+ 		15d9 1d07  AOC-S4016L-L16IT Storage Adapter
+ 		15d9 1d08  AOC-S4016L-L16IR Storage Adapter
++		17aa 7855  ThinkSystem RAID 950W-16i 8GB Flash PCIe Gen4 24Gb Adapter
+ 		1d49 020a  ThinkSystem 450W-16e SAS/SATA PCIe Gen4 24Gb HBA
+ 	00ab  SAS3516 Fusion-MPT Tri-Mode RAID On Chip (ROC)
+ # 8 Internal and 8 External port channel 9400 HBA
+@@ -878,6 +884,7 @@
+ 		1028 23cb  PERC H975i Front
+ 		1028 23cd  PERC H975i Adapter
+ 		1028 2446  PERC H976i Front
++		17aa 784c  ThinkSystem RAID 960W PCIe Gen5 Adapter
+ 		1d49 020b  ThinkSystem 460-16e SAS/SATA PCIe Gen5 24Gb HBA
+ 	00b4  Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx
+ 	00b5  Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx
+@@ -897,6 +904,7 @@
+ 		1028 22d3  PERC H975i Adapter - Virtual
+ 		1028 23cb  PERC H975i Front - Virtual
+ 		1028 23cd  PERC H975i Adapter - Virtual
++		17aa 784c  ThinkSystem RAID 960W PCIe Gen5 Adapter
+ 	00b6  Fusion-MPT 24G SAS/PCIe SAS50xx/SAS51xx
+ 		1000 5000  MegaRAID 9760W-32i 24G SAS/PCIe Storage Adapter
+ 		1000 5001  MegaRAID 9760W-16i 24G SAS/PCIe Storage Adapter
+@@ -13296,6 +13304,7 @@
+ 	22eb  GB206 High Definition Audio Controller
+ 	22ec  GB207 High Definition Audio Controller
+ 	2302  GH100
++	230c  GH100 [H20 NVL16]
+ 	230e  GH100 [H20 NVL16]
+ 	2313  GH100 [H100 CNX]
+ 	2321  GH100 [H100L 94GB]
+@@ -13547,7 +13556,7 @@
+ 	2f80  GB205 High Definition Audio Controller
+ 	3180  GB110 [Reserved Dev ID A]
+ 	3182  GB110 [B300 SXM6 AC]
+-	31a1  GB110
++	31a1  GB110 [GB300 MaxQ]
+ 	31c0  GB110 [Reserved Dev ID B]
+ 	31c2  GB110 [GB300]
+ 	31fe  GB110
+@@ -22978,6 +22987,7 @@
+ 15ce  Genrad Inc
+ 15cf  Hilscher Gesellschaft für Systemautomation mbH
+ 	0000  CIFX PCI/PCIe
++	0090  CIFX PCI/PCIe
+ 15d1  Infineon Technologies AG
+ 15d2  FIC (First International Computer Inc)
+ 15d3  NDS Technologies Israel Ltd
+@@ -28949,9 +28959,23 @@
+ 	1608  PCIe Gen4 x4 M.2 2280
+ 	1f88  TE3420 PCIe Gen3 x4 M.2 2280
+ 	3420  PCIe Gen3 x4 M.2 2280
++	6100  TE3420 Series NVMe PCIe Gen3x4 SSD
++	6101  XE3420 Series NVMe PCIe Gen3x4 SSD
++	6102  TE4407 Series NVMe PCIe Gen4x4 SSD
++	6103  XE4407 Series NVMe PCIe Gen4x4 SSD
++	6104  TE4408 Series NVMe PCIe Gen4x4 SSD
++	6105  XE4408 Series NVMe PCIe Gen4x4 SSD
++	6106  TE4402 Series NVMe PCIe Gen4x4 SSD
++	6107  XE4402 Series NVMe PCIe Gen4x4 SSD
++	6108  TE4405 Series NVMe PCIe Gen4x4 SSD
++	6109  XE4405 Series NVMe PCIe Gen4x4 SSD
++	610a  TE4406 Series NVMe PCIe Gen4x4 SSD
++	610b  XE4406 Series NVMe PCIe Gen4x4 SSD
++	610c  TE3410 Series NVMe PCIe Gen3x4 SSD
+ 1f9d  Axelera AI
+ 	1100  Metis AIPU (rev 02)
+ 	11aa  Metis AIPU (rev 01)
++1fa4  Shandong SinoChip Semiconductors Co., Ltd
+ 1faa  Hexaflake (Shanghai) Information Technology Co., Ltd.
+ 	0c10  Compass C10 PF
+ 	0c11  Compass C10 VF
+@@ -29306,6 +29330,11 @@
+ 		20d8 1211  TUNAN-7 2x100GbE Controller
+ 	2201  TUNAN-7 2x25GbE Controller
+ 		20d8 2201  TUNAN-7 2x25GbE Controller
++		20d8 2211  TUNAN-7V 2x25GbE Controller
++	3201  TUNAN-7 2x200GbE Controller
++		20d8 3201  TUNAN-7 2x200GbE Controller
++	4201  TUNAN-7 1x400GbE Controller
++		20d8 4201  TUNAN-7V 1x400GbE Controller
+ 20dc  Sharetronic Data Technology Co., Ltd.
+ 	1202  M.2 2280 PCIe Gen3 x 4 Series.
+ 20e1  CECloud Computing Technology Co., Ltd.

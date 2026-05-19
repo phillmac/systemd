@@ -1,0 +1,27 @@
+From d4761084258e69b0f02d5802635ff943607b7625 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 1 Feb 2025 14:09:03 +0900
+Subject: [PATCH] userdb: fix typo
+
+Follow-up for 7419291670dd4066594350cce585031f60bc4f0a.
+
+(cherry picked from commit 546e6cb2e3e949e7162e4cf45cce8a6b26db175d)
+
+Related: RHEL-143036
+---
+ src/shared/userdb.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index 638fc5e9af..d4eecbd001 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -196,7 +196,7 @@ static int userdb_maybe_restart_query(
+                 NULL
+         };
+ 
+-        /* Figure out if the reported error indicates any of the suppressable fields are at fault, and that
++        /* Figure out if the reported error indicates any of the suppressible fields are at fault, and that
+          * our query actually included them */
+         bool restart = false;
+         STRV_FOREACH(f, fields) {

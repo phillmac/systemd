@@ -1,0 +1,37 @@
+From 2673c9b4e44730bd49a657925e899d768d8c087f Mon Sep 17 00:00:00 2001
+From: novenary <novenary@kwak.zip>
+Date: Sun, 18 Jan 2026 13:11:19 +0200
+Subject: [PATCH] hwdb: set touchpad resolution for all ThinkPad T49x chassis
+ laptops
+
+Confirmed with owners of T495 and T14 Gen2i.
+P14s should be identical.
+
+(cherry picked from commit 399c8152aec8aef0ff6db8755e30321e354a6adc)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-evdev.hwdb | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-evdev.hwdb b/hwdb.d/60-evdev.hwdb
+index e09c221d15..92b43fe1b2 100644
+--- a/hwdb.d/60-evdev.hwdb
++++ b/hwdb.d/60-evdev.hwdb
+@@ -760,12 +760,15 @@ evdev:name:AlpsPS/2 ALPS GlidePoint:dmi:*svnLENOVO:*pvrLenovoU41-70:*
+  EVDEV_ABS_35=117:3958:36
+  EVDEV_ABS_36=104:1960:26
+ 
+-# Lenovo Thinkpad T490 and T14/P14s Gen1/2
++# Lenovo Thinkpad T490/T495 and T14/P14s Gen1/2 (identical chassis)
+ evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadT490:*
++evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadT495:*
+ evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadT14Gen1:*
+ evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadT14Gen2a:*
++evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadT14Gen2i:*
+ evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadP14sGen1:*
+ evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadP14sGen2a:*
++evdev:name:SynPS/2 Synaptics TouchPad:dmi:*:svnLENOVO:*pvrThinkPadP14sGen2i:*
+  EVDEV_ABS_00=::44
+  EVDEV_ABS_01=::52
+  EVDEV_ABS_35=::44

@@ -1,0 +1,31 @@
+From 119cca5054f04e1afefc15c626ed1b2353fdb080 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Mon, 19 May 2025 12:14:25 +0200
+Subject: [PATCH] logind: also save pidfdid as part of session state, even if
+ we don't parse it
+
+(cherry picked from commit f01d8658a3a57d05a5156aefd32d8137c3ee3996)
+
+Related: RHEL-53112
+---
+ src/login/logind-session.c | 6 +++++-
+ 1 file changed, 5 insertions(+), 1 deletion(-)
+
+diff --git a/src/login/logind-session.c b/src/login/logind-session.c
+index aa2420d5dd..b28dd716d7 100644
+--- a/src/login/logind-session.c
++++ b/src/login/logind-session.c
+@@ -398,8 +398,12 @@ int session_save(Session *s) {
+         if (!s->vtnr)
+                 fprintf(f, "POSITION=%u\n", s->position);
+ 
+-        if (pidref_is_set(&s->leader))
++        if (pidref_is_set(&s->leader)) {
+                 fprintf(f, "LEADER="PID_FMT"\n", s->leader.pid);
++                (void) pidref_acquire_pidfd_id(&s->leader);
++                if (s->leader.fd_id != 0)
++                        fprintf(f, "LEADER_PIDFDID=%" PRIu64 "\n", s->leader.fd_id);
++        }
+ 
+         if (audit_session_is_valid(s->audit_id))
+                 fprintf(f, "AUDIT=%"PRIu32"\n", s->audit_id);

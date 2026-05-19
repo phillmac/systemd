@@ -1,0 +1,32 @@
+From 4e584066e99f6b69ef5c03f151c2e84f41e4e643 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Sat, 3 Jan 2026 21:52:38 +0100
+Subject: [PATCH] quirks: touchpad: Set Duet 3 bt touchpad internal
+
+The touchpad is in a keyboard and touchpad combo that can be attached and
+detached in a convertible device.
+
+(cherry picked from commit 3ae637c42ac316692ce8512b1ad63e4c254e00b1)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-touchpad.hwdb | 6 ++++++
+ 1 file changed, 6 insertions(+)
+
+diff --git a/hwdb.d/70-touchpad.hwdb b/hwdb.d/70-touchpad.hwdb
+index 067ad609a3..d5285566f1 100644
+--- a/hwdb.d/70-touchpad.hwdb
++++ b/hwdb.d/70-touchpad.hwdb
+@@ -52,6 +52,12 @@ touchpad:usb:v05acp0324:*
+ touchpad:usb:v044ep1221:*
+  ID_INPUT_TOUCHPAD_INTEGRATION=external
+ 
++###########################################################
++# Lenovo IdeaPad Duet3 10IGL5 (82AT)
++###########################################################
++touchpad:bluetooth:v17efp60fa:*
++ ID_INPUT_TOUCHPAD_INTEGRATION=internal
++
+ ###########################################################
+ # Logitech
+ ###########################################################

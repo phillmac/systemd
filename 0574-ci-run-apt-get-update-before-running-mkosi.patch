@@ -1,0 +1,51 @@
+From 336556b44e0db18ed59016beff852f44e91c981f Mon Sep 17 00:00:00 2001
+From: Jan Macku <jamacku@redhat.com>
+Date: Fri, 6 Feb 2026 14:17:54 +0100
+Subject: [PATCH] ci: run apt-get update before running mkosi
+
+This is alternative to https://github.com/systemd/mkosi/commit/8c9f6cc6586c4f3b8fedafc5a19e6bf30531ebfc
+
+The repository metadata in the image can get out of date. Let's run
+apt-get update to make sure it is fresh.
+
+```
+Err:21 https://security.ubuntu.com/ubuntu noble-updates/main amd64 libboost-thread1.83.0 amd64 1.83.0-2.1ubuntu3.1
+  404  Not Found [IP: 52.161.185.214 80]
+E: Failed to fetch https://security.ubuntu.com/ubuntu/pool/main/b/boost1.83/libboost-thread1.83.0_1.83.0-2.1ubuntu3.1_amd64.deb  404  Not Found [IP: 52.161.185.214 80]
+Fetched 8320 kB in 2s (3488 kB/s)
+E: Unable to fetch some archives, maybe run apt-get update or try with --fix-missing?
+Error: Process completed with exit code 100.
+```
+
+rhel-only: ci
+
+Related: RHEL-115001
+---
+ .github/workflows/coverage.yml | 1 +
+ .github/workflows/mkosi.yml    | 1 +
+ 2 files changed, 2 insertions(+)
+
+diff --git a/.github/workflows/coverage.yml b/.github/workflows/coverage.yml
+index 1cce9a97f3..bf918bc399 100644
+--- a/.github/workflows/coverage.yml
++++ b/.github/workflows/coverage.yml
+@@ -16,6 +16,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
++      - run: sudo apt-get update
+       - uses: systemd/mkosi@d501139032aa659fa8d34bdb850f4eb6b5f458ed
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space
+diff --git a/.github/workflows/mkosi.yml b/.github/workflows/mkosi.yml
+index 6ddfaf1a87..fe2922ac70 100644
+--- a/.github/workflows/mkosi.yml
++++ b/.github/workflows/mkosi.yml
+@@ -83,6 +83,7 @@ jobs:
+ 
+     steps:
+       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
++      - run: sudo apt-get update
+       - uses: systemd/mkosi@d501139032aa659fa8d34bdb850f4eb6b5f458ed
+ 
+       # Freeing up disk space with rm -rf can take multiple minutes. Since we don't need the extra free space

@@ -1,0 +1,36 @@
+From 739b86e502b1a34ac260522fee177fc1491b9568 Mon Sep 17 00:00:00 2001
+From: Christopher Head <chead@chead.ca>
+Date: Wed, 20 Aug 2025 23:52:38 -0700
+Subject: [PATCH] Add Razer Cobra mouse to hwdb
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+The DPI values are based on the product’s printed documentation. The
+frequency values are based on the endpoint descriptor reported by lsusb
+(the mouse is a full-speed USB device and bInterval is 1 at all DPI
+settings). Both sets of values are for a mouse that has *not* been
+touched by the vendor’s configuration tool.
+
+(cherry picked from commit bd254d371bcfa5154d67937722984e1a4a0e212a)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index d054aeffe6..da64f4837e 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -833,6 +833,10 @@ mouse:usb:v1532p0042:name:Razer Razer Abyssus:*
+ mouse:usb:v1532p0029:name:Razer Razer DeathAdder:*
+  MOUSE_DPI=3500@1000
+ 
++# Razer Cobra RZ04-03750300-R3U1
++mouse:usb:v1532p00a3:name:Razer Razer Cobra:*
++ MOUSE_DPI=400@1000 800@1000 *1600@1000 3200@1000 6400@1000
++
+ ##########################################
+ # Roccat
+ ##########################################

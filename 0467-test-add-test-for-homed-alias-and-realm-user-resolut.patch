@@ -1,0 +1,46 @@
+From 7938e4205fbd9e35375aa4469cd133251a6dcaa5 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Thu, 16 Jan 2025 15:18:45 +0100
+Subject: [PATCH] test: add test for homed alias and realm user resolution
+
+(cherry picked from commit 853e9b754a16c58f9fb147376af941ec679e65a6)
+
+Resolves: RHEL-109902
+---
+ test/units/TEST-46-HOMED.sh | 23 +++++++++++++++++++++++
+ 1 file changed, 23 insertions(+)
+
+diff --git a/test/units/TEST-46-HOMED.sh b/test/units/TEST-46-HOMED.sh
+index e858b0c297..8de170a1c9 100755
+--- a/test/units/TEST-46-HOMED.sh
++++ b/test/units/TEST-46-HOMED.sh
+@@ -629,6 +629,29 @@ EOF
+     wait_for_state homedsshtest inactive
+ fi
+ 
++NEWPASSWORD=hunter4711 homectl create aliastest --storage=directory --alias=aliastest2 --alias=aliastest3 --realm=myrealm
++
++homectl inspect aliastest
++homectl inspect aliastest2
++homectl inspect aliastest3
++homectl inspect aliastest@myrealm
++homectl inspect aliastest2@myrealm
++homectl inspect aliastest3@myrealm
++
++userdbctl user aliastest
++userdbctl user aliastest2
++userdbctl user aliastest3
++userdbctl user aliastest@myrealm
++userdbctl user aliastest2@myrealm
++userdbctl user aliastest3@myrealm
++
++getent passwd aliastest
++getent passwd aliastest2
++getent passwd aliastest3
++getent passwd aliastest@myrealm
++getent passwd aliastest2@myrealm
++getent passwd aliastest3@myrealm
++
+ systemd-analyze log-level info
+ 
+ touch /testok

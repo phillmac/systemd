@@ -1,0 +1,243 @@
+From 1aea0cf1757ce56a47f915aa89043fd5415d1f58 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 30 Jul 2025 11:52:26 +0200
+Subject: [PATCH] journal: treble field hash table size
+
+As discussed in https://github.com/systemd/systemd/issues/38399, "ordinary"
+systems can have the field table with a large number of values, causing journal
+rotation to occur early. For example, audit generates a log of fields:
+$ journalctl --fields | rg -c '^_?AUDIT'
+114
+
+It seems that the "structured log" capabilities of the journal are being use
+more than in the past. Looking at some journal files on my system, it seems
+the field hash table field is quite high in many cases:
+$ build/test-journal-dump /var/log/journal/*/* | rg 'table fill'
+Data hash table fill: 15.1%
+Field hash table fill: 69.1%
+Data hash table fill: 4.9%
+Field hash table fill: 32.4%
+Data hash table fill: 10.2%
+Field hash table fill: 34.2%
+Data hash table fill: 9.9%
+Field hash table fill: 37.2%
+Data hash table fill: 26.8%
+Field hash table fill: 21.9%
+Data hash table fill: 35.6%
+Field hash table fill: 22.8%
+Data hash table fill: 25.5%
+Field hash table fill: 54.1%
+Data hash table fill: 3.4%
+Field hash table fill: 43.8%
+Data hash table fill: 75.0%
+Field hash table fill: 70.3%
+Data hash table fill: 75.0%
+Field hash table fill: 63.1%
+Data hash table fill: 75.0%
+Field hash table fill: 74.2%
+Data hash table fill: 35.6%
+Field hash table fill: 43.2%
+Data hash table fill: 35.5%
+Field hash table fill: 75.4%
+Data hash table fill: 75.0%
+Field hash table fill: 59.8%
+Data hash table fill: 75.0%
+Field hash table fill: 56.5%
+Data hash table fill: 16.9%
+Field hash table fill: 76.3%
+Data hash table fill: 18.1%
+Field hash table fill: 76.9%
+Data hash table fill: 75.0%
+Field hash table fill: 42.0%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 32.1%
+Data hash table fill: 75.0%
+Field hash table fill: 21.9%
+Data hash table fill: 75.0%
+Field hash table fill: 21.9%
+Data hash table fill: 75.0%
+Field hash table fill: 21.9%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 22.8%
+Data hash table fill: 75.0%
+Field hash table fill: 21.9%
+Data hash table fill: 75.0%
+Field hash table fill: 22.5%
+Data hash table fill: 9.6%
+Field hash table fill: 53.8%
+Data hash table fill: 75.0%
+Field hash table fill: 22.2%
+Data hash table fill: 75.0%
+Field hash table fill: 22.2%
+Data hash table fill: 75.0%
+Field hash table fill: 22.2%
+Data hash table fill: 35.6%
+Field hash table fill: 75.1%
+Data hash table fill: 33.6%
+Field hash table fill: 50.2%
+Data hash table fill: 75.0%
+Field hash table fill: 26.7%
+Data hash table fill: 75.0%
+Field hash table fill: 25.8%
+Data hash table fill: 75.0%
+Field hash table fill: 29.1%
+Data hash table fill: 75.0%
+Field hash table fill: 25.8%
+Data hash table fill: 75.0%
+Field hash table fill: 31.8%
+Data hash table fill: 75.0%
+Field hash table fill: 18.9%
+Data hash table fill: 75.0%
+Field hash table fill: 22.2%
+Data hash table fill: 75.0%
+Field hash table fill: 20.1%
+Data hash table fill: 75.0%
+Field hash table fill: 29.1%
+Data hash table fill: 75.0%
+Field hash table fill: 30.9%
+Data hash table fill: 75.0%
+Field hash table fill: 28.5%
+Data hash table fill: 75.0%
+Field hash table fill: 28.5%
+Data hash table fill: 75.0%
+Field hash table fill: 25.8%
+Data hash table fill: 75.0%
+Field hash table fill: 25.2%
+Data hash table fill: 75.0%
+Field hash table fill: 39.3%
+Data hash table fill: 50.2%
+Field hash table fill: 75.1%
+Data hash table fill: 75.0%
+Field hash table fill: 61.9%
+Data hash table fill: 75.0%
+Field hash table fill: 56.5%
+Data hash table fill: 75.0%
+Field hash table fill: 58.6%
+Data hash table fill: 48.9%
+Field hash table fill: 79.6%
+Data hash table fill: 75.0%
+Field hash table fill: 71.5%
+Data hash table fill: 75.0%
+Field hash table fill: 60.1%
+Data hash table fill: 31.4%
+Field hash table fill: 75.7%
+Data hash table fill: 27.0%
+Field hash table fill: 69.4%
+Data hash table fill: 28.9%
+Field hash table fill: 76.6%
+Data hash table fill: 60.2%
+Field hash table fill: 79.9%
+Data hash table fill: 8.8%
+Field hash table fill: 78.7%
+Data hash table fill: 5.8%
+Field hash table fill: 61.3%
+Data hash table fill: 75.0%
+Field hash table fill: 64.0%
+Data hash table fill: 61.4%
+Field hash table fill: 63.4%
+Data hash table fill: 29.7%
+Field hash table fill: 61.9%
+Data hash table fill: 18.9%
+Field hash table fill: 30.9%
+Data hash table fill: 1.4%
+Field hash table fill: 22.2%
+Data hash table fill: 0.4%
+Field hash table fill: 13.5%
+Data hash table fill: 2.6%
+Field hash table fill: 37.5%
+Data hash table fill: 1.3%
+Field hash table fill: 23.4%
+Data hash table fill: 0.6%
+Field hash table fill: 15.3%
+Data hash table fill: 18.7%
+Field hash table fill: 33.9%
+Data hash table fill: 7.4%
+Field hash table fill: 37.5%
+Data hash table fill: 20.2%
+Field hash table fill: 44.1%
+Data hash table fill: 1.3%
+Field hash table fill: 33.0%
+Data hash table fill: 75.0%
+Field hash table fill: 19.2%
+Data hash table fill: 42.2%
+Field hash table fill: 23.4%
+Data hash table fill: 1.6%
+Field hash table fill: 87.1%
+Data hash table fill: 0.1%
+Field hash table fill: 98.8%
+Data hash table fill: 0.2%
+Field hash table fill: 128.8%
+Data hash table fill: 15.4%
+Field hash table fill: 31.2%
+Data hash table fill: 7.4%
+Field hash table fill: 22.5%
+Data hash table fill: 10.5%
+Field hash table fill: 38.7%
+Data hash table fill: 2.8%
+Field hash table fill: 18.0%
+Data hash table fill: 1.5%
+Field hash table fill: 15.9%
+Data hash table fill: 0.0%
+Field hash table fill: 7.5%
+Data hash table fill: 0.1%
+Field hash table fill: 12.0%
+Data hash table fill: 0.2%
+Field hash table fill: 10.8%
+Data hash table fill: 0.2%
+Field hash table fill: 15.6%
+Data hash table fill: 0.1%
+Field hash table fill: 11.7%
+Data hash table fill: 0.1%
+Field hash table fill: 12.0%
+Data hash table fill: 0.0%
+Field hash table fill: 6.6%
+Data hash table fill: 1.4%
+Field hash table fill: 18.0%
+Data hash table fill: 0.7%
+Field hash table fill: 16.8%
+Data hash table fill: 1.1%
+Field hash table fill: 18.0%
+Data hash table fill: 0.2%
+Field hash table fill: 10.8%
+Data hash table fill: 0.1%
+Field hash table fill: 10.8%
+Data hash table fill: 0.4%
+Field hash table fill: 11.1%
+
+Since filling of the field hash table to 75% normally causes file rotation,
+let's double the default to make rotation happen less often.
+We'll use 11kB more for the hash table, which should be fine, considering
+that journal files are usually at least 8 MB.
+
+Closes https://github.com/systemd/systemd/issues/38399.
+
+(cherry picked from commit e8962d77ac5a10926d0216246cfb5ad5dc25a533)
+
+Resolves: RHEL-106795
+---
+ src/libsystemd/sd-journal/journal-file.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/libsystemd/sd-journal/journal-file.c b/src/libsystemd/sd-journal/journal-file.c
+index 791c1e8eaf..290b8af73e 100644
+--- a/src/libsystemd/sd-journal/journal-file.c
++++ b/src/libsystemd/sd-journal/journal-file.c
+@@ -43,7 +43,7 @@
+ #include "xattr-util.h"
+ 
+ #define DEFAULT_DATA_HASH_TABLE_SIZE 2047U
+-#define DEFAULT_FIELD_HASH_TABLE_SIZE 333U
++#define DEFAULT_FIELD_HASH_TABLE_SIZE 1023U
+ 
+ #define DEFAULT_COMPRESS_THRESHOLD 512U
+ #define MIN_COMPRESS_THRESHOLD 8U

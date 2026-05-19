@@ -1,0 +1,26 @@
+From 09282345b595d817725be5333baa08e16ce1f8de Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Sat, 20 Dec 2025 06:33:55 +0100
+Subject: [PATCH] userdbctl: add missing --uuid= to --help text
+
+Follow-up for: 466562c69b75cec197176f556b940a43bb8350f2
+
+(cherry picked from commit f42ac2477258987cf6982c19b05cb46fabca16c9)
+
+Related: RHEL-143036
+---
+ src/userdb/userdbctl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
+index cb9d2e1897..4c304cc656 100644
+--- a/src/userdb/userdbctl.c
++++ b/src/userdb/userdbctl.c
+@@ -1205,6 +1205,7 @@ static int help(int argc, char *argv[], void *userdata) {
+                "     --chain                 Chain another command\n"
+                "     --uid-min=ID            Filter by minimum UID/GID (default 0)\n"
+                "     --uid-max=ID            Filter by maximum UID/GID (default 4294967294)\n"
++               "     --uuid=UUID             Filter by UUID\n"
+                "  -z --fuzzy                 Do a fuzzy name search\n"
+                "     --disposition=VALUE     Filter by disposition\n"
+                "  -I                         Equivalent to --disposition=intrinsic\n"

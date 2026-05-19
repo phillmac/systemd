@@ -1,0 +1,34 @@
+From c02c40417b50e54fa87530aef8a8c150fa574424 Mon Sep 17 00:00:00 2001
+From: QuickSwift315490 <qs315490@outlook.com>
+Date: Wed, 17 Dec 2025 21:26:47 +0800
+Subject: [PATCH] hwdb: fix unstable button triggering on Mipad 2 under GNOME
+ (#40071)
+
+Change unknown key mappings to reserved.
+
+A KEY_RESERVED button is marked as reserved and passed to the kernel. This will stop the kernel from passing this keystroke event to user space.
+
+If unknown, the key is set to KEY_UNKNOWN and the event is passed to user space, which we want to avoid.
+
+(cherry picked from commit f9425092c62461a7164f4253f64929603d26af52)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 715d67dbb0..f47802a905 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -2132,8 +2132,8 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnINET:pnP325J:*
+ # Home: LeftCtrl + Esc -> LeftMeta  (ignore LeftCtrl, map Esc to LeftMeta)
+ # Back: Backspace      -> back      (map backspace to back)
+ evdev:name:FTSC1000:00 2808:509C Keyboard:dmi:*:svnXiaomiInc:pnMipad2:*
+- KEYBOARD_KEY_700e0=unknown                             # LeftCtrl -> ignore
+- KEYBOARD_KEY_700e3=unknown                             # LeftMeta -> ignore
++ KEYBOARD_KEY_700e0=reserved                            # LeftCtrl -> ignore
++ KEYBOARD_KEY_700e3=reserved                            # LeftMeta -> ignore
+  KEYBOARD_KEY_70016=menu                                # S -> menu
+  KEYBOARD_KEY_70029=leftmeta                            # Esc -> LeftMeta (Windows key / Win8 tablets home)
+  KEYBOARD_KEY_7002a=back                                # Backspace -> back

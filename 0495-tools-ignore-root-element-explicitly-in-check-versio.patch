@@ -1,0 +1,35 @@
+From f7092782c240db9fe8887c510b231e1dd3c2f284 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?J=C3=B6rg=20Behrmann?= <behrmann@physik.fu-berlin.de>
+Date: Wed, 20 Aug 2025 15:47:28 +0200
+Subject: [PATCH] tools: ignore root element explicitly in
+ check-version-history
+
+Currently these messages (broken for length)
+
+    2025-08-20T12:04:15.9609277Z
+    /home/runner/work/systemd/systemd/tools/check-version-history.py:26:
+    FutureWarning: This search incorrectly ignores the root element, and will be fixed in a future version.
+    If you rely on the current behaviour, change it to './/funcprototype/funcdef/function'
+
+can be seen in CI output. So let's apply the suggestion.
+
+(cherry picked from commit 1dcbb0b4ca48fe69e2984943d536c3f4252b12b1)
+
+Related: RHEL-128767
+---
+ tools/check-version-history.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/tools/check-version-history.py b/tools/check-version-history.py
+index dce2b6abd1..db32b6920a 100644
+--- a/tools/check-version-history.py
++++ b/tools/check-version-history.py
+@@ -23,7 +23,7 @@ def find_undocumented_functions(pages, ignorelist):
+         assert pagetree.getroot().tag == "refentry"
+ 
+         hist_section = pagetree.find("refsect1[title='History']")
+-        for func in pagetree.findall("//funcprototype/funcdef/function"):
++        for func in pagetree.findall(".//funcprototype/funcdef/function"):
+             path = f"./refsynopsisdiv/funcsynopsis/funcprototype/funcdef/function[.='{func.text}']"
+             assert pagetree.findall(path) == [func]
+ 

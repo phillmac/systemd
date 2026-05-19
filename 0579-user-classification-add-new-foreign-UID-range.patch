@@ -1,0 +1,319 @@
+From 69b8c163b4785b80195d109333776a416b9c4318 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Fri, 8 Nov 2024 12:14:16 +0100
+Subject: [PATCH] user-classification: add new "foreign" UID range
+
+This makes the UID range configurable via build time options, but of
+course it really shouldn't be changed. The default range I picked is
+outside even of IPAs current (ridiculously large) allocation ranges,
+hence hopefully minimizes conflicts.
+
+(cherry picked from commit ec0c10fc9db6459d78f0b3970a0f7a34c88e6db3)
+
+Related: RHEL-143036
+---
+ docs/UIDS-GIDS.md              | 60 ++++++++++++++++++++--------------
+ docs/USER_RECORD.md            |  7 ++--
+ meson.build                    |  4 +++
+ meson_options.txt              |  2 ++
+ src/basic/uid-classification.c |  2 +-
+ src/basic/uid-classification.h | 12 +++++++
+ src/core/systemd.pc.in         |  2 ++
+ src/dissect/dissect.c          |  2 +-
+ src/shared/group-record.c      |  3 ++
+ src/shared/user-record.c       |  4 +++
+ src/shared/user-record.h       |  1 +
+ src/userdb/userdbctl.c         |  7 ++++
+ 12 files changed, 78 insertions(+), 28 deletions(-)
+
+diff --git a/docs/UIDS-GIDS.md b/docs/UIDS-GIDS.md
+index 09488e2a78..35018b77a4 100644
+--- a/docs/UIDS-GIDS.md
++++ b/docs/UIDS-GIDS.md
+@@ -129,10 +129,18 @@ possible.
+    erroneously considers UIDs signed integers, and hence can't deal with values above 2^31.
+    The `systemd-machined.service` service will synthesize user database records for all UIDs assigned to a running container from this range.
+ 
+-Note for both allocation ranges: when a UID allocation takes place NSS is
+-checked for collisions first, and a different UID is picked if an entry is found.
+-Thus, the user database is used as synchronization mechanism to ensure
+-exclusive ownership of UIDs and UID ranges.
++4. 2147352576…2147418111 → UID range used for foreign OS images. For various
++   usecases (primarily: containers) it makes sense to make foreign OS images
++   available locally whose UID/GID ownerships do not make sense in the local
++   context but only within the OS image itself. This 64K UID range can be used
++   to have a clearly defined ownership even on the host, that can be mapped via
++   idmapped mount to a dynamic runtime UID range as needed. (These numbers in
++   hexadecimal are 0x7FFE0000…0x7FFEFFFF.)
++
++Note for the `DynamicUser=` and the `systemd-nspawn` allocation ranges: when a
++UID allocation takes place NSS is checked for collisions first, and a different
++UID is picked if an entry is found.  Thus, the user database is used as
++synchronization mechanism to ensure exclusive ownership of UIDs and UID ranges.
+ To ensure compatibility with other subsystems allocating from the same ranges it is hence essential that they
+ ensure that whatever they pick shows up in the user/group databases, either by
+ providing an NSS module, or by adding entries directly to `/etc/passwd` and `/etc/group`.
+@@ -157,6 +165,8 @@ $ pkg-config --variable=container_uid_base_min systemd
+ 524288
+ $ pkg-config --variable=container_uid_base_max systemd
+ 1878982656
++$ pkg-config --variable=foreign_uid_base systemd
++2147352576
+ ```
+ 
+ (Note that the latter encodes the maximum UID *base* `systemd-nspawn` might
+@@ -164,7 +174,7 @@ pick — given that 64K UIDs are assigned to each container according to this
+ allocation logic, the maximum UID used for this range is hence
+ 1878982656+65535=1879048191.)
+ 
+-Systemd has compile-time default for these boundaries.
++systemd has compile-time default for these boundaries.
+ Using those defaults is recommended.
+ It will nevertheless query `/etc/login.defs` at runtime, when compiled with `-Dcompat-mutable-uid-boundaries=true` and that file is present.
+ Support for this is considered only a compatibility feature and should not be
+@@ -244,25 +254,27 @@ i.e. somewhere below `/var/` or similar.
+ 
+ ## Summary
+ 
+-|               UID/GID | Purpose               | Defined By    | Listed in                     |
+-|-----------------------|-----------------------|---------------|-------------------------------|
+-|                     0 | `root` user           | Linux         | `/etc/passwd` + `nss-systemd` |
+-|                   1…4 | System users          | Distributions | `/etc/passwd`                 |
+-|                     5 | `tty` group           | `systemd`     | `/etc/passwd`                 |
+-|                 6…999 | System users          | Distributions | `/etc/passwd`                 |
+-|            1000…60000 | Regular users         | Distributions | `/etc/passwd` + LDAP/NIS/…    |
+-|           60001…60513 | Human users (homed)   | `systemd`     | `nss-systemd`                 |
+-|           60514…60577 | Host users mapped into containers | `systemd` | `systemd-nspawn`      |
+-|           60578…61183 | Unused                |               |                               |
+-|           61184…65519 | Dynamic service users | `systemd`     | `nss-systemd`                 |
+-|           65520…65533 | Unused                |               |                               |
+-|                 65534 | `nobody` user         | Linux         | `/etc/passwd` + `nss-systemd` |
+-|                 65535 | 16-bit `(uid_t) -1`   | Linux         |                               |
+-|          65536…524287 | Unused                |               |                               |
+-|     524288…1879048191 | Container UID ranges  | `systemd`     | `nss-systemd`                 |
+-| 1879048192…2147483647 | Unused                |               |                               |
+-| 2147483648…4294967294 | HIC SVNT LEONES       |               |                               |
+-|            4294967295 | 32-bit `(uid_t) -1`   | Linux         |                               |
++|               UID/GID |   Same in Hexadecimal |   How Many | Purpose                           | Defined By    | Listed in                     |
++|----------------------:|----------------------:|-----------:|:----------------------------------|:--------------|:------------------------------|
++|                     0 |            0x00000000 |          1 | `root` user                       | Linux         | `/etc/passwd` + `nss-systemd` |
++|                   1…4 | 0x00000001…0x00000004 |          4 | System users                      | Distributions | `/etc/passwd`                 |
++|                     5 |            0x00000005 |          1 | `tty` group                       | `systemd`     | `/etc/passwd`                 |
++|                 6…999 | 0x00000006…0x000003E7 |        994 | System users                      | Distributions | `/etc/passwd`                 |
++|            1000…60000 | 0x000003E8…0x00001770 |      59000 | Regular users                     | Distributions | `/etc/passwd` + LDAP/NIS/…    |
++|           60001…60513 | 0x0000EA61…0x0000EC61 |        513 | Human users (homed)               | `systemd`     | `nss-systemd`                 |
++|           60514…60577 | 0x0000EC62…0x0000ECA1 |         64 | Host users mapped into containers | `systemd`     | `systemd-nspawn`              |
++|           60578…61183 | 0x0000ECA2…0x0000EEFF |        606 | *unused*                          |               |                               |
++|           61184…65519 | 0x0000EF00…0x0000FFEF |       4336 | Dynamic service users             | `systemd`     | `nss-systemd`                 |
++|           65520…65533 | 0x0000FFF0…0x0000FFFD |         13 | *unused*                          |               |                               |
++|                 65534 |            0x0000FFFE |          1 | `nobody` user                     | Linux         | `/etc/passwd` + `nss-systemd` |
++|                 65535 |            0x0000FFFF |          1 | 16-bit `(uid_t) -1`               | Linux         |                               |
++|          65536…524287 | 0x00010000…0x0007FFFF |     458752 | *unused*                          |               |                               |
++|     524288…1879048191 | 0x00080000…0x6FFFFFFF | 1878523904 | Container UID ranges              | `systemd`     | `nss-systemd`                 |
++| 1879048192…2147352575 | 0x70000000…0x7FFDFFFF | 1879048192 | *unused*                          |               |                               |
++| 2147352576…2147418111 | 0x7FFE0000…0x7FFEFFFF |      65536 | Foreign UID range                 | `systemd`     | `nss-systemd`                 |
++| 2147418112…2147483647 | 0x7FFF0000…0x7FFFFFFF |      65536 | *unused*                          |               |                               |
++| 2147483648…4294967294 | 0x80000000…0xFFFFFFFE | 2147483647 | *HIC SVNT LEONES*                 |               |                               |
++|            4294967295 |            0xFFFFFFFF |          1 | 32-bit `(uid_t) -1`               | Linux         |                               |
+ 
+ Note that "Unused" in the table above doesn't mean that these ranges are really unused.
+ It just means that these ranges have no well-established
+diff --git a/docs/USER_RECORD.md b/docs/USER_RECORD.md
+index 5babc70f65..a8e02b2c5e 100644
+--- a/docs/USER_RECORD.md
++++ b/docs/USER_RECORD.md
+@@ -267,14 +267,17 @@ It's probably wise to use a location string processable by geo-location subsyste
+ Example: `Berlin, Germany` or `Basement, Room 3a`.
+ 
+ `disposition` → A string, one of `intrinsic`, `system`, `dynamic`, `regular`,
+-`container`, `reserved`. If specified clarifies the disposition of the user,
++`container`, `foreign`, `reserved`. If specified clarifies the disposition of the user,
+ i.e. the context it is defined in.
+ For regular, "human" users this should be `regular`, for system users (i.e. users that system services run under, and similar) this should be `system`.
+ The `intrinsic` disposition should be used only for the two users that have special meaning to the OS kernel itself,
+ i.e. the `root` and `nobody` users.
+ The `container` string should be used for users that are used by an OS container, and hence will show up in `ps` listings
+ and such, but are only defined in container context.
+-Finally `reserved` should be used for any users outside of these use-cases.
++The `foreign` string should be used for users from UID ranges which are used
++for OS images from foreign systems, i.e. where local resolution would not make
++sense.
++Finally, `reserved` should be used for any users outside of these use-cases.
+ Note that this property is entirely optional and applications are assumed to be able to derive the
+ disposition of a user automatically from a record even in absence of this
+ field, based on other fields, for example the numeric UID. By setting this
+diff --git a/meson.build b/meson.build
+index 873d70f8d3..fa39da2d38 100644
+--- a/meson.build
++++ b/meson.build
+@@ -887,6 +887,9 @@ container_uid_base_max = get_option('container-uid-base-max')
+ conf.set('CONTAINER_UID_BASE_MIN', container_uid_base_min)
+ conf.set('CONTAINER_UID_BASE_MAX', container_uid_base_max)
+ 
++foreign_uid_base = get_option('foreign-uid-base')
++conf.set('FOREIGN_UID_BASE', foreign_uid_base)
++
+ nobody_user = get_option('nobody-user')
+ nobody_group = get_option('nobody-group')
+ 
+@@ -3011,6 +3014,7 @@ summary({
+                                                                          conf.get('SYSTEM_ALLOC_GID_MIN')),
+         'dynamic UIDs' :                    '@0@…@1@'.format(dynamic_uid_min, dynamic_uid_max),
+         'container UID bases' :             '@0@…@1@'.format(container_uid_base_min, container_uid_base_max),
++        'foreign UID base' :                '@0@'.format(foreign_uid_base),
+         'static UID/GID allocations' :      ' '.join(static_ugids),
+         '/dev/kvm access mode' :            get_option('dev-kvm-mode'),
+         'render group access mode' :        get_option('group-render-mode'),
+diff --git a/meson_options.txt b/meson_options.txt
+index 78b7c5fe30..df2bacdd3d 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -273,6 +273,8 @@ option('container-uid-base-min', type : 'integer', value : 0x00080000,
+        description : 'minimum container UID base')
+ option('container-uid-base-max', type : 'integer', value : 0x6FFF0000,
+        description : 'maximum container UID base')
++option('foreign-uid-base', type : 'integer', value : 0x7FFE0000,
++       description : 'foreign OS image UID base')
+ option('adm-group', type : 'boolean',
+        description : 'the ACL for adm group should be added')
+ option('wheel-group', type : 'boolean',
+diff --git a/src/basic/uid-classification.c b/src/basic/uid-classification.c
+index 2c8b06c0d3..1295db01ae 100644
+--- a/src/basic/uid-classification.c
++++ b/src/basic/uid-classification.c
+@@ -127,5 +127,5 @@ bool uid_for_system_journal(uid_t uid) {
+ 
+         /* Returns true if the specified UID shall get its data stored in the system journal. */
+ 
+-        return uid_is_system(uid) || uid_is_dynamic(uid) || uid == UID_NOBODY;
++        return uid_is_system(uid) || uid_is_dynamic(uid) || uid == UID_NOBODY || uid_is_foreign(uid);
+ }
+diff --git a/src/basic/uid-classification.h b/src/basic/uid-classification.h
+index 0932123d5c..2d76be5f04 100644
+--- a/src/basic/uid-classification.h
++++ b/src/basic/uid-classification.h
+@@ -12,6 +12,10 @@ assert_cc((CONTAINER_UID_BASE_MAX & 0xFFFFU) == 0);
+ #define CONTAINER_UID_MIN (CONTAINER_UID_BASE_MIN)
+ #define CONTAINER_UID_MAX (CONTAINER_UID_BASE_MAX + 0xFFFFU)
+ 
++assert_cc((FOREIGN_UID_BASE & 0xFFFFU) == 0);
++#define FOREIGN_UID_MIN (FOREIGN_UID_BASE)
++#define FOREIGN_UID_MAX (FOREIGN_UID_BASE + 0xFFFFU)
++
+ bool uid_is_system(uid_t uid);
+ bool gid_is_system(gid_t gid);
+ 
+@@ -31,6 +35,14 @@ static inline bool gid_is_container(gid_t gid) {
+         return uid_is_container((uid_t) gid);
+ }
+ 
++static inline bool uid_is_foreign(uid_t uid) {
++        return FOREIGN_UID_MIN <= uid && uid <= FOREIGN_UID_MAX;
++}
++
++static inline bool gid_is_foreign(gid_t gid) {
++        return uid_is_foreign((uid_t) gid);
++}
++
+ typedef struct UGIDAllocationRange {
+         uid_t system_alloc_uid_min;
+         uid_t system_uid_max;
+diff --git a/src/core/systemd.pc.in b/src/core/systemd.pc.in
+index f3b85b0190..8d044dd7ad 100644
+--- a/src/core/systemd.pc.in
++++ b/src/core/systemd.pc.in
+@@ -102,6 +102,8 @@ containeruidbasemin=${container_uid_base_min}
+ container_uid_base_max={{CONTAINER_UID_BASE_MAX}}
+ containeruidbasemax=${container_uid_base_max}
+ 
++foreign_uid_base={{FOREIGN_UID_BASE}}
++
+ Name: systemd
+ Description: systemd System and Service Manager
+ URL: {{PROJECT_URL}}
+diff --git a/src/dissect/dissect.c b/src/dissect/dissect.c
+index 78a830d574..84e836027a 100644
+--- a/src/dissect/dissect.c
++++ b/src/dissect/dissect.c
+@@ -1172,7 +1172,7 @@ static const char *pick_color_for_uid_gid(uid_t uid) {
+                 return ansi_normal();            /* files in disk images are typically owned by root and other system users, no issue there */
+         if (uid_is_dynamic(uid))
+                 return ansi_highlight_red();     /* files should never be owned persistently by dynamic users, and there are just no excuses */
+-        if (uid_is_container(uid))
++        if (uid_is_container(uid) || uid_is_foreign(uid))
+                 return ansi_highlight_cyan();
+ 
+         return ansi_highlight();
+diff --git a/src/shared/group-record.c b/src/shared/group-record.c
+index e4a4eca99c..dcabdf634f 100644
+--- a/src/shared/group-record.c
++++ b/src/shared/group-record.c
+@@ -302,6 +302,9 @@ UserDisposition group_record_disposition(GroupRecord *h) {
+         if (gid_is_container(h->gid))
+                 return USER_CONTAINER;
+ 
++        if (gid_is_foreign(h->gid))
++                return USER_FOREIGN;
++
+         if (h->gid > INT32_MAX)
+                 return USER_RESERVED;
+ 
+diff --git a/src/shared/user-record.c b/src/shared/user-record.c
+index 8617c70aef..75605f248b 100644
+--- a/src/shared/user-record.c
++++ b/src/shared/user-record.c
+@@ -1994,6 +1994,9 @@ UserDisposition user_record_disposition(UserRecord *h) {
+         if (uid_is_container(h->uid))
+                 return USER_CONTAINER;
+ 
++        if (uid_is_foreign(h->uid))
++                return USER_FOREIGN;
++
+         if (h->uid > INT32_MAX)
+                 return USER_RESERVED;
+ 
+@@ -2736,6 +2739,7 @@ static const char* const user_disposition_table[_USER_DISPOSITION_MAX] = {
+         [USER_DYNAMIC]   = "dynamic",
+         [USER_REGULAR]   = "regular",
+         [USER_CONTAINER] = "container",
++        [USER_FOREIGN]   = "foreign",
+         [USER_RESERVED]  = "reserved",
+ };
+ 
+diff --git a/src/shared/user-record.h b/src/shared/user-record.h
+index f8c7454f21..d80a46130a 100644
+--- a/src/shared/user-record.h
++++ b/src/shared/user-record.h
+@@ -17,6 +17,7 @@ typedef enum UserDisposition {
+         USER_DYNAMIC,     /* dynamically allocated users for system services */
+         USER_REGULAR,     /* regular (typically human users) */
+         USER_CONTAINER,   /* UID ranges allocated for container uses */
++        USER_FOREIGN,     /* UID range allocated for foreign OS images */
+         USER_RESERVED,    /* Range above 2^31 */
+         _USER_DISPOSITION_MAX,
+         _USER_DISPOSITION_INVALID = -EINVAL,
+diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
+index 0bb458eb15..f029c801a1 100644
+--- a/src/userdb/userdbctl.c
++++ b/src/userdb/userdbctl.c
+@@ -62,6 +62,7 @@ static const char *user_disposition_to_color(UserDisposition d) {
+                 return ansi_green();
+ 
+         case USER_CONTAINER:
++        case USER_FOREIGN:
+                 return ansi_cyan();
+ 
+         case USER_RESERVED:
+@@ -171,6 +172,12 @@ static const struct {
+                 .name = "container",
+                 .disposition = USER_CONTAINER,
+         },
++        {
++                .first = FOREIGN_UID_MIN,
++                .last = FOREIGN_UID_MAX,
++                .name = "foreign",
++                .disposition = USER_FOREIGN,
++        },
+ #if ENABLE_HOMED
+         {
+                 .first = HOME_UID_MIN,

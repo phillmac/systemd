@@ -1,0 +1,36 @@
+From 4863b227d09445698c14c7fb300793c0af4cf3db Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Ab=C3=ADlio=20Costa?= <abmantis@users.noreply.github.com>
+Date: Sat, 29 Nov 2025 03:05:13 +0000
+Subject: [PATCH] hwdb: add ProtoArc EM01 NL mouse configuration
+
+(cherry picked from commit 2fd63f831fb1c19baaf1e2c4967cbb806567d4e2)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index e93755d860..ae1309cdeb 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -856,6 +856,19 @@ mouse:bluetooth:v000ep3412:name:Nulea BT5.0 Mouse:*
+ mouse:bluetooth:v056ep0061:name:Laser  BTmouse:*
+  MOUSE_DPI=*800@333 1600@333
+ 
++##########################################
++# ProtoArc
++##########################################
++
++# ProtoArc EM01 NL
++mouse:usb:v25a7pfa61:name:Compx 2.4G Receiver Mouse:*
++ ID_INPUT_TRACKBALL=1
++ MOUSE_DPI=200@250 *400@250 800@250 1200@250 1600@250
++
++mouse:bluetooth:v25a7pfaa0:name:EM01 NL:*
++ ID_INPUT_TRACKBALL=1
++ MOUSE_DPI=200@150 *400@150 800@150 1200@150 1600@150
++
+ ##########################################
+ # P-Active
+ ##########################################

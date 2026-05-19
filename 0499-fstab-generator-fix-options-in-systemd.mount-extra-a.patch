@@ -1,0 +1,114 @@
+From 3ef86b28a4933e2cc4169c3b13143999269e4bf1 Mon Sep 17 00:00:00 2001
+From: Jules Lamur <contact@juleslamur.fr>
+Date: Mon, 7 Apr 2025 18:49:26 +0200
+Subject: [PATCH] fstab-generator: fix options in systemd.mount-extra= arg
+
+Fixes a bug introduced by 55365b0a233ae3024411fd0815ad930e20f6a3d6 (v254).
+
+The arguments `(rd.)systemd.mount-extra` take a value that looks like
+`WHAT:WHERE[:FSTYPE[:OPTIONS]]`. The `OPTIONS` were parsed into a nulstr
+where a comma-separated c-string was expected. This leads to a bug where
+only the first option was taken into account by the generator.
+
+For example, if you passed `systemd.mount-extra=/x:/y:baz:ro,defaults`
+to the kernel, `systemd-fstab-generator` would translate that into a
+nulstr: `ro\0defaults\0`.
+Since methods processing options in the generator expected a
+comma-separated c-string, they would only see the first option, `ro` in
+this case.
+
+(cherry picked from commit 06fadc4286fee6a7505a88659e5ae2e6f3ee60ba)
+
+Resolves: RHEL-125822
+---
+ src/fstab-generator/fstab-generator.c         | 21 ++++---------------
+ .../hoge-withx20space.mount                   |  2 +-
+ .../dev-sdy3.swap                             |  2 +-
+ .../dev-sdy3.swap                             |  0
+ 4 files changed, 6 insertions(+), 19 deletions(-)
+ rename test/test-fstab-generator/test-20-swap-from-cmdline.expected/{swap.target.requires => swap.target.wants}/dev-sdy3.swap (100%)
+
+diff --git a/src/fstab-generator/fstab-generator.c b/src/fstab-generator/fstab-generator.c
+index 6b7445b201..590042e992 100644
+--- a/src/fstab-generator/fstab-generator.c
++++ b/src/fstab-generator/fstab-generator.c
+@@ -109,15 +109,15 @@ static int mount_array_add_internal(
+                 char *in_what,
+                 char *in_where,
+                 const char *in_fstype,
+-                const char *in_options) {
++                char *in_options) {
+ 
+         _cleanup_free_ char *what = NULL, *where = NULL, *fstype = NULL, *options = NULL;
+-        int r;
+ 
+         /* This takes what and where. */
+ 
+         what = ASSERT_PTR(in_what);
+         where = in_where;
++        options = in_options;
+ 
+         fstype = strdup(isempty(in_fstype) ? "auto" : in_fstype);
+         if (!fstype)
+@@ -126,19 +126,6 @@ static int mount_array_add_internal(
+         if (streq(fstype, "swap"))
+                 where = mfree(where);
+ 
+-        if (!isempty(in_options)) {
+-                _cleanup_strv_free_ char **options_strv = NULL;
+-
+-                r = strv_split_full(&options_strv, in_options, ",", 0);
+-                if (r < 0)
+-                        return r;
+-
+-                r = strv_make_nulstr(options_strv, &options, NULL);
+-        } else
+-                r = strv_make_nulstr(STRV_MAKE("defaults"), &options, NULL);
+-        if (r < 0)
+-                return r;
+-
+         if (!GREEDY_REALLOC(arg_mounts, arg_n_mounts + 1))
+                 return -ENOMEM;
+ 
+@@ -168,7 +155,7 @@ static int mount_array_add(bool for_initrd, const char *str) {
+         if (!isempty(str))
+                 return -EINVAL;
+ 
+-        return mount_array_add_internal(for_initrd, TAKE_PTR(what), TAKE_PTR(where), fstype, options);
++        return mount_array_add_internal(for_initrd, TAKE_PTR(what), TAKE_PTR(where), fstype, TAKE_PTR(options));
+ }
+ 
+ static int mount_array_add_swap(bool for_initrd, const char *str) {
+@@ -186,7 +173,7 @@ static int mount_array_add_swap(bool for_initrd, const char *str) {
+         if (!isempty(str))
+                 return -EINVAL;
+ 
+-        return mount_array_add_internal(for_initrd, TAKE_PTR(what), NULL, "swap", options);
++        return mount_array_add_internal(for_initrd, TAKE_PTR(what), NULL, "swap", TAKE_PTR(options));
+ }
+ 
+ static int write_options(FILE *f, const char *options) {
+diff --git a/test/test-fstab-generator/test-19-mounts-from-cmdline.expected/hoge-withx20space.mount b/test/test-fstab-generator/test-19-mounts-from-cmdline.expected/hoge-withx20space.mount
+index e9ffb4bbd9..d3797c9706 100644
+--- a/test/test-fstab-generator/test-19-mounts-from-cmdline.expected/hoge-withx20space.mount
++++ b/test/test-fstab-generator/test-19-mounts-from-cmdline.expected/hoge-withx20space.mount
+@@ -9,4 +9,4 @@ Before=remote-fs.target
+ What=//foo￾bar
+ Where=/hoge/with space
+ Type=cifs
+-Options=rw
++Options=rw,seclabel
+diff --git a/test/test-fstab-generator/test-20-swap-from-cmdline.expected/dev-sdy3.swap b/test/test-fstab-generator/test-20-swap-from-cmdline.expected/dev-sdy3.swap
+index 3b6563d216..1b4b53c9b8 100644
+--- a/test/test-fstab-generator/test-20-swap-from-cmdline.expected/dev-sdy3.swap
++++ b/test/test-fstab-generator/test-20-swap-from-cmdline.expected/dev-sdy3.swap
+@@ -7,4 +7,4 @@ After=blockdev@dev-sdy3.target
+ 
+ [Swap]
+ What=/dev/sdy3
+-Options=x-systemd.makefs
++Options=x-systemd.makefs,nofail
+diff --git a/test/test-fstab-generator/test-20-swap-from-cmdline.expected/swap.target.requires/dev-sdy3.swap b/test/test-fstab-generator/test-20-swap-from-cmdline.expected/swap.target.wants/dev-sdy3.swap
+similarity index 100%
+rename from test/test-fstab-generator/test-20-swap-from-cmdline.expected/swap.target.requires/dev-sdy3.swap
+rename to test/test-fstab-generator/test-20-swap-from-cmdline.expected/swap.target.wants/dev-sdy3.swap

@@ -1,0 +1,32 @@
+From 68c407e06c533814d9173bbee6bf8585190625bb Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Mon, 6 Jan 2025 23:47:45 +0000
+Subject: [PATCH] test: add test case for AddDependencyUnitFiles assert
+
+Follow-up for d87dc74e8f1a30d72a0f202e411400bab34ab55a
+
+(cherry picked from commit f2b34ce7f397b89fbf734c05a1440e1541f5751d)
+
+Resolves: RHEL-108257
+---
+ test/units/TEST-07-PID1.issue-35882.sh | 11 +++++++++++
+ 1 file changed, 11 insertions(+)
+ create mode 100755 test/units/TEST-07-PID1.issue-35882.sh
+
+diff --git a/test/units/TEST-07-PID1.issue-35882.sh b/test/units/TEST-07-PID1.issue-35882.sh
+new file mode 100755
+index 0000000000..cf1650cc22
+--- /dev/null
++++ b/test/units/TEST-07-PID1.issue-35882.sh
+@@ -0,0 +1,11 @@
++#!/usr/bin/env bash
++# SPDX-License-Identifier: LGPL-2.1-or-later
++set -eux
++set -o pipefail
++
++# shellcheck source=test/units/util.sh
++. "$(dirname "$0")"/util.sh
++
++(! busctl call org.freedesktop.systemd1 /org/freedesktop/systemd1 org.freedesktop.systemd1.Manager AddDependencyUnitFiles "asssbb" 0 abracadabra After 1 1)
++
++exit 0

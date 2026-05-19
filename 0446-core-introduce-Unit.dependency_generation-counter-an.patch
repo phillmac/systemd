@@ -1,0 +1,249 @@
+From 9a97574845363386036c9f8bc83b271e80844999 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 15 May 2025 12:34:35 +0900
+Subject: [PATCH] core: introduce Unit.dependency_generation counter and
+ restart loop when dependency is updated in the loop
+
+When starting unit A, a dependent unit B may be loaded if it is not
+loaded yet, and the dependencies in unit A may be updated.
+As Hashmap does not allow a new entry to be added in a loop, we need to
+restart loop in such case.
+
+Fixes a bug introduced by cda667722c2218cf1a0185284d2a87f8a25f1b2d.
+Fixes #36031.
+
+(cherry picked from commit b7777d08846033859c5b734317fbbbfcca4cafcb)
+
+Resolves: RHEL-112203
+---
+ src/core/transaction.c | 18 +++++++++---------
+ src/core/unit.c        | 10 ++++++++++
+ src/core/unit.h        | 31 ++++++++++++++++++++++++++-----
+ 3 files changed, 45 insertions(+), 14 deletions(-)
+
+diff --git a/src/core/transaction.c b/src/core/transaction.c
+index bec96a67af..705ed0c50f 100644
+--- a/src/core/transaction.c
++++ b/src/core/transaction.c
+@@ -894,7 +894,7 @@ void transaction_add_propagate_reload_jobs(
+         assert(tr);
+         assert(unit);
+ 
+-        UNIT_FOREACH_DEPENDENCY(dep, unit, UNIT_ATOM_PROPAGATES_RELOAD_TO) {
++        UNIT_FOREACH_DEPENDENCY_SAFE(dep, unit, UNIT_ATOM_PROPAGATES_RELOAD_TO) {
+                 _cleanup_(sd_bus_error_free) sd_bus_error e = SD_BUS_ERROR_NULL;
+ 
+                 nt = job_type_collapse(JOB_TRY_RELOAD, dep);
+@@ -1043,7 +1043,7 @@ int transaction_add_job_and_dependencies(
+ 
+         /* Finally, recursively add in all dependencies. */
+         if (IN_SET(type, JOB_START, JOB_RESTART)) {
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PULL_IN_START) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PULL_IN_START) {
+                         r = transaction_add_job_and_dependencies(tr, JOB_START, dep, ret, TRANSACTION_MATTERS | (flags & TRANSACTION_IGNORE_ORDER), e);
+                         if (r < 0) {
+                                 if (r != -EBADR) /* job type not applicable */
+@@ -1053,7 +1053,7 @@ int transaction_add_job_and_dependencies(
+                         }
+                 }
+ 
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PULL_IN_START_IGNORED) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PULL_IN_START_IGNORED) {
+                         r = transaction_add_job_and_dependencies(tr, JOB_START, dep, ret, flags & TRANSACTION_IGNORE_ORDER, e);
+                         if (r < 0) {
+                                 /* unit masked, job type not applicable and unit not found are not considered
+@@ -1066,7 +1066,7 @@ int transaction_add_job_and_dependencies(
+                         }
+                 }
+ 
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PULL_IN_VERIFY) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PULL_IN_VERIFY) {
+                         r = transaction_add_job_and_dependencies(tr, JOB_VERIFY_ACTIVE, dep, ret, TRANSACTION_MATTERS | (flags & TRANSACTION_IGNORE_ORDER), e);
+                         if (r < 0) {
+                                 if (r != -EBADR) /* job type not applicable */
+@@ -1076,7 +1076,7 @@ int transaction_add_job_and_dependencies(
+                         }
+                 }
+ 
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PULL_IN_STOP) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PULL_IN_STOP) {
+                         r = transaction_add_job_and_dependencies(tr, JOB_STOP, dep, ret, TRANSACTION_MATTERS | TRANSACTION_CONFLICTS | (flags & TRANSACTION_IGNORE_ORDER), e);
+                         if (r < 0) {
+                                 if (r != -EBADR) /* job type not applicable */
+@@ -1086,7 +1086,7 @@ int transaction_add_job_and_dependencies(
+                         }
+                 }
+ 
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PULL_IN_STOP_IGNORED) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PULL_IN_STOP_IGNORED) {
+                         r = transaction_add_job_and_dependencies(tr, JOB_STOP, dep, ret, flags & TRANSACTION_IGNORE_ORDER, e);
+                         if (r < 0) {
+                                 log_unit_warning(dep,
+@@ -1100,7 +1100,7 @@ int transaction_add_job_and_dependencies(
+         if (IN_SET(type, JOB_RESTART, JOB_STOP) || (type == JOB_START && FLAGS_SET(flags, TRANSACTION_PROPAGATE_START_AS_RESTART))) {
+                 bool is_stop = type == JOB_STOP;
+ 
+-                UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PROPAGATE_STOP) {
++                UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PROPAGATE_STOP) {
+                         /* We propagate RESTART only as TRY_RESTART, in order not to start dependencies that
+                          * are not around. */
+                         JobType nt;
+@@ -1122,7 +1122,7 @@ int transaction_add_job_and_dependencies(
+                  * all other dependencies are processed, i.e. we're the anchor job or already in the recursion
+                  * that handles it. */
+                 if (!by || FLAGS_SET(flags, TRANSACTION_PROCESS_PROPAGATE_STOP_GRACEFUL))
+-                        UNIT_FOREACH_DEPENDENCY(dep, ret->unit, UNIT_ATOM_PROPAGATE_STOP_GRACEFUL) {
++                        UNIT_FOREACH_DEPENDENCY_SAFE(dep, ret->unit, UNIT_ATOM_PROPAGATE_STOP_GRACEFUL) {
+                                 JobType nt;
+                                 Job *j;
+ 
+@@ -1220,7 +1220,7 @@ int transaction_add_triggering_jobs(Transaction *tr, Unit *u) {
+         assert(tr);
+         assert(u);
+ 
+-        UNIT_FOREACH_DEPENDENCY(trigger, u, UNIT_ATOM_TRIGGERED_BY) {
++        UNIT_FOREACH_DEPENDENCY_SAFE(trigger, u, UNIT_ATOM_TRIGGERED_BY) {
+                 _cleanup_(sd_bus_error_free) sd_bus_error e = SD_BUS_ERROR_NULL;
+ 
+                 /* No need to stop inactive jobs */
+diff --git a/src/core/unit.c b/src/core/unit.c
+index d36f860de9..631fa2f198 100644
+--- a/src/core/unit.c
++++ b/src/core/unit.c
+@@ -636,12 +636,14 @@ static void unit_clear_dependencies(Unit *u) {
+                                 hashmap_remove(other_deps, u);
+ 
+                         unit_add_to_gc_queue(other);
++                        other->dependency_generation++;
+                 }
+ 
+                 hashmap_free(deps);
+         }
+ 
+         u->dependencies = hashmap_free(u->dependencies);
++        u->dependency_generation++;
+ }
+ 
+ static void unit_remove_transient(Unit *u) {
+@@ -1092,6 +1094,9 @@ static void unit_merge_dependencies(Unit *u, Unit *other) {
+         }
+ 
+         other->dependencies = hashmap_free(other->dependencies);
++
++        u->dependency_generation++;
++        other->dependency_generation++;
+ }
+ 
+ int unit_merge(Unit *u, Unit *other) {
+@@ -3114,6 +3119,7 @@ static int unit_add_dependency_impl(
+                         return r;
+ 
+                 flags = NOTIFY_DEPENDENCY_UPDATE_FROM;
++                u->dependency_generation++;
+         }
+ 
+         if (other_info.data != other_info_old.data) {
+@@ -3130,6 +3136,7 @@ static int unit_add_dependency_impl(
+                 }
+ 
+                 flags |= NOTIFY_DEPENDENCY_UPDATE_TO;
++                other->dependency_generation++;
+         }
+ 
+         return flags;
+@@ -5565,6 +5572,9 @@ void unit_remove_dependencies(Unit *u, UnitDependencyMask mask) {
+                                 /* The unit 'other' may not be wanted by the unit 'u'. */
+                                 unit_submit_to_stop_when_unneeded_queue(other);
+ 
++                                u->dependency_generation++;
++                                other->dependency_generation++;
++
+                                 done = false;
+                                 break;
+                         }
+diff --git a/src/core/unit.h b/src/core/unit.h
+index d24658ed9b..b6f47c76d6 100644
+--- a/src/core/unit.h
++++ b/src/core/unit.h
+@@ -227,6 +227,7 @@ typedef struct Unit {
+          * and whose value encodes why the dependency exists, using the UnitDependencyInfo type. i.e. a
+          * Hashmap(UnitDependency → Hashmap(Unit* → UnitDependencyInfo)) */
+         Hashmap *dependencies;
++        uint64_t dependency_generation;
+ 
+         /* Similar, for RequiresMountsFor= and WantsMountsFor= path dependencies. The key is the path, the
+          * value the UnitDependencyInfo type */
+@@ -1154,27 +1155,44 @@ CollectMode collect_mode_from_string(const char *s) _pure_;
+ typedef struct UnitForEachDependencyData {
+         /* Stores state for the FOREACH macro below for iterating through all deps that have any of the
+          * specified dependency atom bits set */
++        const Unit *unit;
+         UnitDependencyAtom match_atom;
+         Hashmap *by_type, *by_unit;
+         void *current_type;
+         Iterator by_type_iterator, by_unit_iterator;
+         Unit **current_unit;
++        uint64_t generation;
++        unsigned n_restart;
++        bool restart_on_generation_change;
+ } UnitForEachDependencyData;
+ 
++/* Let's not restart the loop infinitely. */
++#define MAX_FOREACH_DEPENDENCY_RESTART 100000
++
+ /* Iterates through all dependencies that have a specific atom in the dependency type set. This tries to be
+  * smart: if the atom is unique, we'll directly go to right entry. Otherwise we'll iterate through the
+  * per-dependency type hashmap and match all dep that have the right atom set. */
+-#define _UNIT_FOREACH_DEPENDENCY(other, u, ma, data)                    \
++#define _UNIT_FOREACH_DEPENDENCY(other, u, ma, restart, data)           \
+         for (UnitForEachDependencyData data = {                         \
++                        .unit = (u),                                    \
+                         .match_atom = (ma),                             \
+-                        .by_type = (u)->dependencies,                   \
+-                        .by_type_iterator = ITERATOR_FIRST,             \
+                         .current_unit = &(other),                       \
++                        .restart_on_generation_change = (restart),      \
+                 };                                                      \
+              ({                                                         \
+                      UnitDependency _dt = _UNIT_DEPENDENCY_INVALID;     \
+                      bool _found;                                       \
+                                                                         \
++                     if (data.generation == 0 ||                        \
++                         (data.restart_on_generation_change &&          \
++                          data.generation != data.unit->dependency_generation)) { \
++                             data.generation = data.unit->dependency_generation; \
++                             data.by_type = data.unit->dependencies;    \
++                             data.by_type_iterator = ITERATOR_FIRST;    \
++                             assert_se(data.n_restart++ < MAX_FOREACH_DEPENDENCY_RESTART); \
++                     } else                                             \
++                             assert(data.generation == data.unit->dependency_generation); \
++                                                                        \
+                      if (data.by_type && ITERATOR_IS_FIRST(data.by_type_iterator)) { \
+                              _dt = unit_dependency_from_unique_atom(data.match_atom); \
+                              if (_dt >= 0) {                            \
+@@ -1187,12 +1205,13 @@ typedef struct UnitForEachDependencyData {
+                      if (_dt < 0)                                       \
+                              _found = hashmap_iterate(data.by_type,     \
+                                                       &data.by_type_iterator, \
+-                                                      (void**)&(data.by_unit), \
++                                                      (void**) &(data.by_unit), \
+                                                       (const void**) &(data.current_type)); \
+                      _found;                                            \
+              }); )                                                      \
+                 if ((unit_dependency_to_atom(UNIT_DEPENDENCY_FROM_PTR(data.current_type)) & data.match_atom) != 0) \
+                         for (data.by_unit_iterator = ITERATOR_FIRST;    \
++                             data.generation == data.unit->dependency_generation && \
+                                 hashmap_iterate(data.by_unit,           \
+                                                 &data.by_unit_iterator, \
+                                                 NULL,                   \
+@@ -1200,7 +1219,9 @@ typedef struct UnitForEachDependencyData {
+ 
+ /* Note: this matches deps that have *any* of the atoms specified in match_atom set */
+ #define UNIT_FOREACH_DEPENDENCY(other, u, match_atom) \
+-        _UNIT_FOREACH_DEPENDENCY(other, u, match_atom, UNIQ_T(data, UNIQ))
++        _UNIT_FOREACH_DEPENDENCY(other, u, match_atom, false, UNIQ_T(data, UNIQ))
++#define UNIT_FOREACH_DEPENDENCY_SAFE(other, u, match_atom) \
++        _UNIT_FOREACH_DEPENDENCY(other, u, match_atom, true, UNIQ_T(data, UNIQ))
+ 
+ #define _LOG_CONTEXT_PUSH_UNIT(unit, u, c)                                                              \
+         const Unit *u = (unit);                                                                         \

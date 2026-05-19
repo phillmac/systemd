@@ -1,0 +1,46 @@
+From 3268cc9718218299093db703afb1b1d72d9db789 Mon Sep 17 00:00:00 2001
+From: Charlie Le <20309750+CharlieQLe@users.noreply.github.com>
+Date: Mon, 17 Nov 2025 08:34:03 -0500
+Subject: [PATCH] hwdb: Add Elecom IST Pro trackball (#39762)
+
+Added entries for the Elecom IST Pro via its three connection methods- a
+USB cable, the included G1000 USB receiver, and Bluetooth.
+
+The G1000 USB receiver _may_ have to be removed in the future depending
+on the input devices that can connect to it. According to Elecom, the
+receiver can have up to three different input devices connected such as
+trackballs, mice, keyboards, etc. That said, as far as I can tell, the
+IST Pro is the only released Elecom device that uses the receiver. The
+non-pro model and the upcoming Elecom Huge Plus might use the same
+receiver, but that should not matter as both devices are trackballs.
+
+(cherry picked from commit 7e337327e9e789d75f2bda0c82ecd76005f48a07)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index efd67da555..e93755d860 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -267,6 +267,18 @@ mouse:usb:v056ep0155:name:ELECOM ELECOM Relacon:*
+  MOUSE_DPI=*500 1000 1500
+  MOUSE_WHEEL_CLICK_ANGLE=30
+ 
++# Elecom IST Pro (via wired usb) (M-IPT10MRSABK)
++mouse:usb:v056ep018a:name:ELECOM ELECOM IST PRO Mouse:*
++ ID_INPUT_TRACKBALL=1
++
++# Elecom IST Pro (via usb receiver) (M-IPT10MRSABK)
++mouse:usb:v056ep01a9:name:ELECOM ELECOM Bridge G1000 Mouse:*
++ ID_INPUT_TRACKBALL=1
++
++# Elecom IST Pro (via Bluetooth) (M-IPT10MRSABK)
++mouse:bluetooth:v056ep018a:name:ELECOM IST PRO Mouse:*
++ ID_INPUT_TRACKBALL=1
++
+ ##########################################
+ # Fujitsu Siemens
+ ##########################################

@@ -1,0 +1,67 @@
+From 1592be7d9b8a652c0f680bd3b6bbd8e20f7d1f02 Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Tue, 16 Sep 2025 01:06:18 +0200
+Subject: [PATCH] hwdb: add SDRplay devices
+
+Also remove duplicate MiriSDR device that is just a cheap SDRplay RSP1 copy
+
+(cherry picked from commit 0125be8733023fedb4d97c8e79b19717708e7ade)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 38 ++++++++++++++++++++++++++++-------
+ 1 file changed, 31 insertions(+), 7 deletions(-)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index f1723e1fa9..63af9c77cd 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -107,13 +107,6 @@ usb:v0525p3380*
+ usb:v04B4p325C*
+  ID_SOFTWARE_RADIO=1
+ 
+-##########################################
+-# MiriSDR
+-##########################################
+-# Mirics MSi2500 default (e.g. VTX3D card)
+-usb:v1DF7p2500*
+- ID_SOFTWARE_RADIO=1
+-
+ ##########################################
+ # Nuand
+ ##########################################
+@@ -299,3 +292,34 @@ usb:v1F4DpD286*
+ # PROlectrix DV107669 (FC0012)
+ usb:v1F4DpD803*
+  ID_SOFTWARE_RADIO=1
++
++##########################################
++# SDRplay
++##########################################
++# RSP1
++usb:v1DF7p2500*
++ ID_SOFTWARE_RADIO=1
++
++# RSP1A
++usb:v1DF7p3000*
++ ID_SOFTWARE_RADIO=1
++
++# RSP2/RSP2pro
++usb:v1DF7p3010*
++ ID_SOFTWARE_RADIO=1
++
++# RSPduo
++usb:v1DF7p3020*
++ ID_SOFTWARE_RADIO=1
++
++# RSPdx
++usb:v1DF7p3030*
++ ID_SOFTWARE_RADIO=1
++
++# RSP1B
++usb:v1DF7p3050*
++ ID_SOFTWARE_RADIO=1
++
++# RSPdxR2
++usb:v1DF7p3060*
++ ID_SOFTWARE_RADIO=1

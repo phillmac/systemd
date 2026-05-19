@@ -1,0 +1,84 @@
+From 29d63497e76eb54b060ec53614034951d6c7e454 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 28 Jan 2025 08:50:14 +0900
+Subject: [PATCH] strv: introduce string_strv_hashmap_remove()
+
+(cherry picked from commit c540875cd3b024f64980966376637ecc284d643c)
+
+Related: RHEL-126937
+---
+ src/basic/strv.c              | 17 +++++++++++++++++
+ src/basic/strv.h              |  4 ++++
+ src/test/test-hashmap-plain.c | 16 ++++++++++++++++
+ 3 files changed, 37 insertions(+)
+
+diff --git a/src/basic/strv.c b/src/basic/strv.c
+index c9c4551cdc..bbe0868226 100644
+--- a/src/basic/strv.c
++++ b/src/basic/strv.c
+@@ -1065,6 +1065,23 @@ int fputstrv(FILE *f, char * const *l, const char *separator, bool *space) {
+ 
+ DEFINE_PRIVATE_HASH_OPS_FULL(string_strv_hash_ops, char, string_hash_func, string_compare_func, free, char*, strv_free);
+ 
++void string_strv_hashmap_remove(Hashmap *h, const char *key, const char *value) {
++        assert(key);
++
++        if (value) {
++                char **l = hashmap_get(h, key);
++                if (!l)
++                        return;
++
++                strv_remove(l, value);
++                if (!strv_isempty(l))
++                        return;
++        }
++
++        _unused_ _cleanup_free_ char *key_free = NULL;
++        strv_free(hashmap_remove2(h, key, (void**) &key_free));
++}
++
+ static int string_strv_hashmap_put_internal(Hashmap *h, const char *key, const char *value) {
+         char **l;
+         int r;
+diff --git a/src/basic/strv.h b/src/basic/strv.h
+index 86ba06f835..5cdc801f35 100644
+--- a/src/basic/strv.h
++++ b/src/basic/strv.h
+@@ -258,6 +258,10 @@ int fputstrv(FILE *f, char * const *l, const char *separator, bool *space);
+ #define strv_free_and_replace(a, b)             \
+         free_and_replace_full(a, b, strv_free)
+ 
++void string_strv_hashmap_remove(Hashmap *h, const char *key, const char *value);
++static inline void string_strv_ordered_hashmap_remove(OrderedHashmap *h, const char *key, const char *value) {
++        string_strv_hashmap_remove(PLAIN_HASHMAP(h), key, value);
++}
+ int _string_strv_hashmap_put(Hashmap **h, const char *key, const char *value  HASHMAP_DEBUG_PARAMS);
+ int _string_strv_ordered_hashmap_put(OrderedHashmap **h, const char *key, const char *value  HASHMAP_DEBUG_PARAMS);
+ #define string_strv_hashmap_put(h, k, v) _string_strv_hashmap_put(h, k, v  HASHMAP_DEBUG_SRC_ARGS)
+diff --git a/src/test/test-hashmap-plain.c b/src/test/test-hashmap-plain.c
+index e1485a84d4..0fd4116d8a 100644
+--- a/src/test/test-hashmap-plain.c
++++ b/src/test/test-hashmap-plain.c
+@@ -992,6 +992,22 @@ TEST(string_strv_hashmap) {
+ 
+         s = hashmap_get(m, "xxx");
+         assert_se(strv_equal(s, STRV_MAKE("bar", "BAR")));
++
++        string_strv_hashmap_remove(m, "foo", "bar");
++        ASSERT_NOT_NULL(s = hashmap_get(m, "foo"));
++        ASSERT_TRUE(strv_equal(s, STRV_MAKE("BAR")));
++
++        string_strv_hashmap_remove(m, "foo", "BAR");
++        ASSERT_NULL(hashmap_get(m, "foo"));
++
++        string_strv_hashmap_remove(m, "xxx", "BAR");
++        ASSERT_NOT_NULL(s = hashmap_get(m, "xxx"));
++        ASSERT_TRUE(strv_equal(s, STRV_MAKE("bar")));
++
++        string_strv_hashmap_remove(m, "xxx", "bar");
++        ASSERT_NULL(hashmap_get(m, "xxx"));
++
++        ASSERT_TRUE(hashmap_isempty(m));
+ }
+ 
+ TEST(hashmap_dump_sorted) {

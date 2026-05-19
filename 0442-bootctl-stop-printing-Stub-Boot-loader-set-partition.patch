@@ -1,0 +1,64 @@
+From 9e239ea80030f6740d900891cf5c1aeb0248cf3e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Fri, 14 Feb 2025 09:42:43 +0100
+Subject: [PATCH] bootctl: stop printing "Stub/Boot loader set partition
+ information"
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+... and "Stub/Boot loader set network boot URL information".
+
+This reverts 26bfd97216ab55664214d1e0fac7065e5573a36b
+('bootctl: also shown whether stub loader partition data was passed'),
+and one line from bfcf48b842644c1016583ecf0c4258cb59a102bb
+('bootctl: show stub partition data too in "status" too'),
+and two lines from e15d18b4c64e13c37a4c676bf61a5ecf8bba04a3
+('sd-stub: if we are http booted, query source URL and write to EFI variable').
+
+As discussed in https://github.com/systemd/systemd/pull/36372, those are not
+"features", but optional pieces of information that may or may not be set, also
+depending on how the boot loader and stub were loaded. We already prominently
+show this information right below: either we print the device path or "n/a" or
+skip the output. The user already has all the information, and the status
+output should be dense, so it doesn't make sense to repeat this twice.
+
+               ✓ Boot loader set partition information
+    Partition: /dev/disk/by-partuuid/3f003ec5-5673-5b4f-b9a4-cbac1ca4461a
+OR
+               - Boot loader set partition information
+    Partition: n/a
+
+               ✓ Stub loader set partition information
+    Partition: /dev/disk/by-partuuid/3f003ec5-5673-5b4f-b9a4-cbac1ca4461a
+OR
+               - Stub loader set partition information
+    Partition: n/a
+
+(cherry picked from commit f25e4e5af0518b4865eff84b65dd339047e429ed)
+
+Resolves: RHEL-108251
+---
+ src/bootctl/bootctl-status.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/src/bootctl/bootctl-status.c b/src/bootctl/bootctl-status.c
+index 6f38b0f793..e130838fb0 100644
+--- a/src/bootctl/bootctl-status.c
++++ b/src/bootctl/bootctl-status.c
+@@ -478,7 +478,6 @@ int verb_status(int argc, char *argv[], void *userdata) {
+ 
+                         sd_id128_t loader_partition_uuid = SD_ID128_NULL;
+                         (void) efi_loader_get_device_part_uuid(&loader_partition_uuid);
+-                        print_yes_no_line(/* first= */ false, !sd_id128_is_null(loader_partition_uuid), "Boot loader set partition information");
+ 
+                         if (!sd_id128_is_null(loader_partition_uuid)) {
+                                 if (!sd_id128_is_null(esp_uuid) && !sd_id128_equal(esp_uuid, loader_partition_uuid))
+@@ -511,7 +510,6 @@ int verb_status(int argc, char *argv[], void *userdata) {
+ 
+                         sd_id128_t stub_partition_uuid = SD_ID128_NULL;
+                         (void) efi_stub_get_device_part_uuid(&stub_partition_uuid);
+-                        print_yes_no_line(/* first= */ false, !sd_id128_is_null(stub_partition_uuid), "Stub loader set partition information");
+ 
+                         if (!sd_id128_is_null(stub_partition_uuid)) {
+                                 if (!(!sd_id128_is_null(esp_uuid) && sd_id128_equal(esp_uuid, stub_partition_uuid)) &&

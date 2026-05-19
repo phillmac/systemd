@@ -1,0 +1,38 @@
+From 8d5306dd2f86b3d642080b1eacceebd50028047e Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 28 Oct 2025 13:20:58 +0900
+Subject: [PATCH] TEST-07-PID1: wait for systemd-resolved being stopped
+
+As 'systemctl stop' is called with --no-block, previously systemd-resolved
+might not be stopped when 'resolvectl' is called, and the DBus connection
+might be closed during the call:
+```
+TEST-07-PID1.sh[5643]: + systemctl stop --no-block systemd-resolved.service
+TEST-07-PID1.sh[5643]: + resolvectl
+TEST-07-PID1.sh[5732]: Failed to get global data: Remote peer disconnected
+```
+
+Follow-up for 8eefd0f4debc0bcfeea89dd39c43e3318f3f7ae7.
+Fixes https://github.com/systemd/systemd/pull/39388#issuecomment-3439277442.
+
+(cherry picked from commit 6454fde83eef8da7391ad18a1b1a3248402f9214)
+
+Related: RHEL-115032
+---
+ test/units/TEST-07-PID1.start-limit.sh | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/test/units/TEST-07-PID1.start-limit.sh b/test/units/TEST-07-PID1.start-limit.sh
+index f793d32876..b512c58ff2 100755
+--- a/test/units/TEST-07-PID1.start-limit.sh
++++ b/test/units/TEST-07-PID1.start-limit.sh
+@@ -35,6 +35,9 @@ for i in {1..5}; do
+     echo "Start #$i"
+ 
+     systemctl stop --no-block systemd-resolved.service
++    # Wait for systemd-resolved in ExecStart= being stopped.
++    # shellcheck disable=SC2016
++    timeout 10 bash -c 'until [[ "$(systemctl show --property=MainPID --value systemd-resolved.service)" == 0 ]]; do sleep 0.1; done'
+     if ! resolvectl; then
+         journalctl -o short-monotonic --no-hostname --no-pager -u systemd-resolved.service -n 15
+         exit 1

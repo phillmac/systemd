@@ -1,0 +1,31 @@
+From df825ec49e77a0ef697532bbba7d3638a74ca980 Mon Sep 17 00:00:00 2001
+From: Craig McLure <craig@mclure.net>
+Date: Mon, 24 Nov 2025 06:02:10 +0000
+Subject: [PATCH] hwdb: Add alternative mode for Beacn Mic (#39868)
+
+The Beacn Mic's alt-mode behaves identically to it's primary mode from a
+communication perspective, it just presents a different channel
+configuration to ALSA.
+
+(cherry picked from commit ab5a79ff5d9bae48d544585c84768234e60644bd)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-av-production.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/70-av-production.hwdb b/hwdb.d/70-av-production.hwdb
+index aa23af6add..c130acfb8f 100644
+--- a/hwdb.d/70-av-production.hwdb
++++ b/hwdb.d/70-av-production.hwdb
+@@ -37,6 +37,10 @@ usb:v2982p1967*
+ usb:v33AEp0001*
+  ID_AV_PRODUCTION_CONTROLLER=1
+ 
++# Beacn Mic (alt mode)
++usb:v33AEp8001*
++ ID_AV_PRODUCTION_CONTROLLER=1
++
+ # Beacn Studio
+ usb:v33AEp0003*
+  ID_AV_PRODUCTION_CONTROLLER=1

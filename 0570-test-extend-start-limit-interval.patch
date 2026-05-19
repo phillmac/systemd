@@ -1,0 +1,40 @@
+From 82a8ae0276d91c8cf0ef92117e6f1be1b8fdad95 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Sat, 25 Oct 2025 15:34:44 +0900
+Subject: [PATCH] test: extend start limit interval
+
+As the modified service requires about ~10 seconds for stopping, the
+service never hit the start limit even if we tried to restart the
+service more than 5 times.
+
+This also checks that the service is actually triggered by dbus method
+call.
+
+Follow-up for 8eefd0f4debc0bcfeea89dd39c43e3318f3f7ae7.
+
+(cherry picked from commit 44b4caad6cc99449bbf705350939fde1ed9b1248)
+
+Related: RHEL-115032
+---
+ test/units/TEST-07-PID1.start-limit.sh | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/test/units/TEST-07-PID1.start-limit.sh b/test/units/TEST-07-PID1.start-limit.sh
+index b512c58ff2..93447452da 100755
+--- a/test/units/TEST-07-PID1.start-limit.sh
++++ b/test/units/TEST-07-PID1.start-limit.sh
+@@ -19,7 +19,7 @@ mkdir -p /run/systemd/system/systemd-resolved.service.d/
+ cat >/run/systemd/system/systemd-resolved.service.d/99-start-limit.conf <<EOF
+ [Unit]
+ StartLimitBurst=5
+-StartLimitInterval=30
++StartLimitInterval=100
+ 
+ [Service]
+ ExecStopPost=sleep 10
+@@ -42,4 +42,5 @@ for i in {1..5}; do
+         journalctl -o short-monotonic --no-hostname --no-pager -u systemd-resolved.service -n 15
+         exit 1
+     fi
++    systemctl is-active systemd-resolved.service
+ done

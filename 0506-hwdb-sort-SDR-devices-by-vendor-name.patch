@@ -1,0 +1,60 @@
+From 01746a1c7368214e3cbaa795bd87f64381cb65c8 Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Mon, 25 Aug 2025 11:14:28 +0200
+Subject: [PATCH] hwdb: sort SDR devices by vendor name
+
+(cherry picked from commit e8628ddb787026022c0b91a42dfeb3c782698df3)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 30 +++++++++++++++---------------
+ 1 file changed, 15 insertions(+), 15 deletions(-)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index b005309101..61b0428363 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -21,21 +21,6 @@
+ # Allowed properties are:
+ #   ID_SOFTWARE_RADIO=0|1
+ 
+-##########################################
+-# Nuand
+-##########################################
+-# bladeRF 1.x
+-usb:v2CF0p5246*
+- ID_SOFTWARE_RADIO=1
+-
+-# bladeRF 1.x (legacy)
+-usb:v1D50p6066*
+- ID_SOFTWARE_RADIO=1
+-
+-# bladeRF 2.0 micro
+-usb:v2CF0p5250*
+- ID_SOFTWARE_RADIO=1
+-
+ ##########################################
+ # Analog Devices
+ ##########################################
+@@ -67,6 +52,21 @@ usb:v3923p7813*
+ usb:v3923p7814*
+  ID_SOFTWARE_RADIO=1
+ 
++##########################################
++# Nuand
++##########################################
++# bladeRF 1.x
++usb:v2CF0p5246*
++ ID_SOFTWARE_RADIO=1
++
++# bladeRF 1.x (legacy)
++usb:v1D50p6066*
++ ID_SOFTWARE_RADIO=1
++
++# bladeRF 2.0 micro
++usb:v2CF0p5250*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # RTL-SDR
+ ##########################################

@@ -1,0 +1,43 @@
+From 310520ae804d002dc8adcf7d43e1fc7363de7593 Mon Sep 17 00:00:00 2001
+From: "Derek J. Clark" <derekjohn.clark@gmail.com>
+Date: Thu, 22 Jan 2026 12:52:03 -0800
+Subject: [PATCH] hwdb: Update Lenovo Legion Go Models - Different BIOS
+ versions of the Legion Go 2 can init the keyboard   device as set 1 (appears
+ as raw set 2) or as set 2 (appears as   translated set 2). Add the Legion Go
+ 2 to the Translated list. - While at it, specify the models in a more verbose
+ manner for   posterity.
+
+Signed-off-by: Derek J. Clark <derekjohn.clark@gmail.com>
+(cherry picked from commit a68c8d9ac2b6df455fe0203a8a8f8abb588c0afb)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index f37c3c8bec..41879d981f 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -1179,15 +1179,19 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnLENOVO:pn21LG:pvr*
+  KEYBOARD_KEY_0a=!9
+  KEYBOARD_KEY_0b=!0
+ 
+-# Lenovo Legion Go & Go S
++# Lenovo Legion Go Translated
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83E1:*
++# Lenovo Legion Go S Translated
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83L3:*
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83N6:*
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83Q2:*
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83Q3:*
++# Lenovo Legion Go 2 Translated
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83N0:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83N1:*
+  KEYBOARD_KEY_67=f16 # Power button long press
+ 
+-# Lenovo Legion Go 2
++# Lenovo Legion Go 2 Raw
+ evdev:name:AT Raw Set 2 keyboard:dmi:*:svnLENOVO:pn83N0:*
+ evdev:name:AT Raw Set 2 keyboard:dmi:*:svnLENOVO:pn83N1:*
+  KEYBOARD_KEY_20=f16 # Power button long press

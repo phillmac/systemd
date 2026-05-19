@@ -1,0 +1,388 @@
+From de19e6fd05fe14ef0cf661abc0a087318019ed6b Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Tue, 12 Nov 2024 17:04:11 +0100
+Subject: [PATCH] userdb: synthesize stub user records for the foreign UID
+
+(cherry picked from commit 44eb6b81db77216e4f34e1de37eda133d7db6945)
+
+Related: RHEL-143036
+---
+ man/userdbctl.xml             |   6 +-
+ src/nspawn/nspawn-bind-user.c |   4 +-
+ src/nss-systemd/nss-systemd.c |  12 ++--
+ src/shared/userdb.c           | 127 +++++++++++++++++++++++++++++++---
+ src/shared/userdb.h           |  19 ++---
+ src/userdb/userdbctl.c        |   4 +-
+ 6 files changed, 142 insertions(+), 30 deletions(-)
+
+diff --git a/man/userdbctl.xml b/man/userdbctl.xml
+index fb66ee2c0a..22d7da4d12 100644
+--- a/man/userdbctl.xml
++++ b/man/userdbctl.xml
+@@ -136,9 +136,9 @@
+         <term><option>--synthesize=<replaceable>BOOL</replaceable></option></term>
+ 
+         <listitem><para>Controls whether to synthesize records for the root and nobody users/groups if they
+-        aren't defined otherwise. By default (or <literal>yes</literal>) such records are implicitly
+-        synthesized if otherwise missing since they have special significance to the OS. When
+-        <literal>no</literal> this synthesizing is turned off.</para>
++        are not defined otherwise, as well as the user/groups for the "foreign" UID range. By default (or with
++        <literal>yes</literal>), such records are implicitly synthesized if otherwise missing since they have
++        special significance to the OS. When <literal>no</literal>, this synthesizing is turned off.</para>
+ 
+         <xi:include href="version-info.xml" xpointer="v245"/></listitem>
+       </varlistentry>
+diff --git a/src/nspawn/nspawn-bind-user.c b/src/nspawn/nspawn-bind-user.c
+index d64a89f161..749accdce8 100644
+--- a/src/nspawn/nspawn-bind-user.c
++++ b/src/nspawn/nspawn-bind-user.c
+@@ -231,7 +231,7 @@ int bind_user_prepare(
+                 _cleanup_(group_record_unrefp) GroupRecord *g = NULL, *cg = NULL;
+                 _cleanup_free_ char *sm = NULL, *sd = NULL;
+ 
+-                r = userdb_by_name(*n, USERDB_DONT_SYNTHESIZE, &u);
++                r = userdb_by_name(*n, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &u);
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to resolve user '%s': %m", *n);
+ 
+@@ -252,7 +252,7 @@ int bind_user_prepare(
+                 if (u->uid >= uid_shift && u->uid < uid_shift + uid_range)
+                         return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "UID of user '%s' to map is already in container UID range, refusing.", u->user_name);
+ 
+-                r = groupdb_by_gid(u->gid, USERDB_DONT_SYNTHESIZE, &g);
++                r = groupdb_by_gid(u->gid, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &g);
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to resolve group of user '%s': %m", u->user_name);
+ 
+diff --git a/src/nss-systemd/nss-systemd.c b/src/nss-systemd/nss-systemd.c
+index 8e8d4cf1cb..d686d920fc 100644
+--- a/src/nss-systemd/nss-systemd.c
++++ b/src/nss-systemd/nss-systemd.c
+@@ -615,7 +615,7 @@ enum nss_status _nss_systemd_setpwent(int stayopen) {
+          * (think: LDAP/NIS type situations), and our synthesizing of root/nobody is a robustness fallback
+          * only, which matters for getpwnam()/getpwuid() primarily, which are the main NSS entrypoints to the
+          * user database. */
+-        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE, &getpwent_data.iterator);
++        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getpwent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -634,8 +634,8 @@ enum nss_status _nss_systemd_setgrent(int stayopen) {
+         getgrent_data.iterator = userdb_iterator_free(getgrent_data.iterator);
+         getgrent_data.by_membership = false;
+ 
+-        /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE here */
+-        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE, &getgrent_data.iterator);
++        /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE_INTRINSIC here */
++        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getgrent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -654,8 +654,8 @@ enum nss_status _nss_systemd_setspent(int stayopen) {
+         getspent_data.iterator = userdb_iterator_free(getspent_data.iterator);
+         getspent_data.by_membership = false;
+ 
+-        /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE here */
+-        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE, &getspent_data.iterator);
++        /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE_INTRINSIC here */
++        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getspent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -675,7 +675,7 @@ enum nss_status _nss_systemd_setsgent(int stayopen) {
+         getsgent_data.by_membership = false;
+ 
+         /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE here */
+-        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE, &getsgent_data.iterator);
++        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getsgent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index 29acebae19..1154906fd5 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -16,10 +16,11 @@
+ #include "set.h"
+ #include "socket-util.h"
+ #include "strv.h"
++#include "uid-classification.h"
+ #include "user-record-nss.h"
+ #include "user-util.h"
+-#include "userdb-dropin.h"
+ #include "userdb.h"
++#include "userdb-dropin.h"
+ 
+ DEFINE_PRIVATE_HASH_OPS_WITH_VALUE_DESTRUCTOR(link_hash_ops, void, trivial_hash_func, trivial_compare_func, sd_varlink, sd_varlink_unref);
+ 
+@@ -116,8 +117,8 @@ static UserDBIterator* userdb_iterator_new(LookupWhat what, UserDBFlags flags) {
+         *i = (UserDBIterator) {
+                 .what = what,
+                 .flags = flags,
+-                .synthesize_root = !FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE),
+-                .synthesize_nobody = !FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE),
++                .synthesize_root = !FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC),
++                .synthesize_nobody = !FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC),
+         };
+ 
+         return i;
+@@ -434,7 +435,7 @@ static int userdb_start_query(
+         }
+ 
+         /* First, let's talk to the multiplexer, if we can */
+-        if ((flags & (USERDB_AVOID_MULTIPLEXER|USERDB_EXCLUDE_DYNAMIC_USER|USERDB_EXCLUDE_NSS|USERDB_EXCLUDE_DROPIN|USERDB_DONT_SYNTHESIZE)) == 0 &&
++        if ((flags & (USERDB_AVOID_MULTIPLEXER|USERDB_EXCLUDE_DYNAMIC_USER|USERDB_EXCLUDE_NSS|USERDB_EXCLUDE_DROPIN|USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN)) == 0 &&
+             !strv_contains(except, "io.systemd.Multiplexer") &&
+             (!only || strv_contains(only, "io.systemd.Multiplexer"))) {
+                 _cleanup_(sd_json_variant_unrefp) sd_json_variant *patched_query = sd_json_variant_ref(query);
+@@ -617,6 +618,63 @@ static int synthetic_nobody_user_build(UserRecord **ret) {
+                                           SD_JSON_BUILD_PAIR("disposition", JSON_BUILD_CONST_STRING("intrinsic"))));
+ }
+ 
++static int synthetic_foreign_user_build(uid_t foreign_uid, UserRecord **ret) {
++        assert(ret);
++
++        if (!uid_is_valid(foreign_uid))
++                return -ESRCH;
++        if (foreign_uid > 0xFFFF)
++                return -ESRCH;
++
++        _cleanup_free_ char *un = NULL;
++        if (asprintf(&un, "foreign-" UID_FMT, foreign_uid) < 0)
++                return -ENOMEM;
++
++        _cleanup_free_ char *rn = NULL;
++        if (asprintf(&rn, "Foreign System Image UID " UID_FMT, foreign_uid) < 0)
++                return -ENOMEM;
++
++        return user_record_build(
++                        ret,
++                        SD_JSON_BUILD_OBJECT(
++                                        SD_JSON_BUILD_PAIR("userName", SD_JSON_BUILD_STRING(un)),
++                                        SD_JSON_BUILD_PAIR("realName", SD_JSON_BUILD_STRING(rn)),
++                                        SD_JSON_BUILD_PAIR("uid", SD_JSON_BUILD_UNSIGNED(FOREIGN_UID_BASE + foreign_uid)),
++                                        SD_JSON_BUILD_PAIR("gid", SD_JSON_BUILD_UNSIGNED(FOREIGN_UID_BASE + foreign_uid)),
++                                        SD_JSON_BUILD_PAIR("shell", JSON_BUILD_CONST_STRING(NOLOGIN)),
++                                        SD_JSON_BUILD_PAIR("locked", SD_JSON_BUILD_BOOLEAN(true)),
++                                        SD_JSON_BUILD_PAIR("disposition", JSON_BUILD_CONST_STRING("foreign"))));
++}
++
++static int user_name_foreign_extract_uid(const char *name, uid_t *ret_uid) {
++        int r;
++
++        assert(name);
++        assert(ret_uid);
++
++        /* Parses the inner UID from a user name of the foreign UID range, in the form "foreign-NNN". Returns
++         * > 0 if that worked, 0 if it didn't. */
++
++        const char *e = startswith(name, "foreign-");
++        if (!e)
++                goto nomatch;
++
++        uid_t uid;
++        r = parse_uid(e, &uid);
++        if (r < 0)
++                goto nomatch;
++
++        if (uid > 0xFFFF)
++                goto nomatch;
++
++        *ret_uid = uid;
++        return 1;
++
++nomatch:
++        *ret_uid = UID_INVALID;
++        return 0;
++}
++
+ int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+         _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+@@ -658,7 +716,7 @@ int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret) {
+                 }
+         }
+ 
+-        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC)) {
+                 if (streq(name, "root"))
+                         return synthetic_root_user_build(ret);
+ 
+@@ -666,6 +724,16 @@ int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret) {
+                         return synthetic_nobody_user_build(ret);
+         }
+ 
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN)) {
++                uid_t foreign_uid;
++                r = user_name_foreign_extract_uid(name, &foreign_uid);
++                if (r < 0)
++                        return r;
++                if (r > 0)
++                        return synthetic_foreign_user_build(foreign_uid, ret);
++                r = -ESRCH;
++        }
++
+         return r;
+ }
+ 
+@@ -708,7 +776,7 @@ int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret) {
+                 }
+         }
+ 
+-        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC)) {
+                 if (uid == 0)
+                         return synthetic_root_user_build(ret);
+ 
+@@ -716,6 +784,9 @@ int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret) {
+                         return synthetic_nobody_user_build(ret);
+         }
+ 
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN) && uid_is_foreign(uid))
++                return synthetic_foreign_user_build(uid - FOREIGN_UID_BASE, ret);
++
+         return r;
+ }
+ 
+@@ -751,6 +822,8 @@ int userdb_all(UserDBFlags flags, UserDBIterator **ret) {
+                         log_debug_errno(r, "Failed to find user drop-ins, ignoring: %m");
+         }
+ 
++        /* Note that we do not enumerate the foreign users, since those would be just 64K of noise */
++
+         /* propagate IPC error, but only if there are no drop-ins */
+         if (qr < 0 &&
+             !iterator->nss_iterating &&
+@@ -889,6 +962,31 @@ static int synthetic_nobody_group_build(GroupRecord **ret) {
+                                           SD_JSON_BUILD_PAIR("disposition", JSON_BUILD_CONST_STRING("intrinsic"))));
+ }
+ 
++static int synthetic_foreign_group_build(gid_t foreign_gid, GroupRecord **ret) {
++        assert(ret);
++
++        if (!gid_is_valid(foreign_gid))
++                return -ESRCH;
++        if (foreign_gid > 0xFFFF)
++                return -ESRCH;
++
++        _cleanup_free_ char *gn = NULL;
++        if (asprintf(&gn, "foreign-" GID_FMT, foreign_gid) < 0)
++                return -ENOMEM;
++
++        _cleanup_free_ char *d = NULL;
++        if (asprintf(&d, "Foreign System Image GID " GID_FMT, foreign_gid) < 0)
++                return -ENOMEM;
++
++        return group_record_build(
++                        ret,
++                        SD_JSON_BUILD_OBJECT(
++                                        SD_JSON_BUILD_PAIR("groupName", SD_JSON_BUILD_STRING(gn)),
++                                        SD_JSON_BUILD_PAIR("description", SD_JSON_BUILD_STRING(d)),
++                                        SD_JSON_BUILD_PAIR("gid", SD_JSON_BUILD_UNSIGNED(FOREIGN_UID_BASE + foreign_gid)),
++                                        SD_JSON_BUILD_PAIR("disposition", JSON_BUILD_CONST_STRING("foreign"))));
++}
++
+ int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+         _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+@@ -927,7 +1025,7 @@ int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret) {
+                 }
+         }
+ 
+-        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC)) {
+                 if (streq(name, "root"))
+                         return synthetic_root_group_build(ret);
+ 
+@@ -935,6 +1033,16 @@ int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret) {
+                         return synthetic_nobody_group_build(ret);
+         }
+ 
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN)) {
++                uid_t foreign_gid;
++                r = user_name_foreign_extract_uid(name, &foreign_gid); /* Same for UID + GID */
++                if (r < 0)
++                        return r;
++                if (r > 0)
++                        return synthetic_foreign_group_build(foreign_gid, ret);
++                r = -ESRCH;
++        }
++
+         return r;
+ }
+ 
+@@ -976,7 +1084,7 @@ int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret) {
+                 }
+         }
+ 
+-        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE)) {
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_INTRINSIC)) {
+                 if (gid == 0)
+                         return synthetic_root_group_build(ret);
+ 
+@@ -984,6 +1092,9 @@ int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret) {
+                         return synthetic_nobody_group_build(ret);
+         }
+ 
++        if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN) && gid_is_foreign(gid))
++                return synthetic_foreign_group_build(gid - FOREIGN_UID_BASE, ret);
++
+         return r;
+ }
+ 
+diff --git a/src/shared/userdb.h b/src/shared/userdb.h
+index 75eb4b2dce..daf87fb5cf 100644
+--- a/src/shared/userdb.h
++++ b/src/shared/userdb.h
+@@ -16,19 +16,20 @@ DEFINE_TRIVIAL_CLEANUP_FUNC(UserDBIterator*, userdb_iterator_free);
+ 
+ typedef enum UserDBFlags {
+         /* The main sources */
+-        USERDB_EXCLUDE_NSS          = 1 << 0,  /* don't do client-side nor server-side NSS */
+-        USERDB_EXCLUDE_VARLINK      = 1 << 1,  /* don't talk to any varlink services */
+-        USERDB_EXCLUDE_DROPIN       = 1 << 2,  /* don't load drop-in user/group definitions */
++        USERDB_EXCLUDE_NSS               = 1 << 0,  /* don't do client-side nor server-side NSS */
++        USERDB_EXCLUDE_VARLINK           = 1 << 1,  /* don't talk to any varlink services */
++        USERDB_EXCLUDE_DROPIN            = 1 << 2,  /* don't load drop-in user/group definitions */
+ 
+         /* Modifications */
+-        USERDB_SUPPRESS_SHADOW      = 1 << 3,  /* don't do client-side shadow calls (server side might happen though) */
+-        USERDB_EXCLUDE_DYNAMIC_USER = 1 << 4,  /* exclude looking up in io.systemd.DynamicUser */
+-        USERDB_AVOID_MULTIPLEXER    = 1 << 5,  /* exclude looking up via io.systemd.Multiplexer */
+-        USERDB_DONT_SYNTHESIZE      = 1 << 6,  /* don't synthesize root/nobody */
++        USERDB_SUPPRESS_SHADOW           = 1 << 3,  /* don't do client-side shadow calls (server side might happen though) */
++        USERDB_EXCLUDE_DYNAMIC_USER      = 1 << 4,  /* exclude looking up in io.systemd.DynamicUser */
++        USERDB_AVOID_MULTIPLEXER         = 1 << 5,  /* exclude looking up via io.systemd.Multiplexer */
++        USERDB_DONT_SYNTHESIZE_INTRINSIC = 1 << 6,  /* don't synthesize root/nobody */
++        USERDB_DONT_SYNTHESIZE_FOREIGN   = 1 << 7,  /* don't synthesize foreign UID records */
+ 
+         /* Combinations */
+-        USERDB_NSS_ONLY = USERDB_EXCLUDE_VARLINK|USERDB_EXCLUDE_DROPIN|USERDB_DONT_SYNTHESIZE,
+-        USERDB_DROPIN_ONLY = USERDB_EXCLUDE_NSS|USERDB_EXCLUDE_VARLINK|USERDB_DONT_SYNTHESIZE,
++        USERDB_NSS_ONLY = USERDB_EXCLUDE_VARLINK|USERDB_EXCLUDE_DROPIN|USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN,
++        USERDB_DROPIN_ONLY = USERDB_EXCLUDE_NSS|USERDB_EXCLUDE_VARLINK|USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN,
+ } UserDBFlags;
+ 
+ /* Well-known errors we'll return here:
+diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
+index f029c801a1..eac7636ace 100644
+--- a/src/userdb/userdbctl.c
++++ b/src/userdb/userdbctl.c
+@@ -1381,7 +1381,7 @@ static int parse_argv(int argc, char *argv[]) {
+                         break;
+ 
+                 case 'N':
+-                        arg_userdb_flags |= USERDB_EXCLUDE_NSS|USERDB_DONT_SYNTHESIZE;
++                        arg_userdb_flags |= USERDB_EXCLUDE_NSS|USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN;
+                         break;
+ 
+                 case ARG_WITH_NSS:
+@@ -1413,7 +1413,7 @@ static int parse_argv(int argc, char *argv[]) {
+                         if (r < 0)
+                                 return r;
+ 
+-                        SET_FLAG(arg_userdb_flags, USERDB_DONT_SYNTHESIZE, !r);
++                        SET_FLAG(arg_userdb_flags, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, !r);
+                         break;
+ 
+                 case ARG_MULTIPLEXER:

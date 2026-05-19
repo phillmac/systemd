@@ -1,0 +1,41 @@
+From 9d798b52c260b50d37bbce328065915917e2b78a Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Thu, 29 Jan 2026 23:28:21 +0100
+Subject: [PATCH] hwdb: keyboard: uppercase apple id
+
+(cherry picked from commit 3bb9dedc05fdc9ca8f4515bca90dacbb3e89dc16)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 18 +++++++++---------
+ 1 file changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 2dd8298cf7..a942ac798a 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -2387,15 +2387,15 @@ evdev:input:b0003v05FEp1010*
+ # Presence of a LED is implicit when the property is absent.
+ 
+ # Apple Wireless keyboards
+-evdev:input:b0005v05aCp022C*
+-evdev:input:b0005v05aCp022D*
+-evdev:input:b0005v05aCp022E*
+-evdev:input:b0005v05aCp0239*
+-evdev:input:b0005v05aCp023A*
+-evdev:input:b0005v05aCp023B*
+-evdev:input:b0005v05aCp0255*
+-evdev:input:b0005v05aCp0256*
+-evdev:input:b0005v05aCp0257*
++evdev:input:b0005v05ACp022C*
++evdev:input:b0005v05ACp022D*
++evdev:input:b0005v05ACp022E*
++evdev:input:b0005v05ACp0239*
++evdev:input:b0005v05ACp023A*
++evdev:input:b0005v05ACp023B*
++evdev:input:b0005v05ACp0255*
++evdev:input:b0005v05ACp0256*
++evdev:input:b0005v05ACp0257*
+  KEYBOARD_LED_NUMLOCK=0
+ 
+ # Logitech K750

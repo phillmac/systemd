@@ -1,0 +1,79 @@
+From 6ac255a57fc953a6de35c307b5b120063ab1c704 Mon Sep 17 00:00:00 2001
+From: Martin Homuth-Rosemann <Ho-Ro@users.noreply.github.com>
+Date: Tue, 9 Sep 2025 17:32:45 +0200
+Subject: [PATCH] Add Hantek DSO-6022 oscilloscopes and compatible devices
+
+Signed-off-by: Martin Homuth-Rosemann <Ho-Ro@users.noreply.github.com>
+(cherry picked from commit 3efabf88cd8348e76d5f032dd0b4b2ded7c6f06d)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-analyzers.hwdb | 55 ++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 55 insertions(+)
+
+diff --git a/hwdb.d/70-analyzers.hwdb b/hwdb.d/70-analyzers.hwdb
+index 821ebcb1ca..f56ee97739 100644
+--- a/hwdb.d/70-analyzers.hwdb
++++ b/hwdb.d/70-analyzers.hwdb
+@@ -16,6 +16,61 @@
+ usb:v1209p4D69*
+  ID_SIGNAL_ANALYZER=1
+ 
++###########################################################
++# Hantek DSO-6022 oscilloscopes and compatible devices
++###########################################################
++# Hantek DSO-6022BE w/o FW
++usb:v04B4p6022*
++ ID_SIGNAL_ANALYZER=1
++
++# Hantek DSO-6022BE with FW
++usb:v04B5p6022*
++ ID_SIGNAL_ANALYZER=1
++
++# Hantek DSO-6022BL w/o FW
++usb:v04B4p602A*
++ ID_SIGNAL_ANALYZER=1
++
++# Hantek DSO-6022BL with FW
++usb:v04B5p602A*
++ ID_SIGNAL_ANALYZER=1
++
++# Hantek DSO-6021 w/o FW
++usb:v04B4p6021*
++ ID_SIGNAL_ANALYZER=1
++
++# Hantek DSO-6021 with FW
++usb:v04B5p6021*
++ ID_SIGNAL_ANALYZER=1
++
++# Voltcraft DSO-2020, w/o FW, becomes DSO-6022BE with FW
++usb:v04B4p2020*
++ ID_SIGNAL_ANALYZER=1
++
++# YiXingDianZiKeJi MDSO w/o FW
++usb:vD4A2p5660*
++ ID_SIGNAL_ANALYZER=1
++
++# YiXingDianZiKeJi MDSO with FW
++usb:v1D50p608E*
++ ID_SIGNAL_ANALYZER=1
++
++# BUUDAI DDS120 w/o FW
++usb:v8102p8102*
++ ID_SIGNAL_ANALYZER=1
++
++# BUUDAI DDS120 with FW
++usb:v04B5p0120*
++ ID_SIGNAL_ANALYZER=1
++
++# Instrustar isds-205b w/o FW
++usb:vD4A2p5661*
++ ID_SIGNAL_ANALYZER=1
++
++# Instrustar isds-205b with FW
++usb:v1D50p1D50*
++ ID_SIGNAL_ANALYZER=1
++
+ ###########################################################
+ # Total Phase
+ ###########################################################

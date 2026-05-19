@@ -1,0 +1,26 @@
+From a35ccdfe825b1bec3282af28a06ce2aa9bc7756a Mon Sep 17 00:00:00 2001
+From: Florian Klink <flokli@flokli.de>
+Date: Fri, 16 Jan 2026 13:30:05 +0200
+Subject: [PATCH] hwdb: Add GPD Pocket 4 chassis quirk
+
+See https://github.com/systemd/systemd/issues/7390#issuecomment-573607402
+
+(cherry picked from commit f9a3f729ac35cda33586ef4d44169a7a1cfc398d)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/20-dmi-id.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/20-dmi-id.hwdb b/hwdb.d/20-dmi-id.hwdb
+index 905d6923bb..855aa90936 100644
+--- a/hwdb.d/20-dmi-id.hwdb
++++ b/hwdb.d/20-dmi-id.hwdb
+@@ -31,3 +31,7 @@ dmi:bvnLENOVO*
+ # Microsoft Surface 1's chassis type
+ dmi:bvnMicrosoft Corporation*:pvrSurface with Windows 8 Pro*
+     ID_CHASSIS=tablet
++
++# GPD Pocket 4 chassis type
++dmi:bvnAmericanMegatrendsInternational*:rvnGPD:rnG1628-04*
++    ID_CHASSIS=convertible

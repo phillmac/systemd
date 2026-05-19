@@ -1,0 +1,30 @@
+From e7f97ca0d9ab2843eb05eb42604a37d19c49ada1 Mon Sep 17 00:00:00 2001
+From: Alexander Bruy <alexander.bruy@gmail.com>
+Date: Tue, 19 Aug 2025 11:05:00 +0100
+Subject: [PATCH] hwdb: map FN key on TongFang X4SP4NAL laptops
+
+(cherry picked from commit b15ff659b49eef0d256ac901af625f72febcaee3)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 465d527817..20c8662af4 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -2015,6 +2015,13 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnSystem76*:pnPangolin*:pvrpang15*
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnT-bao:pnTbookair:*
+  KEYBOARD_KEY_76=touchpad_toggle                        # Touchpad toggle
+ 
++###########################################################
++# TongFang
++###########################################################
++# TongFang GX4 (X4SP4NAL)
++evdev:atkbd:dmi:bvn*:bvr*:bd*:svnAiStone:pnX4SP4NAL:*
++ KEYBOARD_KEY_f8=fn
++
+ ###########################################################
+ # Toshiba
+ ###########################################################

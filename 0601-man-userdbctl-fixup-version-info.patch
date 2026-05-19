@@ -1,0 +1,27 @@
+From f1e64d4b3583e78e4fbbee9f21e663974d0af1fe Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Wed, 8 Oct 2025 22:17:38 +0200
+Subject: [PATCH] man/userdbctl: fixup version info
+
+Follow-up for 466562c69b75cec197176f556b940a43bb8350f2
+
+(cherry picked from commit fd99d9d1cb53f32dea46f1770446db729c316304)
+
+Related: RHEL-143036
+---
+ man/userdbctl.xml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/man/userdbctl.xml b/man/userdbctl.xml
+index 110b1c0f35..4da9762ab0 100644
+--- a/man/userdbctl.xml
++++ b/man/userdbctl.xml
+@@ -231,7 +231,7 @@
+         <listitem><para>When used with the <command>user</command> or <command>group</command> command,
+         filters the output to the record with the specified UUID. If unspecified, no UUID-based filtering is applied.</para>
+ 
+-        <xi:include href="version-info.xml" xpointer="v258"/></listitem>
++        <xi:include href="version-info.xml" xpointer="v259"/></listitem>
+       </varlistentry>
+ 
+       <varlistentry>

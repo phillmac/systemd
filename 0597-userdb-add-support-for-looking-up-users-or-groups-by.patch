@@ -1,0 +1,213 @@
+From 6f5da55f271c36fbc55a6e5f343375b25978c2ed Mon Sep 17 00:00:00 2001
+From: Erin Shepherd <erin.shepherd@e43.eu>
+Date: Fri, 11 Apr 2025 19:18:32 +0000
+Subject: [PATCH] userdb: add support for looking up users or groups by uuid.
+
+This propagates the UUID lookup parameter through the API permitting
+lookups to be done by uuid.
+
+(cherry picked from commit 52874bb763cf97e453ef49a9f71db7c4cc6c1322)
+
+Resolves: RHEL-143036
+---
+ docs/USER_GROUP_API.md   | 11 +++++++----
+ src/shared/user-record.c |  3 +++
+ src/shared/user-record.h |  5 ++++-
+ src/shared/userdb.c      | 33 +++++++++++++++++----------------
+ src/userdb/userwork.c    |  2 ++
+ 5 files changed, 33 insertions(+), 21 deletions(-)
+
+diff --git a/docs/USER_GROUP_API.md b/docs/USER_GROUP_API.md
+index 0beb3bb912..3e273cccb0 100644
+--- a/docs/USER_GROUP_API.md
++++ b/docs/USER_GROUP_API.md
+@@ -165,6 +165,7 @@ method GetUserRecord(
+         dispositionMask: ?[]string,
+         uidMin: ?int,
+         uidMax: ?int,
++        uuid: ?string,
+         service : string
+ ) -> (
+         record : object,
+@@ -178,6 +179,7 @@ method GetGroupRecord(
+         dispositionMask: ?[]string,
+         gidMin: ?int,
+         gidMax: ?int,
++        uuid: ?string,
+         service : string
+ ) -> (
+         record : object,
+@@ -212,7 +214,7 @@ If neither of the two parameters are set the whole user database is enumerated.
+ In this case the method call needs to be made with `more` set, so that multiple method call replies may be generated as
+ effect, each carrying one user record.
+ 
+-The `fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax` fields permit
++The `fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax` and `uuid` fields permit
+ *additional* filtering of the returned set of user records. The `fuzzyNames`
+ parameter shall be one or more strings that shall be searched for in "fuzzy"
+ way. What specifically this means is left for the backend to decide, but
+@@ -222,19 +224,20 @@ carry identifying information for the user. The `dispositionMask` field shall
+ be one of more user record `disposition` strings. If specified only user
+ records matching one of the specified dispositions should be enumerated. The
+ `uidMin` and `uidMax` fields specify a minimum and maximum value for the UID of
+-returned records. Inline searching for `uid` and `userName` support for
++returned records. The `uuid` field specifies to search for the user record associated
++with the specified UUID. Inline searching for `uid` and `userName` support for
+ filtering with these four additional parameters is optional, and clients are
+ expected to be able to do client-side filtering in case the parameters are not
+ supported by a service. The service should return the usual `InvalidParameter`
+ error for the relevant parameter if one is passed and it does not support
+ it. If a request is made specifying `uid` or `userName` and a suitable record
+ is found, but the specified filter via `fuzzyNames`, `dispositionMask`,
+-`uidMin`, or `uidMax` does not match, a `NonMatchingRecordFound` error should
++`uidMin`, `uidMax` or `uuid` does not match, a `NonMatchingRecordFound` error should
+ be returned.
+ 
+ Or to say this differently: the *primary search keys* are
+ `userName`/`groupName` and `uid`/`gid` and the *secondary search filters* are
+-`fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax`. If no entry matching
++`fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax`, `uuid`. If no entry matching
+ either of the primary search keys are found `NoRecordFound()` is returned. If
+ one is found that matches one but not the other primary search key
+ `ConflictingRecordFound()` is returned. If an entry is found that matches the
+diff --git a/src/shared/user-record.c b/src/shared/user-record.c
+index 3b2194a9de..342a1c9c4f 100644
+--- a/src/shared/user-record.c
++++ b/src/shared/user-record.c
+@@ -2705,6 +2705,9 @@ int user_record_match(UserRecord *u, const UserDBMatch *match) {
+         if (!FLAGS_SET(match->disposition_mask, UINT64_C(1) << user_record_disposition(u)))
+                 return false;
+ 
++        if (!sd_id128_is_null(match->uuid) && !sd_id128_equal(match->uuid, u->uuid))
++                return false;
++
+         if (!strv_isempty(match->fuzzy_names)) {
+ 
+                 /* Note this array of names is sparse, i.e. various entries listed in it will be
+diff --git a/src/shared/user-record.h b/src/shared/user-record.h
+index a7a3f5e924..a3d8f4eb07 100644
+--- a/src/shared/user-record.h
++++ b/src/shared/user-record.h
+@@ -487,6 +487,7 @@ typedef struct UserDBMatch {
+                 uid_t uid_max;
+                 gid_t gid_max;
+         };
++        sd_id128_t uuid;
+ } UserDBMatch;
+ 
+ #define USER_DISPOSITION_MASK_ALL ((UINT64_C(1) << _USER_DISPOSITION_MAX) - UINT64_C(1))
+@@ -496,6 +497,7 @@ typedef struct UserDBMatch {
+                 .disposition_mask = USER_DISPOSITION_MASK_ALL,  \
+                 .uid_min = 0,                                   \
+                 .uid_max = UID_INVALID-1,                       \
++                .uuid = SD_ID128_NULL,                          \
+        }
+ 
+ static inline bool userdb_match_is_set(const UserDBMatch *match) {
+@@ -505,7 +507,8 @@ static inline bool userdb_match_is_set(const UserDBMatch *match) {
+         return !strv_isempty(match->fuzzy_names) ||
+                 !FLAGS_SET(match->disposition_mask, USER_DISPOSITION_MASK_ALL) ||
+                 match->uid_min > 0 ||
+-                match->uid_max < UID_INVALID-1;
++                match->uid_max < UID_INVALID-1 ||
++                !sd_id128_is_null(match->uuid);
+ }
+ 
+ static inline void userdb_match_done(UserDBMatch *match) {
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index ac505285bb..638fc5e9af 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -770,27 +770,29 @@ nomatch:
+         return 0;
+ }
+ 
+-static int query_append_disposition_mask(sd_json_variant **query, uint64_t mask) {
++static int query_append_common(sd_json_variant **query, const UserDBMatch *match) {
+         int r;
++        _cleanup_strv_free_ char **dispositions = NULL;
+ 
+         assert(query);
+ 
+-        if (FLAGS_SET(mask, USER_DISPOSITION_MASK_ALL))
+-                return 0;
+-
+-        _cleanup_strv_free_ char **dispositions = NULL;
+-        for (UserDisposition d = 0; d < _USER_DISPOSITION_MAX; d++) {
+-                if (!BITS_SET(mask, d))
+-                        continue;
++        uint64_t mask = match->disposition_mask;
++        if (FLAGS_SET(mask, USER_DISPOSITION_MASK_ALL)) {
++                for (UserDisposition d = 0; d < _USER_DISPOSITION_MAX; d++) {
++                        if (!BIT_SET(mask, d))
++                                continue;
+ 
+-                r = strv_extend(&dispositions, user_disposition_to_string(d));
+-                if (r < 0)
+-                        return r;
++                        r = strv_extend(&dispositions, user_disposition_to_string(d));
++                        if (r < 0)
++                                return r;
++                }
+         }
+ 
+         return sd_json_variant_merge_objectbo(
+                         query,
+-                        SD_JSON_BUILD_PAIR_STRV("dispositionMask", dispositions));
++                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(match->fuzzy_names), "fuzzyNames", SD_JSON_BUILD_STRV(match->fuzzy_names)),
++                        SD_JSON_BUILD_PAIR_CONDITION(!sd_id128_is_null(match->uuid), "uuid", SD_JSON_BUILD_UUID(match->uuid)),
++                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(dispositions), "dispositionMask", SD_JSON_BUILD_STRV(dispositions)));
+ }
+ 
+ static int query_append_uid_match(sd_json_variant **query, const UserDBMatch *match) {
+@@ -803,13 +805,12 @@ static int query_append_uid_match(sd_json_variant **query, const UserDBMatch *ma
+ 
+         r = sd_json_variant_merge_objectbo(
+                         query,
+-                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(match->fuzzy_names), "fuzzyNames", SD_JSON_BUILD_STRV(match->fuzzy_names)),
+                         SD_JSON_BUILD_PAIR_CONDITION(match->uid_min > 0, "uidMin", SD_JSON_BUILD_UNSIGNED(match->uid_min)),
+                         SD_JSON_BUILD_PAIR_CONDITION(match->uid_max < UID_INVALID-1, "uidMax", SD_JSON_BUILD_UNSIGNED(match->uid_max)));
+         if (r < 0)
+                 return r;
+ 
+-        return query_append_disposition_mask(query, match->disposition_mask);
++        return query_append_common(query, match);
+ }
+ 
+ static int userdb_by_name_fallbacks(
+@@ -1248,13 +1249,13 @@ static int query_append_gid_match(sd_json_variant **query, const UserDBMatch *ma
+ 
+         r = sd_json_variant_merge_objectbo(
+                         query,
+-                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(match->fuzzy_names), "fuzzyNames", SD_JSON_BUILD_STRV(match->fuzzy_names)),
+                         SD_JSON_BUILD_PAIR_CONDITION(match->gid_min > 0, "gidMin", SD_JSON_BUILD_UNSIGNED(match->gid_min)),
+                         SD_JSON_BUILD_PAIR_CONDITION(match->gid_max < GID_INVALID-1, "gidMax", SD_JSON_BUILD_UNSIGNED(match->gid_max)));
++
+         if (r < 0)
+                 return r;
+ 
+-        return query_append_disposition_mask(query, match->disposition_mask);
++        return query_append_common(query, match);
+ }
+ 
+ static int groupdb_by_name_fallbacks(
+diff --git a/src/userdb/userwork.c b/src/userdb/userwork.c
+index b030fae84c..d079af4dcb 100644
+--- a/src/userdb/userwork.c
++++ b/src/userdb/userwork.c
+@@ -148,6 +148,7 @@ static int vl_method_get_user_record(sd_varlink *link, sd_json_variant *paramete
+                 { "dispositionMask", SD_JSON_VARIANT_ARRAY,         json_dispatch_dispositions_mask,     offsetof(LookupParameters, match.disposition_mask), 0             },
+                 { "uidMin",          _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uid_gid,            offsetof(LookupParameters, match.uid_min),          0             },
+                 { "uidMax",          _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uid_gid,            offsetof(LookupParameters, match.uid_max),          0             },
++                { "uuid",            SD_JSON_VARIANT_STRING,        sd_json_dispatch_id128,              offsetof(LookupParameters, match.uuid),             0             },
+                 {}
+         };
+ 
+@@ -292,6 +293,7 @@ static int vl_method_get_group_record(sd_varlink *link, sd_json_variant *paramet
+                 { "dispositionMask", SD_JSON_VARIANT_ARRAY,         json_dispatch_dispositions_mask,     offsetof(LookupParameters, match.disposition_mask), 0             },
+                 { "gidMin",          _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uid_gid,            offsetof(LookupParameters, match.gid_min),          0             },
+                 { "gidMax",          _SD_JSON_VARIANT_TYPE_INVALID, sd_json_dispatch_uid_gid,            offsetof(LookupParameters, match.gid_max),          0             },
++                { "uuid",            SD_JSON_VARIANT_STRING,        sd_json_dispatch_id128,              offsetof(LookupParameters, match.uuid),             0             },
+                 {}
+         };
+ 

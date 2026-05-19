@@ -1,0 +1,27 @@
+From 074be5a0c6c69baa0fc7545cddf9f48cd23f2d09 Mon Sep 17 00:00:00 2001
+From: Marcos Alano <mhalano@users.noreply.github.com>
+Date: Thu, 30 Oct 2025 08:16:26 -0300
+Subject: [PATCH] hwdb: add support for the Logitech MX Master 4 (#39490)
+
+(cherry picked from commit 44ca5b800230f36a49e6758b6a92b5fc50a0f088)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index 86470bcfda..efd67da555 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -611,6 +611,10 @@ mouse:usb:v046dpc548:name:Logitech USB Receiver Mouse:*
+ mouse:bluetooth:v046dpb035:name:MX Master 3S B Mouse:*
+  MOUSE_DPI=1000@142
+ 
++# Logitech MX Master 4 (via Bluetooth)
++mouse:bluetooth:v046dpb042:name:MX Master 4 Mouse:*
++ MOUSE_DPI=1000@142
++
+ # Logitech MX Ergo
+ mouse:usb:v046dp406f:name:Logitech MX Ergo:*
+ mouse:usb:v046dpc52b:name:Logitech Unifying Device. Wireless PID:406f:*
