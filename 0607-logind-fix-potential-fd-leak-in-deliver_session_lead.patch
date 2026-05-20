@@ -1,0 +1,52 @@
+From aa181fefdd039d74a20ccce431f12f6b5fa9b637 Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Thu, 6 Nov 2025 19:31:18 +0100
+Subject: [PATCH] logind: fix potential fd leak in
+ deliver_session_leader_fd_consume()
+
+Follow-up for 45eea629e3b3a640bf6a5cd13f4c73c86b426b11
+
+(cherry picked from commit c54112bdee1d32934e688961ca53e81ffff0c99a)
+
+Related: RHEL-53112
+---
+ src/login/logind.c | 7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/src/login/logind.c b/src/login/logind.c
+index a7f75f0904..afa9b1d42c 100644
+--- a/src/login/logind.c
++++ b/src/login/logind.c
+@@ -435,13 +435,13 @@ static int deliver_session_device_fd(Session *s, const char *fdname, int fd, dev
+         return 0;
+ }
+ 
+-static int deliver_session_leader_fd_consume(Session *s, const char *fdname, int fd) {
++static int deliver_session_leader_fd_consume(Session *s, const char *fdname, int fd_consume) {
++        _cleanup_close_ int fd = ASSERT_FD(fd_consume);
+         _cleanup_(pidref_done) PidRef leader_fdstore = PIDREF_NULL;
+         int r;
+ 
+         assert(s);
+         assert(fdname);
+-        assert(fd >= 0);
+ 
+         /* Already deserialized via pidfd id? */
+         if (pidref_is_set(&s->leader)) {
+@@ -473,6 +473,7 @@ static int deliver_session_leader_fd_consume(Session *s, const char *fdname, int
+                         log_warning_errno(r, "Failed to create reference to leader of session '%s': %m", s->id);
+                 goto fail_close;
+         }
++        TAKE_FD(fd);
+ 
+         if (leader_fdstore.pid != s->deserialized_pid)
+                 log_warning("Leader from pidfd (" PID_FMT ") doesn't match with LEADER=" PID_FMT " for session '%s', proceeding anyway.",
+@@ -485,7 +486,7 @@ static int deliver_session_leader_fd_consume(Session *s, const char *fdname, int
+         return 0;
+ 
+ fail_close:
+-        close_and_notify_warn(fd, fdname);
++        close_and_notify_warn(TAKE_FD(fd), fdname);
+         return r;
+ }
+ 

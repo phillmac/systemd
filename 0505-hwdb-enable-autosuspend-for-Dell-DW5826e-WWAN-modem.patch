@@ -1,0 +1,27 @@
+From cb9e41823e67873669f14030d78408632496be55 Mon Sep 17 00:00:00 2001
+From: Jack Wu <wojackbb@gmail.com>
+Date: Fri, 22 Aug 2025 17:23:46 +0800
+Subject: [PATCH] hwdb: enable autosuspend for Dell DW5826e WWAN modem
+
+(cherry picked from commit 46a688c559886230cc41018348415dda9b59b3cd)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-autosuspend.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/60-autosuspend.hwdb b/hwdb.d/60-autosuspend.hwdb
+index f564c6aed9..0e38c0a9a4 100644
+--- a/hwdb.d/60-autosuspend.hwdb
++++ b/hwdb.d/60-autosuspend.hwdb
+@@ -96,6 +96,10 @@ usb:v2CB7p0007*
+  ID_AUTOSUSPEND=1
+  ID_AUTOSUSPEND_DELAY_MS=7000
+ 
++# Dell Computer Corp. DW5826e Qualcomm Snapdragon X12 Global LTE-A
++usb:v413Cp8217*
++ ID_AUTOSUSPEND=1
++
+ #########################################
+ # Wacom
+ #########################################

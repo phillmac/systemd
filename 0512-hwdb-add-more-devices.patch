@@ -1,0 +1,56 @@
+From c4cca5bb8658701f22f3c8d688811231df0e96ae Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Thu, 11 Sep 2025 00:58:46 +0200
+Subject: [PATCH] hwdb: add more devices
+
+- FUNcube Dongle Pro
+- Great Scott Gadgets HackRF
+- Microtelecom Perseus
+
+(cherry picked from commit c61bdd79ef1703fa988d5f156a4bcff25f98bd90)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 29 +++++++++++++++++++++++++++++
+ 1 file changed, 29 insertions(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 43ea0f2588..7d4138fdc1 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -63,6 +63,35 @@ usb:v3923p7813*
+ usb:v3923p7814*
+  ID_SOFTWARE_RADIO=1
+ 
++##########################################
++# FUNcube
++##########################################
++# FUNcube Dongle Pro
++usb:v04D8pFB56*
++ ID_SOFTWARE_RADIO=1
++
++# FUNcube Dongle Pro+
++usb:v04D8pFB31*
++ ID_SOFTWARE_RADIO=1
++
++##########################################
++# Great Scott Gadgets
++##########################################
++# HackRF Jawbreaker
++usb:v1D50p604B*
++ ID_SOFTWARE_RADIO=1
++
++# HackRF One
++usb:v1D50p6089*
++ ID_SOFTWARE_RADIO=1
++
++##########################################
++# Microtelecom
++##########################################
++# Perseus
++usb:v04B4p325C*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # Nuand
+ ##########################################

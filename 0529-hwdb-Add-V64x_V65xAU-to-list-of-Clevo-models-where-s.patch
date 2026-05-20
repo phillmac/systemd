@@ -1,0 +1,30 @@
+From 6cdeb8656460b0716727132c5448b1271f1a563f Mon Sep 17 00:00:00 2001
+From: Hans de Goede <hansg@kernel.org>
+Date: Mon, 20 Oct 2025 20:52:00 +0200
+Subject: [PATCH] hwdb: Add V64x_V65xAU to list of Clevo models where scancode
+ f7+f8 get mapped to touchpad-toggle
+
+Fn + F1 which is the shortcut for toggling the touchpad on/off sends
+atkbd scancodes f7 (first press) + f8 (second press) just like on various
+other Clevo models. Add the V64x_V65xAU model to the list of models where
+these scancodes are mapped to touchpad-toggle.
+
+(cherry picked from commit b8490c9e51d814287eaa146a438934432f912dfe)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 20c8662af4..8b5bc775fd 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -344,6 +344,7 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnNotebook:pnW65_67SZ:*
+ evdev:atkbd:dmi:bvn*:bvr*:svnNotebook:pnNS50_70MU:*
+ evdev:atkbd:dmi:bvn*:bvr*:svnNotebook:pnNV4XMB,ME,MZ:*
+ evdev:atkbd:dmi:bvn*:bvr*:svnNotebook:pnNS5x_NS7xPU:*
++evdev:atkbd:dmi:bvn*:bvr*:svnNotebook:pnV64x_V65xAU:*
+  KEYBOARD_KEY_f7=touchpad_toggle                        # Touchpad Toggle
+  KEYBOARD_KEY_f8=touchpad_toggle                        # Touchpad Toggle
+ 

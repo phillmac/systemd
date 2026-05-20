@@ -1,0 +1,115 @@
+From 8973e33905369c319d8db07d9a453fc3c99099ef Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 28 May 2025 18:31:13 +0200
+Subject: [PATCH] Define helper to call PR_SET_DUMPABLE
+
+(cherry picked from commit 9ce8e3e449def92c75ada41b7d10c5bc3946be77)
+
+Related: RHEL-104135
+---
+ src/coredump/coredump.c    | 3 +--
+ src/shared/coredump-util.c | 7 +++++++
+ src/shared/coredump-util.h | 2 ++
+ src/shared/elf-util.c      | 4 ++--
+ src/shared/tests.c         | 1 +
+ 5 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 7bde2f5196..caec4bb76c 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -3,7 +3,6 @@
+ #include <errno.h>
+ #include <stdio.h>
+ #include <sys/mount.h>
+-#include <sys/prctl.h>
+ #include <sys/statvfs.h>
+ #include <sys/auxv.h>
+ #include <sys/xattr.h>
+@@ -2016,7 +2015,7 @@ static int run(int argc, char *argv[]) {
+         log_set_target_and_open(LOG_TARGET_KMSG);
+ 
+         /* Make sure we never enter a loop */
+-        (void) prctl(PR_SET_DUMPABLE, SUID_DUMP_DISABLE);
++        (void) set_dumpable(SUID_DUMP_DISABLE);
+ 
+         /* Ignore all parse errors */
+         (void) parse_config();
+diff --git a/src/shared/coredump-util.c b/src/shared/coredump-util.c
+index 805503f366..0050e133c4 100644
+--- a/src/shared/coredump-util.c
++++ b/src/shared/coredump-util.c
+@@ -1,14 +1,21 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
+ #include <elf.h>
++#include <sys/prctl.h>
+ 
+ #include "coredump-util.h"
++#include "errno-util.h"
+ #include "extract-word.h"
+ #include "fileio.h"
+ #include "string-table.h"
+ #include "unaligned.h"
+ #include "virt.h"
+ 
++int set_dumpable(SuidDumpMode mode) {
++        /* Cast mode explicitly to long, because prctl wants longs but is varargs. */
++        return RET_NERRNO(prctl(PR_SET_DUMPABLE, (long) mode));
++}
++
+ static const char *const coredump_filter_table[_COREDUMP_FILTER_MAX] = {
+         [COREDUMP_FILTER_PRIVATE_ANONYMOUS]   = "private-anonymous",
+         [COREDUMP_FILTER_SHARED_ANONYMOUS]    = "shared-anonymous",
+diff --git a/src/shared/coredump-util.h b/src/shared/coredump-util.h
+index 73c74c98c7..b18cb33c84 100644
+--- a/src/shared/coredump-util.h
++++ b/src/shared/coredump-util.h
+@@ -32,6 +32,8 @@ typedef enum SuidDumpMode {
+         _SUID_DUMP_MODE_MAX,
+ } SuidDumpMode;
+ 
++int set_dumpable(SuidDumpMode mode);
++
+ const char* coredump_filter_to_string(CoredumpFilter i) _const_;
+ CoredumpFilter coredump_filter_from_string(const char *s) _pure_;
+ int coredump_filter_mask_from_string(const char *s, uint64_t *ret);
+diff --git a/src/shared/elf-util.c b/src/shared/elf-util.c
+index a3ff1fd3fb..ff8818de27 100644
+--- a/src/shared/elf-util.c
++++ b/src/shared/elf-util.c
+@@ -6,12 +6,12 @@
+ #include <elfutils/libdwelf.h>
+ #include <elfutils/libdwfl.h>
+ #include <libelf.h>
+-#include <sys/prctl.h>
+ #include <sys/resource.h>
+ #include <sys/types.h>
+ #include <unistd.h>
+ 
+ #include "alloc-util.h"
++#include "coredump-util.h"
+ #include "dlfcn-util.h"
+ #include "elf-util.h"
+ #include "errno-util.h"
+@@ -825,7 +825,7 @@ int parse_elf_object(int fd, const char *executable, const char *root, bool fork
+         if (r == 0) {
+                 /* We want to avoid loops, given this can be called from systemd-coredump */
+                 if (fork_disable_dump) {
+-                        r = RET_NERRNO(prctl(PR_SET_DUMPABLE, 0));
++                        r = set_dumpable(SUID_DUMP_DISABLE);
+                         if (r < 0)
+                                 report_errno_and_exit(error_pipe[1], r);
+                 }
+diff --git a/src/shared/tests.c b/src/shared/tests.c
+index 50b30ca17d..88031e90d9 100644
+--- a/src/shared/tests.c
++++ b/src/shared/tests.c
+@@ -16,6 +16,7 @@
+ #include "bus-wait-for-jobs.h"
+ #include "cgroup-setup.h"
+ #include "cgroup-util.h"
++#include "coredump-util.h"
+ #include "env-file.h"
+ #include "env-util.h"
+ #include "fd-util.h"

@@ -1,0 +1,30 @@
+From e2438bb5f5d8632f6e8f1d8a20e2e52b3c4784dd Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Mon, 15 Sep 2025 02:14:08 +0200
+Subject: [PATCH] hwdb: add HydraSDR RFOne
+
+(cherry picked from commit bb4c00001d29151fc44267776c6099711eb4362d)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 79e91dc5ef..f1723e1fa9 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -86,6 +86,13 @@ usb:v1D50p604B*
+ usb:v1D50p6089*
+  ID_SOFTWARE_RADIO=1
+ 
++##########################################
++# HydraSDR
++##########################################
++# HydraSDR RFOne
++usb:v38AFp0001*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # LimeSDR
+ ##########################################

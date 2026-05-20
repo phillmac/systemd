@@ -1,0 +1,29 @@
+From 11e7db7f66e0cfc4f9c961de291b62fe2325adf0 Mon Sep 17 00:00:00 2001
+From: francescoza6 <106155863+francescoza6@users.noreply.github.com>
+Date: Wed, 31 Dec 2025 18:30:54 +0100
+Subject: [PATCH] hwdb: add matrix for ASUS 2-in-1 T101HA
+
+The matrix tested working in monitor-sensor (06 gen 2026),
+corrects accel values and not just display output.
+
+(cherry picked from commit fcc6b299210585f2ed3cfa4e4cdc01a0195d3fc3)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 54182cb504..d29c08a5f1 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -160,7 +160,8 @@ sensor:modalias:acpi:INVN6500*:dmi:*svnASUSTeK*:*pnT100TAS:*
+ sensor:modalias:acpi:INVN6500*:dmi:*svnASUSTeK*:pnT200TA:*
+  ACCEL_MOUNT_MATRIX=1, 0, 0; 0, -1, 0; 0, 0, 1
+ 
+-# Asus Transformer Mini T103HAF
++# Asus Transformer Mini T101HA & T103HAF
++sensor:modalias:platform:HID-SENSOR-200073*:dmi:*svn*ASUSTeK*:pnT101HA:*
+ sensor:modalias:platform:HID-SENSOR-200073*:dmi:*svn*ASUSTeK*:pnT103HAF:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; 1, 0, 0; 0, 0, -1
+ 

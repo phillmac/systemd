@@ -1,0 +1,1361 @@
+From 3954be8a1a0b0eb2ad42ee00d2263cab5b0c191d Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 16:40:47 +0100
+Subject: [PATCH] userdb: move UserDBMatch handling from userdbctl into generic
+ userdb code to allow it to be done server side
+
+This moves around the UserDBMatch handling, moves it out of userdbctl
+and into generic userdb code, so that it can be passed to the server
+side, to allow server side filtering.
+
+This is preparation for one day allowing complex software to do such
+filtering server side, and thus reducing the necessary traffic.
+
+Right now no server side actually knows this, hence care is taken to
+downgrade to the userdb varlink API as it was in v257 in case the new
+options are not understood. This retains compatibility with any
+implementation hence.
+
+(cherry picked from commit 7419291670dd4066594350cce585031f60bc4f0a)
+
+Related: RHEL-143036
+---
+ src/home/homectl.c               |  14 +-
+ src/login/logind-core.c          |   4 +-
+ src/login/pam_systemd.c          |   2 +-
+ src/nspawn/nspawn-bind-user.c    |   4 +-
+ src/nsresourced/nsresourcework.c |   8 +-
+ src/nss-systemd/nss-systemd.c    |  18 +-
+ src/nss-systemd/userdb-glue.c    |  12 +-
+ src/shared/user-record-show.c    |   2 +-
+ src/shared/userdb.c              | 507 ++++++++++++++++++++++++++-----
+ src/shared/userdb.h              |  18 +-
+ src/userdb/userdbctl.c           |  55 ++--
+ src/userdb/userwork.c            |  16 +-
+ 12 files changed, 503 insertions(+), 157 deletions(-)
+
+diff --git a/src/home/homectl.c b/src/home/homectl.c
+index 08136cda3f..46a2a4c806 100644
+--- a/src/home/homectl.c
++++ b/src/home/homectl.c
+@@ -2395,14 +2395,14 @@ static int has_regular_user(void) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+         int r;
+ 
+-        r = userdb_all(USERDB_SUPPRESS_SHADOW, &iterator);
++        r = userdb_all(/* match= */ NULL, USERDB_SUPPRESS_SHADOW, &iterator);
+         if (r < 0)
+                 return log_error_errno(r, "Failed to create user enumerator: %m");
+ 
+         for (;;) {
+                 _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
+ 
+-                r = userdb_iterator_get(iterator, &ur);
++                r = userdb_iterator_get(iterator, /* match= */ NULL, &ur);
+                 if (r == -ESRCH)
+                         break;
+                 if (r < 0)
+@@ -2422,7 +2422,7 @@ static int acquire_group_list(char ***ret) {
+ 
+         assert(ret);
+ 
+-        r = groupdb_all(USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, &iterator);
++        r = groupdb_all(/* match= */ NULL, USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, &iterator);
+         if (r == -ENOLINK)
+                 log_debug_errno(r, "No groups found. (Didn't check via Varlink.)");
+         else if (r == -ESRCH)
+@@ -2433,7 +2433,7 @@ static int acquire_group_list(char ***ret) {
+                 for (;;) {
+                         _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
+ 
+-                        r = groupdb_iterator_get(iterator, &gr);
++                        r = groupdb_iterator_get(iterator, /* match= */ NULL, &gr);
+                         if (r == -ESRCH)
+                                 break;
+                         if (r < 0)
+@@ -2447,7 +2447,7 @@ static int acquire_group_list(char ***ret) {
+ 
+                                 /* Filter groups here that belong to a specific user, and are named like them */
+ 
+-                                r = userdb_by_name(gr->group_name, USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, &ur);
++                                r = userdb_by_name(gr->group_name, /* match= */ NULL, USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, &ur);
+                                 if (r < 0 && r != -ESRCH)
+                                         return log_debug_errno(r, "Failed to check if matching user exists for group '%s': %m", gr->group_name);
+ 
+@@ -2498,7 +2498,7 @@ static int create_interactively(void) {
+                         continue;
+                 }
+ 
+-                r = userdb_by_name(username, USERDB_SUPPRESS_SHADOW, /* ret= */ NULL);
++                r = userdb_by_name(username, /* match= */ NULL, USERDB_SUPPRESS_SHADOW, /* ret= */ NULL);
+                 if (r == -ESRCH)
+                         break;
+                 if (r < 0)
+@@ -2568,7 +2568,7 @@ static int create_interactively(void) {
+                         continue;
+                 }
+ 
+-                r = groupdb_by_name(s, USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, /*ret=*/ NULL);
++                r = groupdb_by_name(s, /* match= */ NULL, USERDB_SUPPRESS_SHADOW|USERDB_EXCLUDE_DYNAMIC_USER, /*ret=*/ NULL);
+                 if (r == -ESRCH) {
+                         log_notice("Specified auxiliary group does not exist, try again: %s", s);
+                         continue;
+diff --git a/src/login/logind-core.c b/src/login/logind-core.c
+index 197b1e8cd2..4629e4aa50 100644
+--- a/src/login/logind-core.c
++++ b/src/login/logind-core.c
+@@ -190,7 +190,7 @@ int manager_add_user_by_name(
+         assert(m);
+         assert(name);
+ 
+-        r = userdb_by_name(name, USERDB_SUPPRESS_SHADOW, &ur);
++        r = userdb_by_name(name, /* match= */ NULL, USERDB_SUPPRESS_SHADOW, &ur);
+         if (r < 0)
+                 return r;
+ 
+@@ -208,7 +208,7 @@ int manager_add_user_by_uid(
+         assert(m);
+         assert(uid_is_valid(uid));
+ 
+-        r = userdb_by_uid(uid, USERDB_SUPPRESS_SHADOW, &ur);
++        r = userdb_by_uid(uid, /* match= */ NULL, USERDB_SUPPRESS_SHADOW, &ur);
+         if (r < 0)
+                 return r;
+ 
+diff --git a/src/login/pam_systemd.c b/src/login/pam_systemd.c
+index ab50137e4e..c2f074ca0a 100644
+--- a/src/login/pam_systemd.c
++++ b/src/login/pam_systemd.c
+@@ -219,7 +219,7 @@ static int acquire_user_record(
+                 _cleanup_free_ char *formatted = NULL;
+ 
+                 /* Request the record ourselves */
+-                r = userdb_by_name(username, /* flags= */ 0, &ur);
++                r = userdb_by_name(username, /* match= */ NULL, /* flags= */ 0, &ur);
+                 if (r < 0) {
+                         pam_syslog_errno(handle, LOG_ERR, r, "Failed to get user record: %m");
+                         return PAM_USER_UNKNOWN;
+diff --git a/src/nspawn/nspawn-bind-user.c b/src/nspawn/nspawn-bind-user.c
+index 749accdce8..8964de22a1 100644
+--- a/src/nspawn/nspawn-bind-user.c
++++ b/src/nspawn/nspawn-bind-user.c
+@@ -231,7 +231,7 @@ int bind_user_prepare(
+                 _cleanup_(group_record_unrefp) GroupRecord *g = NULL, *cg = NULL;
+                 _cleanup_free_ char *sm = NULL, *sd = NULL;
+ 
+-                r = userdb_by_name(*n, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &u);
++                r = userdb_by_name(*n, /* match= */ NULL, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &u);
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to resolve user '%s': %m", *n);
+ 
+@@ -252,7 +252,7 @@ int bind_user_prepare(
+                 if (u->uid >= uid_shift && u->uid < uid_shift + uid_range)
+                         return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "UID of user '%s' to map is already in container UID range, refusing.", u->user_name);
+ 
+-                r = groupdb_by_gid(u->gid, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &g);
++                r = groupdb_by_gid(u->gid, /* match= */ NULL, USERDB_DONT_SYNTHESIZE_INTRINSIC|USERDB_DONT_SYNTHESIZE_FOREIGN, &g);
+                 if (r < 0)
+                         return log_error_errno(r, "Failed to resolve group of user '%s': %m", u->user_name);
+ 
+diff --git a/src/nsresourced/nsresourcework.c b/src/nsresourced/nsresourcework.c
+index 21fc2d9088..c611f01507 100644
+--- a/src/nsresourced/nsresourcework.c
++++ b/src/nsresourced/nsresourcework.c
+@@ -361,13 +361,13 @@ static int uid_is_available(
+         if (r > 0)
+                 return false;
+ 
+-        r = userdb_by_uid(candidate, USERDB_AVOID_MULTIPLEXER, NULL);
++        r = userdb_by_uid(candidate, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
+         if (r >= 0)
+                 return false;
+         if (r != -ESRCH)
+                 return r;
+ 
+-        r = groupdb_by_gid(candidate, USERDB_AVOID_MULTIPLEXER, NULL);
++        r = groupdb_by_gid(candidate, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
+         if (r >= 0)
+                 return false;
+         if (r != -ESRCH)
+@@ -398,13 +398,13 @@ static int name_is_available(
+         if (!user_name)
+                 return -ENOMEM;
+ 
+-        r = userdb_by_name(user_name, USERDB_AVOID_MULTIPLEXER, NULL);
++        r = userdb_by_name(user_name, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
+         if (r >= 0)
+                 return false;
+         if (r != -ESRCH)
+                 return r;
+ 
+-        r = groupdb_by_name(user_name, USERDB_AVOID_MULTIPLEXER, NULL);
++        r = groupdb_by_name(user_name, /* match= */ NULL, USERDB_AVOID_MULTIPLEXER, /* ret_record= */ NULL);
+         if (r >= 0)
+                 return false;
+         if (r != -ESRCH)
+diff --git a/src/nss-systemd/nss-systemd.c b/src/nss-systemd/nss-systemd.c
+index d686d920fc..a72d8b8d0d 100644
+--- a/src/nss-systemd/nss-systemd.c
++++ b/src/nss-systemd/nss-systemd.c
+@@ -615,7 +615,7 @@ enum nss_status _nss_systemd_setpwent(int stayopen) {
+          * (think: LDAP/NIS type situations), and our synthesizing of root/nobody is a robustness fallback
+          * only, which matters for getpwnam()/getpwuid() primarily, which are the main NSS entrypoints to the
+          * user database. */
+-        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getpwent_data.iterator);
++        r = userdb_all(/* match= */ NULL, nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getpwent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -635,7 +635,7 @@ enum nss_status _nss_systemd_setgrent(int stayopen) {
+         getgrent_data.by_membership = false;
+ 
+         /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE_INTRINSIC here */
+-        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getgrent_data.iterator);
++        r = groupdb_all(/* match= */ NULL, nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getgrent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -655,7 +655,7 @@ enum nss_status _nss_systemd_setspent(int stayopen) {
+         getspent_data.by_membership = false;
+ 
+         /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE_INTRINSIC here */
+-        r = userdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getspent_data.iterator);
++        r = userdb_all(/* match= */ NULL, nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getspent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -675,7 +675,7 @@ enum nss_status _nss_systemd_setsgent(int stayopen) {
+         getsgent_data.by_membership = false;
+ 
+         /* See _nss_systemd_setpwent() for an explanation why we use USERDB_DONT_SYNTHESIZE here */
+-        r = groupdb_all(nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getsgent_data.iterator);
++        r = groupdb_all(/* match= */ NULL, nss_glue_userdb_flags() | USERDB_DONT_SYNTHESIZE_INTRINSIC | USERDB_DONT_SYNTHESIZE_FOREIGN, &getsgent_data.iterator);
+         return r < 0 ? NSS_STATUS_UNAVAIL : NSS_STATUS_SUCCESS;
+ }
+ 
+@@ -705,7 +705,7 @@ enum nss_status _nss_systemd_getpwent_r(
+                 return NSS_STATUS_UNAVAIL;
+         }
+ 
+-        r = userdb_iterator_get(getpwent_data.iterator, &ur);
++        r = userdb_iterator_get(getpwent_data.iterator, /* match= */ NULL, &ur);
+         if (r == -ESRCH)
+                 return NSS_STATUS_NOTFOUND;
+         if (r < 0) {
+@@ -752,7 +752,7 @@ enum nss_status _nss_systemd_getgrent_r(
+         }
+ 
+         if (!getgrent_data.by_membership) {
+-                r = groupdb_iterator_get(getgrent_data.iterator, &gr);
++                r = groupdb_iterator_get(getgrent_data.iterator, /* match= */ NULL, &gr);
+                 if (r == -ESRCH) {
+                         /* So we finished iterating native groups now. Let's now continue with iterating
+                          * native memberships, and generate additional group entries for any groups
+@@ -878,7 +878,7 @@ enum nss_status _nss_systemd_getspent_r(
+         }
+ 
+         for (;;) {
+-                r = userdb_iterator_get(getspent_data.iterator, &ur);
++                r = userdb_iterator_get(getspent_data.iterator, /* match= */ NULL, &ur);
+                 if (r == -ESRCH)
+                         return NSS_STATUS_NOTFOUND;
+                 if (r < 0) {
+@@ -930,7 +930,7 @@ enum nss_status _nss_systemd_getsgent_r(
+         }
+ 
+         for (;;) {
+-                r = groupdb_iterator_get(getsgent_data.iterator, &gr);
++                r = groupdb_iterator_get(getsgent_data.iterator, /* match= */ NULL, &gr);
+                 if (r == -ESRCH)
+                         return NSS_STATUS_NOTFOUND;
+                 if (r < 0) {
+@@ -1010,7 +1010,7 @@ enum nss_status _nss_systemd_initgroups_dyn(
+                 /* The group might be defined via traditional NSS only, hence let's do a full look-up without
+                  * disabling NSS. This means we are operating recursively here. */
+ 
+-                r = groupdb_by_name(group_name, (nss_glue_userdb_flags() & ~USERDB_EXCLUDE_NSS) | USERDB_SUPPRESS_SHADOW, &g);
++                r = groupdb_by_name(group_name, /* match= */ NULL, (nss_glue_userdb_flags() & ~USERDB_EXCLUDE_NSS) | USERDB_SUPPRESS_SHADOW, &g);
+                 if (r == -ESRCH)
+                         continue;
+                 if (r < 0) {
+diff --git a/src/nss-systemd/userdb-glue.c b/src/nss-systemd/userdb-glue.c
+index 61311d8db3..4f96e9b90f 100644
+--- a/src/nss-systemd/userdb-glue.c
++++ b/src/nss-systemd/userdb-glue.c
+@@ -81,7 +81,7 @@ enum nss_status userdb_getpwnam(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = userdb_by_name(name, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &hr);
++        r = userdb_by_name(name, /* match= */ NULL, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &hr);
+         if (r == -ESRCH)
+                 return NSS_STATUS_NOTFOUND;
+         if (r < 0) {
+@@ -114,7 +114,7 @@ enum nss_status userdb_getpwuid(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = userdb_by_uid(uid, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &hr);
++        r = userdb_by_uid(uid, /* match= */ NULL, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &hr);
+         if (r == -ESRCH)
+                 return NSS_STATUS_NOTFOUND;
+         if (r < 0) {
+@@ -190,7 +190,7 @@ enum nss_status userdb_getspnam(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = userdb_by_name(name, nss_glue_userdb_flags(), &hr);
++        r = userdb_by_name(name, /* match= */ NULL, nss_glue_userdb_flags(), &hr);
+         if (r == -ESRCH)
+                 return NSS_STATUS_NOTFOUND;
+         if (r < 0) {
+@@ -290,7 +290,7 @@ enum nss_status userdb_getgrnam(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = groupdb_by_name(name, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &g);
++        r = groupdb_by_name(name, /* match= */ NULL, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &g);
+         if (r < 0 && r != -ESRCH) {
+                 *errnop = -r;
+                 return NSS_STATUS_UNAVAIL;
+@@ -357,7 +357,7 @@ enum nss_status userdb_getgrgid(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = groupdb_by_gid(gid, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &g);
++        r = groupdb_by_gid(gid, /* match= */ NULL, nss_glue_userdb_flags()|USERDB_SUPPRESS_SHADOW, &g);
+         if (r < 0 && r != -ESRCH) {
+                 *errnop = -r;
+                 return NSS_STATUS_UNAVAIL;
+@@ -456,7 +456,7 @@ enum nss_status userdb_getsgnam(
+         if (_nss_systemd_is_blocked())
+                 return NSS_STATUS_NOTFOUND;
+ 
+-        r = groupdb_by_name(name, nss_glue_userdb_flags(), &hr);
++        r = groupdb_by_name(name, /* match= */ NULL, nss_glue_userdb_flags(), &hr);
+         if (r == -ESRCH)
+                 return NSS_STATUS_NOTFOUND;
+         if (r < 0) {
+diff --git a/src/shared/user-record-show.c b/src/shared/user-record-show.c
+index f47da4b4c7..754895c787 100644
+--- a/src/shared/user-record-show.c
++++ b/src/shared/user-record-show.c
+@@ -200,7 +200,7 @@ void user_record_show(UserRecord *hr, bool show_full_group_info) {
+                 if (show_full_group_info) {
+                         _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
+ 
+-                        r = groupdb_by_gid(hr->gid, 0, &gr);
++                        r = groupdb_by_gid(hr->gid, /* match= */ NULL, /* flags= */ 0, &gr);
+                         if (r < 0) {
+                                 errno = -r;
+                                 printf("         GID: " GID_FMT " (unresolvable: %m)\n", hr->gid);
+diff --git a/src/shared/userdb.c b/src/shared/userdb.c
+index 32f851b0f3..ac505285bb 100644
+--- a/src/shared/userdb.c
++++ b/src/shared/userdb.c
+@@ -4,6 +4,7 @@
+ 
+ #include "sd-varlink.h"
+ 
++#include "bitfield.h"
+ #include "conf-files.h"
+ #include "dirent-util.h"
+ #include "dlfcn-util.h"
+@@ -35,16 +36,23 @@ struct UserDBIterator {
+         LookupWhat what;
+         UserDBFlags flags;
+         Set *links;
++
++        const char *method; /* Note, this is a const static string! */
++        sd_json_variant *query;
++
++        bool more:1;
+         bool nss_covered:1;
+         bool nss_iterating:1;
+         bool dropin_covered:1;
+         bool synthesize_root:1;
+         bool synthesize_nobody:1;
+         bool nss_systemd_blocked:1;
++
+         char **dropins;
+         size_t current_dropin;
+         int error;
+         unsigned n_found;
++
+         sd_event *event;
+         UserRecord *found_user;                   /* when .what == LOOKUP_USER */
+         GroupRecord *found_group;                 /* when .what == LOOKUP_GROUP */
+@@ -55,10 +63,14 @@ struct UserDBIterator {
+         char *filter_user_name, *filter_group_name;
+ };
+ 
++static int userdb_connect(UserDBIterator *iterator, const char *path, const char *method, bool more, sd_json_variant *query);
++
+ UserDBIterator* userdb_iterator_free(UserDBIterator *iterator) {
+         if (!iterator)
+                 return NULL;
+ 
++        sd_json_variant_unref(iterator->query);
++
+         set_free(iterator->links);
+         strv_free(iterator->dropins);
+ 
+@@ -159,6 +171,70 @@ static void membership_data_done(struct membership_data *d) {
+         free(d->group_name);
+ }
+ 
++static int userdb_maybe_restart_query(
++                UserDBIterator *iterator,
++                sd_varlink *link,
++                sd_json_variant *parameters,
++                const char *error_id) {
++
++        int r;
++
++        assert(iterator);
++        assert(link);
++        assert(error_id);
++
++        /* These fields were added in v258 and didn't exist in previous implementations. Hence, we consider
++         * their support optional: if any service refuses any of these fields, we'll restart the query
++         * without them, and apply the filtering they are supposed to do client side. */
++        static const char *const fields[] = {
++                "fuzzyNames",
++                "dispositionMask",
++                "uidMin",
++                "uidMax",
++                "gidMin",
++                "gidMax",
++                NULL
++        };
++
++        /* Figure out if the reported error indicates any of the suppressable fields are at fault, and that
++         * our query actually included them */
++        bool restart = false;
++        STRV_FOREACH(f, fields) {
++                if (!sd_varlink_error_is_invalid_parameter(error_id, parameters, *f))
++                        continue;
++
++                if (!sd_json_variant_by_key(iterator->query, *f))
++                        continue;
++
++                restart = true;
++                break;
++        }
++
++        if (!restart)
++                return 0;
++
++        /* Now patch the fields out */
++        _cleanup_(sd_json_variant_unrefp) sd_json_variant *patched_query =
++                sd_json_variant_ref(iterator->query);
++
++        r = sd_json_variant_filter(&patched_query, (char**const) fields);
++        if (r < 0)
++                return r;
++
++        /* NB: we stored the socket path in the varlink connection description when we set things up here! */
++        r = userdb_connect(
++                        iterator,
++                        ASSERT_PTR(sd_varlink_get_description(link)),
++                        iterator->method,
++                        iterator->more,
++                        patched_query);
++        if (r < 0)
++                return r;
++
++        log_debug("Restarted query to service '%s' due to missing features.", sd_varlink_get_description(link));
++        return 1;
++}
++
+ static int userdb_on_query_reply(
+                 sd_varlink *link,
+                 sd_json_variant *parameters,
+@@ -172,6 +248,14 @@ static int userdb_on_query_reply(
+         if (error_id) {
+                 log_debug("Got lookup error: %s", error_id);
+ 
++                r = userdb_maybe_restart_query(iterator, link, parameters, error_id);
++                if (r < 0)
++                        return r;
++                if (r > 0) {
++                        r = 0;
++                        goto finish;
++                }
++
+                 /* Convert various forms of record not found into -ESRCH, since NSS typically doesn't care,
+                  * about the details. Note that if a userName specification is refused as invalid parameter,
+                  * we also turn this into -ESRCH following the logic that there cannot be a user record for a
+@@ -182,6 +266,8 @@ static int userdb_on_query_reply(
+                     sd_varlink_error_is_invalid_parameter(error_id, parameters, "userName") ||
+                     sd_varlink_error_is_invalid_parameter(error_id, parameters, "groupName"))
+                         r = -ESRCH;
++                else if (streq(error_id, "io.systemd.UserDatabase.NonMatchingRecordFound"))
++                        r = -ENOEXEC;
+                 else if (streq(error_id, "io.systemd.UserDatabase.ServiceNotAvailable"))
+                         r = -EHOSTDOWN;
+                 else if (streq(error_id, "io.systemd.UserDatabase.EnumerationNotSupported"))
+@@ -338,9 +424,9 @@ static int userdb_on_query_reply(
+         }
+ 
+ finish:
+-        /* If we got one ESRCH, let that win. This way when we do a wild dump we won't be tripped up by bad
+-         * errors if at least one connection ended cleanly */
+-        if (r == -ESRCH || iterator->error == 0)
++        /* If we got one ESRCH or ENOEXEC, let that win. This way when we do a wild dump we won't be tripped
++         * up by bad errors – as long as at least one connection ended somewhat cleanly */
++        if (IN_SET(r, -ESRCH, -ENOEXEC) || iterator->error == 0)
+                 iterator->error = -r;
+ 
+         assert_se(set_remove(iterator->links, link) == link);
+@@ -378,7 +464,12 @@ static int userdb_connect(
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to attach varlink connection to event loop: %m");
+ 
+-        (void) sd_varlink_set_description(vl, path);
++        /* Note, this is load bearing: we store the socket path as description for the varlink
++         * connection. That's not just good for debugging, but we reuse this information in case we need to
++         * reissue the query with a reduced set of parameters. */
++        r = sd_varlink_set_description(vl, path);
++        if (r < 0)
++                return log_debug_errno(r, "Failed to set varlink connection description: %m");
+ 
+         r = sd_varlink_bind_reply(vl, userdb_on_query_reply);
+         if (r < 0)
+@@ -410,7 +501,7 @@ static int userdb_connect(
+ 
+ static int userdb_start_query(
+                 UserDBIterator *iterator,
+-                const char *method,
++                const char *method, /* must be a static string, we are not going to copy this here! */
+                 bool more,
+                 sd_json_variant *query,
+                 UserDBFlags flags) {
+@@ -426,6 +517,11 @@ static int userdb_start_query(
+         if (FLAGS_SET(flags, USERDB_EXCLUDE_VARLINK))
+                 return -ENOLINK;
+ 
++        assert(!iterator->query);
++        iterator->method = method; /* note: we don't make a copy here! */
++        iterator->query = sd_json_variant_ref(query);
++        iterator->more = more;
++
+         e = getenv("SYSTEMD_BYPASS_USERDB");
+         if (e) {
+                 r = parse_boolean(e);
+@@ -674,38 +770,61 @@ nomatch:
+         return 0;
+ }
+ 
+-int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret) {
+-        _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+-        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
++static int query_append_disposition_mask(sd_json_variant **query, uint64_t mask) {
+         int r;
+ 
+-        if (FLAGS_SET(flags, USERDB_PARSE_NUMERIC)) {
+-                uid_t uid;
++        assert(query);
+ 
+-                if (parse_uid(name, &uid) >= 0)
+-                        return userdb_by_uid(uid, flags, ret);
++        if (FLAGS_SET(mask, USER_DISPOSITION_MASK_ALL))
++                return 0;
++
++        _cleanup_strv_free_ char **dispositions = NULL;
++        for (UserDisposition d = 0; d < _USER_DISPOSITION_MAX; d++) {
++                if (!BITS_SET(mask, d))
++                        continue;
++
++                r = strv_extend(&dispositions, user_disposition_to_string(d));
++                if (r < 0)
++                        return r;
+         }
+ 
+-        if (!valid_user_group_name(name, VALID_USER_RELAX))
+-                return -EINVAL;
++        return sd_json_variant_merge_objectbo(
++                        query,
++                        SD_JSON_BUILD_PAIR_STRV("dispositionMask", dispositions));
++}
+ 
+-        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("userName", SD_JSON_BUILD_STRING(name)));
++static int query_append_uid_match(sd_json_variant **query, const UserDBMatch *match) {
++        int r;
++
++        assert(query);
++
++        if (!userdb_match_is_set(match))
++                return 0;
++
++        r = sd_json_variant_merge_objectbo(
++                        query,
++                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(match->fuzzy_names), "fuzzyNames", SD_JSON_BUILD_STRV(match->fuzzy_names)),
++                        SD_JSON_BUILD_PAIR_CONDITION(match->uid_min > 0, "uidMin", SD_JSON_BUILD_UNSIGNED(match->uid_min)),
++                        SD_JSON_BUILD_PAIR_CONDITION(match->uid_max < UID_INVALID-1, "uidMax", SD_JSON_BUILD_UNSIGNED(match->uid_max)));
+         if (r < 0)
+                 return r;
+ 
+-        iterator = userdb_iterator_new(LOOKUP_USER, flags);
+-        if (!iterator)
+-                return -ENOMEM;
++        return query_append_disposition_mask(query, match->disposition_mask);
++}
+ 
+-        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", false, query, flags);
+-        if (r >= 0) {
+-                r = userdb_process(iterator, ret, NULL, NULL, NULL);
+-                if (r >= 0)
+-                        return r;
+-        }
++static int userdb_by_name_fallbacks(
++                const char *name,
++                UserDBIterator *iterator,
++                UserDBFlags flags,
++                UserRecord **ret) {
++        int r;
++
++        assert(name);
++        assert(iterator);
++        assert(ret);
+ 
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && !iterator->dropin_covered) {
+-                r = dropin_user_record_by_name(name, NULL, flags, ret);
++                r = dropin_user_record_by_name(name, /* path= */ NULL, flags, ret);
+                 if (r >= 0)
+                         return r;
+         }
+@@ -737,21 +856,41 @@ int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret) {
+                         return r;
+                 if (r > 0)
+                         return synthetic_foreign_user_build(foreign_uid, ret);
+-                r = -ESRCH;
+         }
+ 
+-        return r;
++        return -ESRCH;
+ }
+ 
+-int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret) {
++int userdb_by_name(const char *name, const UserDBMatch *match, UserDBFlags flags, UserRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+         _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+         int r;
+ 
+-        if (!uid_is_valid(uid))
++        /* Well known errors this returns:
++         *         -EINVAL    → user name is not valid
++         *         -ESRCH     → no such user
++         *         -ENOEXEC   → found a user by request UID or name, but it does not match filter
++         *         -EHOSTDOWN → service failed for some reason
++         *         -ETIMEDOUT → service timed out
++         */
++
++        assert(name);
++
++        if (FLAGS_SET(flags, USERDB_PARSE_NUMERIC)) {
++                uid_t uid;
++
++                if (parse_uid(name, &uid) >= 0)
++                        return userdb_by_uid(uid, match, flags, ret);
++        }
++
++        if (!valid_user_group_name(name, VALID_USER_RELAX))
+                 return -EINVAL;
+ 
+-        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("uid", SD_JSON_BUILD_UNSIGNED(uid)));
++        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("userName", SD_JSON_BUILD_STRING(name)));
++        if (r < 0)
++                return r;
++
++        r = query_append_uid_match(&query, match);
+         if (r < 0)
+                 return r;
+ 
+@@ -759,12 +898,45 @@ int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret) {
+         if (!iterator)
+                 return -ENOMEM;
+ 
+-        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", false, query, flags);
++        _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
++        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", /* more= */ false, query, flags);
+         if (r >= 0) {
+-                r = userdb_process(iterator, ret, NULL, NULL, NULL);
+-                if (r >= 0)
++                r = userdb_process(iterator, &ur, /* ret_group_record= */ NULL, /* ret_user_name= */ NULL, /* ret_group_name= */ NULL);
++                if (r == -ENOEXEC) /* found a user matching UID or name, but not filter. In this case the
++                                    * fallback paths below are pointless */
+                         return r;
+         }
++        if (r < 0) { /* If the above fails for any other reason, try fallback paths */
++                r = userdb_by_name_fallbacks(name, iterator, flags, &ur);
++                if (r < 0)
++                        return r;
++        }
++
++        /* NB: we always apply our own filtering here, explicitly, regardless if the server supported it or
++         * not. It's more robust this way, we never know how carefully the server is written, and whether it
++         * properly implements all details of the filtering logic. */
++        r = user_record_match(ur, match);
++        if (r < 0)
++                return r;
++        if (r == 0)
++                return -ENOEXEC;
++
++        if (ret)
++                *ret = TAKE_PTR(ur);
++
++        return 0;
++}
++
++static int userdb_by_uid_fallbacks(
++                uid_t uid,
++                UserDBIterator *iterator,
++                UserDBFlags flags,
++                UserRecord **ret) {
++        int r;
++
++        assert(uid_is_valid(uid));
++        assert(iterator);
++        assert(ret);
+ 
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && !iterator->dropin_covered) {
+                 r = dropin_user_record_by_uid(uid, NULL, flags, ret);
+@@ -793,20 +965,70 @@ int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret) {
+         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN) && uid_is_foreign(uid))
+                 return synthetic_foreign_user_build(uid - FOREIGN_UID_BASE, ret);
+ 
+-        return r;
++        return -ESRCH;
+ }
+ 
+-int userdb_all(UserDBFlags flags, UserDBIterator **ret) {
++int userdb_by_uid(uid_t uid, const UserDBMatch *match, UserDBFlags flags, UserRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
++        int r;
++
++        if (!uid_is_valid(uid))
++                return -EINVAL;
++
++        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("uid", SD_JSON_BUILD_UNSIGNED(uid)));
++        if (r < 0)
++                return r;
++
++        r = query_append_uid_match(&query, match);
++        if (r < 0)
++                return r;
++
++        iterator = userdb_iterator_new(LOOKUP_USER, flags);
++        if (!iterator)
++                return -ENOMEM;
++
++        _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
++        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", /* more= */ false, query, flags);
++        if (r >= 0) {
++                r = userdb_process(iterator, &ur, /* ret_group_record= */ NULL, /* ret_user_name= */ NULL, /* ret_group_name= */ NULL);
++                if (r == -ENOEXEC)
++                        return r;
++        }
++        if (r < 0) {
++                r = userdb_by_uid_fallbacks(uid, iterator, flags, &ur);
++                if (r < 0)
++                        return r;
++        }
++
++        r = user_record_match(ur, match);
++        if (r < 0)
++                return r;
++        if (r == 0)
++                return -ENOEXEC;
++
++        if (ret)
++                *ret = TAKE_PTR(ur);
++
++        return 0;
++}
++
++int userdb_all(const UserDBMatch *match, UserDBFlags flags, UserDBIterator **ret) {
++        _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+         int r, qr;
+ 
+         assert(ret);
+ 
++        r = query_append_uid_match(&query, match);
++        if (r < 0)
++                return r;
++
+         iterator = userdb_iterator_new(LOOKUP_USER, flags);
+         if (!iterator)
+                 return -ENOMEM;
+ 
+-        qr = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", true, NULL, flags);
++        qr = userdb_start_query(iterator, "io.systemd.UserDatabase.GetUserRecord", /* more= */ true, query, flags);
+ 
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && (qr < 0 || !iterator->nss_covered)) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+@@ -840,7 +1062,7 @@ int userdb_all(UserDBFlags flags, UserDBIterator **ret) {
+         return 0;
+ }
+ 
+-int userdb_iterator_get(UserDBIterator *iterator, UserRecord **ret) {
++static int userdb_iterator_get_one(UserDBIterator *iterator, UserRecord **ret) {
+         int r;
+ 
+         assert(iterator);
+@@ -928,7 +1150,7 @@ int userdb_iterator_get(UserDBIterator *iterator, UserRecord **ret) {
+         }
+ 
+         /* Then, let's return the users provided by varlink IPC */
+-        r = userdb_process(iterator, ret, NULL, NULL, NULL);
++        r = userdb_process(iterator, ret, /* ret_group_record= */ NULL, /* ret_user_name= */ NULL, /* ret_group_name= */ NULL);
+         if (r < 0) {
+ 
+                 /* Finally, synthesize root + nobody if not done yet */
+@@ -952,6 +1174,29 @@ int userdb_iterator_get(UserDBIterator *iterator, UserRecord **ret) {
+         return r;
+ }
+ 
++int userdb_iterator_get(UserDBIterator *iterator, const UserDBMatch *match, UserRecord **ret) {
++        int r;
++
++        assert(iterator);
++        assert(iterator->what == LOOKUP_USER);
++
++        for (;;) {
++                _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
++
++                r = userdb_iterator_get_one(iterator, userdb_match_is_set(match) || ret ? &ur : NULL);
++                if (r < 0)
++                        return r;
++
++                if (ur && !user_record_match(ur, match))
++                        continue;
++
++                if (ret)
++                        *ret = TAKE_PTR(ur);
++
++                return r;
++        }
++}
++
+ static int synthetic_root_group_build(GroupRecord **ret) {
+         return group_record_build(
+                         ret,
+@@ -993,43 +1238,44 @@ static int synthetic_foreign_group_build(gid_t foreign_gid, GroupRecord **ret) {
+                                         SD_JSON_BUILD_PAIR("disposition", JSON_BUILD_CONST_STRING("foreign"))));
+ }
+ 
+-int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret) {
+-        _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+-        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
++static int query_append_gid_match(sd_json_variant **query, const UserDBMatch *match) {
+         int r;
+ 
+-        if (FLAGS_SET(flags, USERDB_PARSE_NUMERIC)) {
+-                gid_t gid;
+-
+-                if (parse_gid(name, &gid) >= 0)
+-                        return groupdb_by_gid(gid, flags, ret);
+-        }
++        assert(query);
+ 
+-        if (!valid_user_group_name(name, VALID_USER_RELAX))
+-                return -EINVAL;
++        if (!userdb_match_is_set(match))
++                return 0;
+ 
+-        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("groupName", SD_JSON_BUILD_STRING(name)));
++        r = sd_json_variant_merge_objectbo(
++                        query,
++                        SD_JSON_BUILD_PAIR_CONDITION(!strv_isempty(match->fuzzy_names), "fuzzyNames", SD_JSON_BUILD_STRV(match->fuzzy_names)),
++                        SD_JSON_BUILD_PAIR_CONDITION(match->gid_min > 0, "gidMin", SD_JSON_BUILD_UNSIGNED(match->gid_min)),
++                        SD_JSON_BUILD_PAIR_CONDITION(match->gid_max < GID_INVALID-1, "gidMax", SD_JSON_BUILD_UNSIGNED(match->gid_max)));
+         if (r < 0)
+                 return r;
+ 
+-        iterator = userdb_iterator_new(LOOKUP_GROUP, flags);
+-        if (!iterator)
+-                return -ENOMEM;
++        return query_append_disposition_mask(query, match->disposition_mask);
++}
+ 
+-        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", false, query, flags);
+-        if (r >= 0) {
+-                r = userdb_process(iterator, NULL, ret, NULL, NULL);
+-                if (r >= 0)
+-                        return r;
+-        }
++static int groupdb_by_name_fallbacks(
++                const char *name,
++                UserDBIterator *iterator,
++                UserDBFlags flags,
++                GroupRecord **ret) {
+ 
+-        if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && !(iterator && iterator->dropin_covered)) {
++        int r;
++
++        assert(name);
++        assert(iterator);
++        assert(ret);
++
++        if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && !iterator->dropin_covered) {
+                 r = dropin_group_record_by_name(name, NULL, flags, ret);
+                 if (r >= 0)
+                         return r;
+         }
+ 
+-        if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && !(iterator && iterator->nss_covered)) {
++        if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && !iterator->nss_covered) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+                 if (r >= 0) {
+                         r = nss_group_record_by_name(name, !FLAGS_SET(flags, USERDB_SUPPRESS_SHADOW), ret);
+@@ -1053,21 +1299,33 @@ int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret) {
+                         return r;
+                 if (r > 0)
+                         return synthetic_foreign_group_build(foreign_gid, ret);
+-                r = -ESRCH;
+         }
+ 
+-        return r;
++        return -ESRCH;
+ }
+ 
+-int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret) {
++int groupdb_by_name(const char *name, const UserDBMatch *match, UserDBFlags flags, GroupRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+         _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+         int r;
+ 
+-        if (!gid_is_valid(gid))
++        assert(name);
++
++        if (FLAGS_SET(flags, USERDB_PARSE_NUMERIC)) {
++                gid_t gid;
++
++                if (parse_gid(name, &gid) >= 0)
++                        return groupdb_by_gid(gid, match, flags, ret);
++        }
++
++        if (!valid_user_group_name(name, VALID_USER_RELAX))
+                 return -EINVAL;
+ 
+-        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("gid", SD_JSON_BUILD_UNSIGNED(gid)));
++        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("groupName", SD_JSON_BUILD_STRING(name)));
++        if (r < 0)
++                return r;
++
++        r = query_append_gid_match(&query, match);
+         if (r < 0)
+                 return r;
+ 
+@@ -1075,13 +1333,43 @@ int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret) {
+         if (!iterator)
+                 return -ENOMEM;
+ 
+-        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", false, query, flags);
++        _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
++        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", /* more= */ false, query, flags);
+         if (r >= 0) {
+-                r = userdb_process(iterator, NULL, ret, NULL, NULL);
+-                if (r >= 0)
++                r = userdb_process(iterator, /* ret_user_record= */ NULL, &gr, /* ret_user_name= */ NULL, /* ret_group_name= */ NULL);
++                if (r == -ENOEXEC)
++                        return r;
++        }
++        if (r < 0) {
++                r = groupdb_by_name_fallbacks(name, iterator, flags, &gr);
++                if (r < 0)
+                         return r;
+         }
+ 
++        /* As above, we apply our own client-side filtering even if server-side filtering worked, for robustness and simplicity reasons. */
++        r = group_record_match(gr, match);
++        if (r < 0)
++                return r;
++        if (r == 0)
++                return -ENOEXEC;
++
++        if (ret)
++                *ret = TAKE_PTR(gr);
++
++        return r;
++}
++
++static int groupdb_by_gid_fallbacks(
++                gid_t gid,
++                UserDBIterator *iterator,
++                UserDBFlags flags,
++                GroupRecord **ret) {
++        int r;
++
++        assert(gid_is_valid(gid));
++        assert(iterator);
++        assert(ret);
++
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_DROPIN) && !(iterator && iterator->dropin_covered)) {
+                 r = dropin_group_record_by_gid(gid, NULL, flags, ret);
+                 if (r >= 0)
+@@ -1108,20 +1396,70 @@ int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret) {
+         if (!FLAGS_SET(flags, USERDB_DONT_SYNTHESIZE_FOREIGN) && gid_is_foreign(gid))
+                 return synthetic_foreign_group_build(gid - FOREIGN_UID_BASE, ret);
+ 
+-        return r;
++        return -ESRCH;
+ }
+ 
+-int groupdb_all(UserDBFlags flags, UserDBIterator **ret) {
++int groupdb_by_gid(gid_t gid, const UserDBMatch *match, UserDBFlags flags, GroupRecord **ret) {
+         _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
++        int r;
++
++        if (!gid_is_valid(gid))
++                return -EINVAL;
++
++        r = sd_json_buildo(&query, SD_JSON_BUILD_PAIR("gid", SD_JSON_BUILD_UNSIGNED(gid)));
++        if (r < 0)
++                return r;
++
++        r = query_append_gid_match(&query, match);
++        if (r < 0)
++                return r;
++
++        iterator = userdb_iterator_new(LOOKUP_GROUP, flags);
++        if (!iterator)
++                return -ENOMEM;
++
++        _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
++        r = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", /* more= */ false, query, flags);
++        if (r >= 0) {
++                r = userdb_process(iterator, /* ret_user_record= */ NULL, &gr, /* ret_user_name= */ NULL, /* ret_group_name= */ NULL);
++                if (r == -ENOEXEC)
++                        return r;
++        }
++        if (r < 0) {
++                r = groupdb_by_gid_fallbacks(gid, iterator, flags, &gr);
++                if (r < 0)
++                        return r;
++        }
++
++        r = group_record_match(gr, match);
++        if (r < 0)
++                return r;
++        if (r == 0)
++                return -ENOEXEC;
++
++        if (ret)
++                *ret = TAKE_PTR(gr);
++
++        return 0;
++}
++
++int groupdb_all(const UserDBMatch *match, UserDBFlags flags, UserDBIterator **ret) {
++        _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++        _cleanup_(sd_json_variant_unrefp) sd_json_variant *query = NULL;
+         int r, qr;
+ 
+         assert(ret);
+ 
++        r = query_append_gid_match(&query, match);
++        if (r < 0)
++                return r;
++
+         iterator = userdb_iterator_new(LOOKUP_GROUP, flags);
+         if (!iterator)
+                 return -ENOMEM;
+ 
+-        qr = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", true, NULL, flags);
++        qr = userdb_start_query(iterator, "io.systemd.UserDatabase.GetGroupRecord", /* more= */ true, query, flags);
+ 
+         if (!FLAGS_SET(flags, USERDB_EXCLUDE_NSS) && (qr < 0 || !iterator->nss_covered)) {
+                 r = userdb_iterator_block_nss_systemd(iterator);
+@@ -1152,7 +1490,7 @@ int groupdb_all(UserDBFlags flags, UserDBIterator **ret) {
+         return 0;
+ }
+ 
+-int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
++static int groupdb_iterator_get_one(UserDBIterator *iterator, GroupRecord **ret) {
+         int r;
+ 
+         assert(iterator);
+@@ -1254,6 +1592,29 @@ int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret) {
+         return r;
+ }
+ 
++int groupdb_iterator_get(UserDBIterator *iterator, const UserDBMatch *match, GroupRecord **ret) {
++        int r;
++
++        assert(iterator);
++        assert(iterator->what == LOOKUP_GROUP);
++
++        for (;;) {
++                _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
++
++                r = groupdb_iterator_get_one(iterator, userdb_match_is_set(match) || ret ? &gr : NULL);
++                if (r < 0)
++                        return r;
++
++                if (gr && !group_record_match(gr, match))
++                        continue;
++
++                if (ret)
++                        *ret = TAKE_PTR(gr);
++
++                return r;
++        }
++}
++
+ static void discover_membership_dropins(UserDBIterator *i, UserDBFlags flags) {
+         int r;
+ 
+diff --git a/src/shared/userdb.h b/src/shared/userdb.h
+index 9bb47efbfe..783e39d591 100644
+--- a/src/shared/userdb.h
++++ b/src/shared/userdb.h
+@@ -42,15 +42,15 @@ typedef enum UserDBFlags {
+  *  -ETIMEDOUT: Time-out
+  */
+ 
+-int userdb_by_name(const char *name, UserDBFlags flags, UserRecord **ret);
+-int userdb_by_uid(uid_t uid, UserDBFlags flags, UserRecord **ret);
+-int userdb_all(UserDBFlags flags, UserDBIterator **ret);
+-int userdb_iterator_get(UserDBIterator *iterator, UserRecord **ret);
+-
+-int groupdb_by_name(const char *name, UserDBFlags flags, GroupRecord **ret);
+-int groupdb_by_gid(gid_t gid, UserDBFlags flags, GroupRecord **ret);
+-int groupdb_all(UserDBFlags flags, UserDBIterator **ret);
+-int groupdb_iterator_get(UserDBIterator *iterator, GroupRecord **ret);
++int userdb_by_name(const char *name, const UserDBMatch *match, UserDBFlags flags, UserRecord **ret);
++int userdb_by_uid(uid_t uid, const UserDBMatch *match, UserDBFlags flags, UserRecord **ret);
++int userdb_all(const UserDBMatch *match, UserDBFlags flags, UserDBIterator **ret);
++int userdb_iterator_get(UserDBIterator *iterator, const UserDBMatch *match, UserRecord **ret);
++
++int groupdb_by_name(const char *name, const UserDBMatch *match, UserDBFlags flags, GroupRecord **ret);
++int groupdb_by_gid(gid_t gid, const UserDBMatch *match, UserDBFlags flags, GroupRecord **ret);
++int groupdb_all(const UserDBMatch *match, UserDBFlags flags, UserDBIterator **ret);
++int groupdb_iterator_get(UserDBIterator *iterator, const UserDBMatch *match, GroupRecord **ret);
+ 
+ int membershipdb_by_user(const char *name, UserDBFlags flags, UserDBIterator **ret);
+ int membershipdb_by_group(const char *name, UserDBFlags flags, UserDBIterator **ret);
+diff --git a/src/userdb/userdbctl.c b/src/userdb/userdbctl.c
+index 2c3b274828..074d9103af 100644
+--- a/src/userdb/userdbctl.c
++++ b/src/userdb/userdbctl.c
+@@ -397,7 +397,7 @@ static int display_user(int argc, char *argv[], void *userdata) {
+                         (void) table_hide_column_from_display(table, (size_t) 0);
+         }
+ 
+-        UserDBMatch match = {
++        _cleanup_(userdb_match_done) UserDBMatch match = {
+                 .disposition_mask = arg_disposition_mask,
+                 .uid_min = arg_uid_min,
+                 .uid_max = arg_uid_max,
+@@ -423,19 +423,18 @@ static int display_user(int argc, char *argv[], void *userdata) {
+                 STRV_FOREACH(i, argv + 1) {
+                         _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
+ 
+-                        r = userdb_by_name(*i, arg_userdb_flags|USERDB_PARSE_NUMERIC, &ur);
++                        r = userdb_by_name(*i, &match, arg_userdb_flags|USERDB_PARSE_NUMERIC, &ur);
+                         if (r < 0) {
+                                 if (r == -ESRCH)
+                                         log_error_errno(r, "User %s does not exist.", *i);
+                                 else if (r == -EHOSTDOWN)
+                                         log_error_errno(r, "Selected user database service is not available for this request.");
++                                else if (r == -ENOEXEC)
++                                        log_error_errno(r, "User '%s' exists but does not match specified filter.", *i);
+                                 else
+                                         log_error_errno(r, "Failed to find user %s: %m", *i);
+ 
+                                 RET_GATHER(ret, r);
+-                        } else if (!user_record_match(ur, &match)) {
+-                                log_error("User '%s' does not match filter.", *i);
+-                                RET_GATHER(ret, -ENOEXEC);
+                         } else {
+                                 if (draw_separator && arg_output == OUTPUT_FRIENDLY)
+                                         putchar('\n');
+@@ -448,18 +447,15 @@ static int display_user(int argc, char *argv[], void *userdata) {
+                         }
+                 }
+         else {
+-                _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+-                _cleanup_strv_free_ char **names = NULL;
+-
+                 if (argc > 1) {
+-                        names = strv_copy(argv + 1);
+-                        if (!names)
++                        /* If there are further arguments, they are the fuzzy match strings. */
++                        match.fuzzy_names = strv_copy(strv_skip(argv, 1));
++                        if (!match.fuzzy_names)
+                                 return log_oom();
+-
+-                        match.fuzzy_names = names;
+                 }
+ 
+-                r = userdb_all(arg_userdb_flags, &iterator);
++                _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++                r = userdb_all(&match, arg_userdb_flags, &iterator);
+                 if (r == -ENOLINK) /* ENOLINK → Didn't find answer without Varlink, and didn't try Varlink because was configured to off. */
+                         log_debug_errno(r, "No entries found. (Didn't check via Varlink.)");
+                 else if (r == -ESRCH) /* ESRCH → Couldn't find any suitable entry, but we checked all sources */
+@@ -470,7 +466,7 @@ static int display_user(int argc, char *argv[], void *userdata) {
+                         for (;;) {
+                                 _cleanup_(user_record_unrefp) UserRecord *ur = NULL;
+ 
+-                                r = userdb_iterator_get(iterator, &ur);
++                                r = userdb_iterator_get(iterator, &match, &ur);
+                                 if (r == -ESRCH)
+                                         break;
+                                 if (r == -EHOSTDOWN)
+@@ -478,9 +474,6 @@ static int display_user(int argc, char *argv[], void *userdata) {
+                                 if (r < 0)
+                                         return log_error_errno(r, "Failed acquire next user: %m");
+ 
+-                                if (!user_record_match(ur, &match))
+-                                        continue;
+-
+                                 if (draw_separator && arg_output == OUTPUT_FRIENDLY)
+                                         putchar('\n');
+ 
+@@ -745,7 +738,7 @@ static int display_group(int argc, char *argv[], void *userdata) {
+                         (void) table_hide_column_from_display(table, (size_t) 0);
+         }
+ 
+-        UserDBMatch match = {
++        _cleanup_(userdb_match_done) UserDBMatch match = {
+                 .disposition_mask = arg_disposition_mask,
+                 .gid_min = arg_uid_min,
+                 .gid_max = arg_uid_max,
+@@ -771,19 +764,18 @@ static int display_group(int argc, char *argv[], void *userdata) {
+                 STRV_FOREACH(i, argv + 1) {
+                         _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
+ 
+-                        r = groupdb_by_name(*i, arg_userdb_flags|USERDB_PARSE_NUMERIC, &gr);
++                        r = groupdb_by_name(*i, &match, arg_userdb_flags|USERDB_PARSE_NUMERIC, &gr);
+                         if (r < 0) {
+                                 if (r == -ESRCH)
+                                         log_error_errno(r, "Group %s does not exist.", *i);
+                                 else if (r == -EHOSTDOWN)
+                                         log_error_errno(r, "Selected group database service is not available for this request.");
++                                else if (r == -ENOEXEC)
++                                        log_error_errno(r, "Group '%s' exists but does not match specified filter.", *i);
+                                 else
+                                         log_error_errno(r, "Failed to find group %s: %m", *i);
+ 
+                                 RET_GATHER(ret, r);
+-                        } else if (!group_record_match(gr, &match)) {
+-                                log_error("Group '%s' does not match filter.", *i);
+-                                RET_GATHER(ret, -ENOEXEC);
+                         } else {
+                                 if (draw_separator && arg_output == OUTPUT_FRIENDLY)
+                                         putchar('\n');
+@@ -796,18 +788,14 @@ static int display_group(int argc, char *argv[], void *userdata) {
+                         }
+                 }
+         else {
+-                _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+-                _cleanup_strv_free_ char **names = NULL;
+-
+                 if (argc > 1) {
+-                        names = strv_copy(argv + 1);
+-                        if (!names)
++                        match.fuzzy_names = strv_copy(strv_skip(argv, 1));
++                        if (!match.fuzzy_names)
+                                 return log_oom();
+-
+-                        match.fuzzy_names = names;
+                 }
+ 
+-                r = groupdb_all(arg_userdb_flags, &iterator);
++                _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
++                r = groupdb_all(&match, arg_userdb_flags, &iterator);
+                 if (r == -ENOLINK)
+                         log_debug_errno(r, "No entries found. (Didn't check via Varlink.)");
+                 else if (r == -ESRCH)
+@@ -818,7 +806,7 @@ static int display_group(int argc, char *argv[], void *userdata) {
+                         for (;;) {
+                                 _cleanup_(group_record_unrefp) GroupRecord *gr = NULL;
+ 
+-                                r = groupdb_iterator_get(iterator, &gr);
++                                r = groupdb_iterator_get(iterator, &match, &gr);
+                                 if (r == -ESRCH)
+                                         break;
+                                 if (r == -EHOSTDOWN)
+@@ -826,9 +814,6 @@ static int display_group(int argc, char *argv[], void *userdata) {
+                                 if (r < 0)
+                                         return log_error_errno(r, "Failed acquire next group: %m");
+ 
+-                                if (!group_record_match(gr, &match))
+-                                        continue;
+-
+                                 if (draw_separator && arg_output == OUTPUT_FRIENDLY)
+                                         putchar('\n');
+ 
+@@ -1131,7 +1116,7 @@ static int ssh_authorized_keys(int argc, char *argv[], void *userdata) {
+                 chain_invocation = NULL;
+         }
+ 
+-        r = userdb_by_name(argv[1], arg_userdb_flags, &ur);
++        r = userdb_by_name(argv[1], /* match= */ NULL, arg_userdb_flags, &ur);
+         if (r == -ESRCH)
+                 log_error_errno(r, "User %s does not exist.", argv[1]);
+         else if (r == -EHOSTDOWN)
+diff --git a/src/userdb/userwork.c b/src/userdb/userwork.c
+index c8fef87326..da115ec6e5 100644
+--- a/src/userdb/userwork.c
++++ b/src/userdb/userwork.c
+@@ -160,14 +160,14 @@ static int vl_method_get_user_record(sd_varlink *link, sd_json_variant *paramete
+                 return r;
+ 
+         if (uid_is_valid(p.uid))
+-                r = userdb_by_uid(p.uid, userdb_flags, &hr);
++                r = userdb_by_uid(p.uid, /* match= */ NULL, userdb_flags, &hr);
+         else if (p.name)
+-                r = userdb_by_name(p.name, userdb_flags, &hr);
++                r = userdb_by_name(p.name, /* match= */ NULL, userdb_flags, &hr);
+         else {
+                 _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+                 _cleanup_(sd_json_variant_unrefp) sd_json_variant *last = NULL;
+ 
+-                r = userdb_all(userdb_flags, &iterator);
++                r = userdb_all(/* match= */ NULL, userdb_flags, &iterator);
+                 if (IN_SET(r, -ESRCH, -ENOLINK))
+                         /* We turn off Varlink lookups in various cases (e.g. in case we only enable DropIn
+                          * backend) — this might make userdb_all return ENOLINK (which indicates that varlink
+@@ -182,7 +182,7 @@ static int vl_method_get_user_record(sd_varlink *link, sd_json_variant *paramete
+                 for (;;) {
+                         _cleanup_(user_record_unrefp) UserRecord *z = NULL;
+ 
+-                        r = userdb_iterator_get(iterator, &z);
++                        r = userdb_iterator_get(iterator, /* match= */ NULL, &z);
+                         if (r == -ESRCH)
+                                 break;
+                         if (r < 0)
+@@ -296,14 +296,14 @@ static int vl_method_get_group_record(sd_varlink *link, sd_json_variant *paramet
+                 return r;
+ 
+         if (gid_is_valid(p.gid))
+-                r = groupdb_by_gid(p.gid, userdb_flags, &g);
++                r = groupdb_by_gid(p.gid, /* match= */ NULL, userdb_flags, &g);
+         else if (p.name)
+-                r = groupdb_by_name(p.name, userdb_flags, &g);
++                r = groupdb_by_name(p.name, /* match= */ NULL, userdb_flags, &g);
+         else {
+                 _cleanup_(userdb_iterator_freep) UserDBIterator *iterator = NULL;
+                 _cleanup_(sd_json_variant_unrefp) sd_json_variant *last = NULL;
+ 
+-                r = groupdb_all(userdb_flags, &iterator);
++                r = groupdb_all(/* match= */ NULL, userdb_flags, &iterator);
+                 if (IN_SET(r, -ESRCH, -ENOLINK))
+                         return sd_varlink_error(link, "io.systemd.UserDatabase.NoRecordFound", NULL);
+                 if (r < 0)
+@@ -312,7 +312,7 @@ static int vl_method_get_group_record(sd_varlink *link, sd_json_variant *paramet
+                 for (;;) {
+                         _cleanup_(group_record_unrefp) GroupRecord *z = NULL;
+ 
+-                        r = groupdb_iterator_get(iterator, &z);
++                        r = groupdb_iterator_get(iterator, /* match= */ NULL, &z);
+                         if (r == -ESRCH)
+                                 break;
+                         if (r < 0)

@@ -1,0 +1,28 @@
+From 0c62771bd44a5c9c67b73e62c9eba187f35a42cd Mon Sep 17 00:00:00 2001
+From: 0x06 <56885523+0x000006@users.noreply.github.com>
+Date: Sun, 14 Dec 2025 23:19:10 +0100
+Subject: [PATCH] hwdb: Fix ACCEL_MOUNT_MATRIX for Lenovo Ideapad MIIX 310-ICR
+ (#40067)
+
+Tested with monitor-sensor on bvr1HCN44WW
+
+(cherry picked from commit 8e20b9a79d2e00eedb6b55e5bc3293c783bed588)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 177aee49a9..c5446bd17d 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -768,7 +768,7 @@ sensor:modalias:acpi:SMO8500*:dmi:bvnLENOVO:*:pvrMIIX300-*:*
+ # a portrait LCD panel, versions with bvr 1HCN3?WW have a landscape panel
+ sensor:modalias:acpi:KIOX000A*:dmi:bvnLENOVO:bvr1HCN4?WW:*:svnLENOVO:pn80SG:*
+ sensor:modalias:acpi:KIOX000A*:dmi:bvnLENOVO:bvr1HCN2?WW:*:svnLENOVO:pn80SG:*
+- ACCEL_MOUNT_MATRIX=0, 1, 0; 1, 0, 0; 0, 0, 1
++ ACCEL_MOUNT_MATRIX=0, 1, 0; 1, 0, 0; 0, 0, -1
+ 
+ # IdeaPad Miix 310 BIOS version bvr1HCN3?WW (variant 3)
+ sensor:modalias:acpi:KIOX000A*:dmi:bvnLENOVO:bvr1HCN3?WW:*:svnLENOVO:pn80SG:*

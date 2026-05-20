@@ -1,0 +1,25 @@
+From fa9c5fb503fb90c2e9f04b11cee62fea83e48a04 Mon Sep 17 00:00:00 2001
+From: Dirk Su <dirk.su@canonical.com>
+Date: Thu, 15 Jan 2026 10:23:56 +0800
+Subject: [PATCH] hwdb: add HP EliteBoard Mic mute key mapping
+
+(cherry picked from commit 1ef107cb221839bf29a2a9eea6f3ead4e76198bd)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index a760969574..f37c3c8bec 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -813,6 +813,8 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHP*:pnHPEliteBook*:*
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHP*:pnHPElite*x360*:*
+ # HP Elite Dragonfly
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHP*:pnHPEliteDragonfly*:*
++# HP EliteBoard
++evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHP*:pnHPEliteBoard*:*
+ # HP ProBook 440 G2
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHewlett-Packard*:pnHP440G2:*
+ # HP ProBook

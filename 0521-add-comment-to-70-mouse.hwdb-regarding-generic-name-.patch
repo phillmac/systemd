@@ -1,0 +1,26 @@
+From 92004bda4c2dd502d7e4ba9a10e754bae2e2d6e9 Mon Sep 17 00:00:00 2001
+From: Daniel Brackenbury <daniel.brackenbury@gmail.com>
+Date: Tue, 7 Oct 2025 18:04:56 -0400
+Subject: [PATCH] add comment to 70-mouse.hwdb regarding generic name for Nulea
+ M501 USB dongle
+
+(cherry picked from commit 6dfbaa80639d8bbbea6fc7f1976451da575da652)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index 98c0149d90..b0099ece96 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -826,6 +826,8 @@ mouse:usb:v0e8fp00a7:name:DaKai 2.4G RX:*
+ # Nulea
+ ##########################################
+ 
++# Note: it is possible that other devices may use the same wireless dongle,
++# as such this could require revisiting if it causes issues with other mice
+ # Nulea M501 Wireless Trackball (USB Receiver)
+ mouse:usb:v25a7pfa61:name:Compx 2.4G Receiver Mouse:*
+   ID_INPUT_TRACKBALL=1

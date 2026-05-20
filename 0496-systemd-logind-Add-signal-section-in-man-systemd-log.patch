@@ -1,0 +1,48 @@
+From 699c8216cd5cd85c344f6ca475b5adaa8272daa4 Mon Sep 17 00:00:00 2001
+From: Masanari Iida <standby24x7@gmail.com>
+Date: Tue, 11 Nov 2025 23:20:15 +0900
+Subject: [PATCH] systemd-logind: Add signal section in man systemd-logind
+
+This patch adds signal setion in man systemd-logind
+
+(cherry picked from commit 036100d74563edda3cb81e19255ffec5e1b7fc7f)
+
+Resolves: RHEL-128767
+---
+ man/systemd-logind.service.xml | 10 ++++++++++
+ tools/command_ignorelist       |  1 +
+ 2 files changed, 11 insertions(+)
+
+diff --git a/man/systemd-logind.service.xml b/man/systemd-logind.service.xml
+index 93bcd6bc8f..34f6330bf7 100644
+--- a/man/systemd-logind.service.xml
++++ b/man/systemd-logind.service.xml
+@@ -95,6 +95,16 @@
+     Desktop Environments</ulink>.</para>
+   </refsect1>
+ 
++  <refsect1>
++    <title>Signal</title>
++    <variablelist>
++      <varlistentry>
++         <term><constant>SIGHUP</constant></term>
++         <listitem><para>Reloads the service configuration file.</para></listitem>
++      </varlistentry>
++    </variablelist>
++  </refsect1>
++
+   <refsect1>
+     <title>See Also</title>
+     <para><simplelist type="inline">
+diff --git a/tools/command_ignorelist b/tools/command_ignorelist
+index 42076013e4..ffbff08867 100644
+--- a/tools/command_ignorelist
++++ b/tools/command_ignorelist
+@@ -161,6 +161,7 @@ systemd-inhibit.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="
+ systemd-inhibit.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--why="]
+ systemd-inhibit.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--mode="]
+ systemd-inhibit.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--list"]
++systemd-logind.service.xml ./refsect1[title="Signal"]/
+ systemd-notify.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--ready"]
+ systemd-notify.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--pid="]
+ systemd-notify.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--status="]

@@ -1,0 +1,27 @@
+From f0eba85d74e1a95339be1353c2087e2a3605de4c Mon Sep 17 00:00:00 2001
+From: Stephanie Wilde-Hobbs <github@stephanie.is>
+Date: Mon, 8 Dec 2025 19:38:17 +0100
+Subject: [PATCH] hwdb: add Magic Trackpad v2 USB-C (2024) to quirks (#40032)
+
+Without being marked as an external trackpad the palm rejection triggers
+too easily. Tested with a local hwdb rule.
+
+(cherry picked from commit 6c9b778076bbb9d4a20b48a70130fb1c01eef0ca)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-touchpad.hwdb | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hwdb.d/70-touchpad.hwdb b/hwdb.d/70-touchpad.hwdb
+index 83089bba28..067ad609a3 100644
+--- a/hwdb.d/70-touchpad.hwdb
++++ b/hwdb.d/70-touchpad.hwdb
+@@ -43,6 +43,7 @@ touchpad:bluetooth:*
+ # Magic Trackpad (1 and 2)
+ touchpad:usb:v05acp030e:*
+ touchpad:usb:v05acp0265:*
++touchpad:usb:v05acp0324:*
+  ID_INPUT_TOUCHPAD_INTEGRATION=external
+ 
+ ###########################################################

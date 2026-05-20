@@ -1,0 +1,183 @@
+From 08842799a6656ea0de3921842b2e157b032b46b5 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 28 Jan 2025 09:55:12 +0900
+Subject: [PATCH] unit-file: introduce unit_file_remove_from_name_map()
+
+(cherry picked from commit d8b34aaef24599917d4e7fa04c78fffac3afe7cf)
+
+Related: RHEL-126937
+---
+ src/shared/unit-file.c    | 35 +++++++++++++++++
+ src/shared/unit-file.h    |  8 ++++
+ src/test/test-unit-file.c | 81 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 124 insertions(+)
+
+diff --git a/src/shared/unit-file.c b/src/shared/unit-file.c
+index 5bb580285c..01e10c596d 100644
+--- a/src/shared/unit-file.c
++++ b/src/shared/unit-file.c
+@@ -616,6 +616,41 @@ int unit_file_build_name_map(
+         return 1;
+ }
+ 
++int unit_file_remove_from_name_map(
++                const LookupPaths *lp,
++                uint64_t *cache_timestamp_hash,
++                Hashmap **unit_ids_map,
++                Hashmap **unit_names_map,
++                Set **path_cache,
++                const char *path) {
++
++        int r;
++
++        assert(path);
++
++        /* This assumes the specified path is already removed, and drops the relevant entries from the maps. */
++
++        /* If one of the lookup paths we are monitoring is already changed, let's rebuild the map. Then, the
++         * new map should not contain entries relevant to the specified path. */
++        r = unit_file_build_name_map(lp, cache_timestamp_hash, unit_ids_map, unit_names_map, path_cache);
++        if (r != 0)
++                return r;
++
++        /* If not, drop the relevant entries. */
++
++        _cleanup_free_ char *name = NULL;
++        r = path_extract_filename(path, &name);
++        if (r < 0)
++                return log_warning_errno(r, "Failed to extract file name from '%s': %m", path);
++
++        _unused_ _cleanup_free_ char *key = NULL;
++        free(hashmap_remove2(*unit_ids_map, name, (void**) &key));
++        string_strv_hashmap_remove(*unit_names_map, name, name);
++        free(set_remove(*path_cache, path));
++
++        return 0;
++}
++
+ static int add_name(
+                 const char *unit_name,
+                 Set **names,
+diff --git a/src/shared/unit-file.h b/src/shared/unit-file.h
+index 1c89a92c7d..dd7dc57d15 100644
+--- a/src/shared/unit-file.h
++++ b/src/shared/unit-file.h
+@@ -68,6 +68,14 @@ int unit_file_build_name_map(
+                 Hashmap **unit_names_map,
+                 Set **path_cache);
+ 
++int unit_file_remove_from_name_map(
++                const LookupPaths *lp,
++                uint64_t *cache_timestamp_hash,
++                Hashmap **unit_ids_map,
++                Hashmap **unit_names_map,
++                Set **path_cache,
++                const char *path);
++
+ int unit_file_find_fragment(
+                 Hashmap *unit_ids_map,
+                 Hashmap *unit_name_map,
+diff --git a/src/test/test-unit-file.c b/src/test/test-unit-file.c
+index 63e500003c..a84e6aaf97 100644
+--- a/src/test/test-unit-file.c
++++ b/src/test/test-unit-file.c
+@@ -1,11 +1,16 @@
+ /* SPDX-License-Identifier: LGPL-2.1-or-later */
+ 
++#include "fileio.h"
+ #include "initrd-util.h"
+ #include "path-lookup.h"
++#include "path-util.h"
++#include "random-util.h"
++#include "rm-rf.h"
+ #include "set.h"
+ #include "special.h"
+ #include "strv.h"
+ #include "tests.h"
++#include "tmpfile-util.h"
+ #include "unit-file.h"
+ 
+ TEST(unit_validate_alias_symlink_and_warn) {
+@@ -86,6 +91,82 @@ TEST(unit_file_build_name_map) {
+         }
+ }
+ 
++static bool test_unit_file_remove_from_name_map_trail(const LookupPaths *lp, size_t trial) {
++        int r;
++
++        log_debug("/* %s(trial=%zu) */", __func__, trial);
++
++        _cleanup_hashmap_free_ Hashmap *unit_ids = NULL, *unit_names = NULL;
++        _cleanup_set_free_ Set *path_cache = NULL;
++        ASSERT_OK_POSITIVE(unit_file_build_name_map(lp, NULL, &unit_ids, &unit_names, &path_cache));
++
++        _cleanup_free_ char *name = NULL;
++        for (size_t i = 0; i < 100; i++) {
++                ASSERT_OK(asprintf(&name, "test-unit-file-%"PRIx64".service", random_u64()));
++                if (!hashmap_contains(unit_ids, name))
++                        break;
++                name = mfree(name);
++        }
++        ASSERT_NOT_NULL(name);
++
++        _cleanup_free_ char *path = path_join(lp->transient, name);
++        ASSERT_NOT_NULL(path);
++        ASSERT_OK(write_string_file(path, "[Unit]\n", WRITE_STRING_FILE_CREATE|WRITE_STRING_FILE_MKDIR_0755));
++
++        uint64_t cache_timestamp_hash = 0;
++        ASSERT_OK_POSITIVE(unit_file_build_name_map(lp, &cache_timestamp_hash, &unit_ids, &unit_names, &path_cache));
++
++        ASSERT_STREQ(hashmap_get(unit_ids, name), path);
++        ASSERT_TRUE(strv_equal(hashmap_get(unit_names, name), STRV_MAKE(name)));
++        ASSERT_TRUE(set_contains(path_cache, path));
++
++        ASSERT_OK_ERRNO(unlink(path));
++
++        ASSERT_OK(r = unit_file_remove_from_name_map(lp, &cache_timestamp_hash, &unit_ids, &unit_names, &path_cache, path));
++        if (r > 0)
++                return false; /* someone touches unit files. Retrying. */
++
++        ASSERT_FALSE(hashmap_contains(unit_ids, name));
++        ASSERT_FALSE(hashmap_contains(unit_names, path));
++        ASSERT_FALSE(set_contains(path_cache, path));
++
++        _cleanup_hashmap_free_ Hashmap *unit_ids_2 = NULL, *unit_names_2 = NULL;
++        _cleanup_set_free_ Set *path_cache_2 = NULL;
++        ASSERT_OK_POSITIVE(unit_file_build_name_map(lp, NULL, &unit_ids_2, &unit_names_2, &path_cache_2));
++
++        if (hashmap_size(unit_ids) != hashmap_size(unit_ids_2) ||
++            hashmap_size(unit_names) != hashmap_size(unit_names_2) ||
++            !set_equal(path_cache, path_cache_2))
++                return false;
++
++        const char *k, *v;
++        HASHMAP_FOREACH_KEY(v, k, unit_ids)
++                if (!streq_ptr(hashmap_get(unit_ids_2, k), v))
++                        return false;
++
++        char **l;
++        HASHMAP_FOREACH_KEY(l, k, unit_names)
++                if (!strv_equal_ignore_order(hashmap_get(unit_names_2, k), l))
++                        return false;
++
++        return true;
++}
++
++
++TEST(unit_file_remove_from_name_map) {
++        _cleanup_(rm_rf_physical_and_freep) char *d = NULL;
++
++        _cleanup_(lookup_paths_done) LookupPaths lp = {};
++        ASSERT_OK(lookup_paths_init(&lp, RUNTIME_SCOPE_SYSTEM, LOOKUP_PATHS_TEMPORARY_GENERATED, NULL));
++        ASSERT_NOT_NULL(d = strdup(lp.temporary_dir));
++
++        for (size_t i = 0; i < 10; i++)
++                if (test_unit_file_remove_from_name_map_trail(&lp, i))
++                        return;
++
++        assert_not_reached();
++}
++
+ TEST(runlevel_to_target) {
+         in_initrd_force(false);
+         ASSERT_STREQ(runlevel_to_target(NULL), NULL);

@@ -1,0 +1,90 @@
+From 7f38c74a532b536c2f8b2e3a948ab1391387adca Mon Sep 17 00:00:00 2001
+From: Miroslav Lichvar <mlichvar@redhat.com>
+Date: Thu, 16 Jan 2025 15:34:47 +0100
+Subject: [PATCH] udev: set clock group for PTP and RTC devices
+
+Add a new group for clock devices to enable applications like linuxptp
+to open clocks without root privileges.
+
+(cherry picked from commit af96ccfc24bc4803078a46b4ef2cdeb5decdfbcd)
+
+Resolves: RHEL-113051
+---
+ README                           | 3 ++-
+ meson.build                      | 1 +
+ meson_options.txt                | 2 ++
+ rules.d/50-udev-default.rules.in | 2 ++
+ sysusers.d/basic.conf.in         | 1 +
+ 5 files changed, 8 insertions(+), 1 deletion(-)
+
+diff --git a/README b/README
+index 9b84bf7e7a..b9a58389ad 100644
+--- a/README
++++ b/README
+@@ -351,7 +351,8 @@ USERS AND GROUPS:
+         need to be resolvable by getgrnam() at any time, even in the very early
+         boot stages, where no other databases and network are available:
+ 
+-        audio, cdrom, dialout, disk, input, kmem, kvm, lp, render, tape, tty, video
++        audio, cdrom, clock, dialout, disk, input, kmem, kvm, lp, render, tape,
++        tty, video
+ 
+         During runtime, the journal daemon requires the "systemd-journal" system
+         group to exist. New journal files will be readable by this group (but
+diff --git a/meson.build b/meson.build
+index cfb202eb30..873d70f8d3 100644
+--- a/meson.build
++++ b/meson.build
+@@ -950,6 +950,7 @@ static_ugids = []
+ foreach option : ['adm-gid',
+                   'audio-gid',
+                   'cdrom-gid',
++                  'clock-gid',
+                   'dialout-gid',
+                   'disk-gid',
+                   'input-gid',
+diff --git a/meson_options.txt b/meson_options.txt
+index f30b3f5238..78b7c5fe30 100644
+--- a/meson_options.txt
++++ b/meson_options.txt
+@@ -289,6 +289,8 @@ option('audio-gid', type : 'integer', value : 0,
+        description : 'soft-static allocation for the "audio" group')
+ option('cdrom-gid', type : 'integer', value : 0,
+        description : 'soft-static allocation for the "cdrom" group')
++option('clock-gid', type : 'integer', value : 0,
++       description : 'soft-static allocation for the "clock" group')
+ option('dialout-gid', type : 'integer', value : 0,
+        description : 'soft-static allocation for the "dialout" group')
+ option('disk-gid', type : 'integer', value : 0,
+diff --git a/rules.d/50-udev-default.rules.in b/rules.d/50-udev-default.rules.in
+index 08b2de7047..9264b8e021 100644
+--- a/rules.d/50-udev-default.rules.in
++++ b/rules.d/50-udev-default.rules.in
+@@ -10,6 +10,7 @@ SUBSYSTEM=="block", KERNEL=="md*", ENV{ID_IGNORE_DISKSEQ}="1"
+ 
+ SUBSYSTEM=="virtio-ports", KERNEL=="vport*", ATTR{name}=="?*", SYMLINK+="virtio-ports/$attr{name}"
+ 
++SUBSYSTEM=="rtc", GROUP="clock", MODE="0660"
+ # select "system RTC" or just use the first one
+ SUBSYSTEM=="rtc", ATTR{hctosys}=="1", SYMLINK+="rtc"
+ SUBSYSTEM=="rtc", KERNEL=="rtc0", SYMLINK+="rtc", OPTIONS+="link_priority=-100"
+@@ -30,6 +31,7 @@ SUBSYSTEM=="pci|usb|platform", IMPORT{builtin}="path_id"
+ 
+ SUBSYSTEM=="net", IMPORT{builtin}="net_driver"
+ 
++SUBSYSTEM=="ptp", GROUP="clock", MODE="0660"
+ SUBSYSTEM=="ptp", ATTR{clock_name}=="KVM virtual PTP", SYMLINK+="ptp_kvm"
+ SUBSYSTEM=="ptp", ATTR{clock_name}=="hyperv", SYMLINK+="ptp_hyperv"
+ SUBSYSTEM=="ptp", ATTR{clock_name}=="s390 Physical Clock", SYMLINK+="ptp_s390_physical"
+diff --git a/sysusers.d/basic.conf.in b/sysusers.d/basic.conf.in
+index 992af346ca..baf31cb739 100644
+--- a/sysusers.d/basic.conf.in
++++ b/sysusers.d/basic.conf.in
+@@ -25,6 +25,7 @@ g utmp    {{UTMP_GID   }}     -            -
+ # Physical and virtual hardware access groups
+ g audio   {{AUDIO_GID  }}     -            -
+ g cdrom   {{CDROM_GID  }}     -            -
++g clock   {{CLOCK_GID  }}     -            -
+ g dialout {{DIALOUT_GID}}     -            -
+ g disk    {{DISK_GID   }}     -            -
+ g input   {{INPUT_GID  }}     -            -

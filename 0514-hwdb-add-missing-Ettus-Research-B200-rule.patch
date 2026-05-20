@@ -1,0 +1,28 @@
+From 14a249339749efc21cf6cf468510487c731192ff Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Thu, 11 Sep 2025 16:14:18 +0200
+Subject: [PATCH] hwdb: add missing Ettus Research B200 rule
+
+https://github.com/EttusResearch/uhd/blob/master/host/utils/uhd-usrp.rules#L18
+
+Not sure why it was missing.
+
+(cherry picked from commit 69442f94b58dd137e3d163b0ec0187f1a5c0ae13)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 9ae41601a2..7b885cac0b 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -59,6 +59,7 @@ usb:v2500p0002*
+ usb:v2500p0020*
+ usb:v2500p0021*
+ usb:v2500p0022*
++usb:v2500p0023*
+ usb:v3923p7813*
+ usb:v3923p7814*
+  ID_SOFTWARE_RADIO=1

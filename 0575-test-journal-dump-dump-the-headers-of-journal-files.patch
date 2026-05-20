@@ -1,0 +1,84 @@
+From 53118a0bc2f4855cb90ba24c674c3c6044ea6e3d Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Wed, 30 Jul 2025 11:33:35 +0200
+Subject: [PATCH] test-journal-dump: dump the headers of journal files
+
+We have journal_file_print_header(), but it's not exposed anywhere in
+a way that it is easy to call.
+
+(cherry picked from commit 58ecb72bcf5b2f25057d58fe52ce9717c0d07382)
+
+Resolves: RHEL-106795
+---
+ src/libsystemd/meson.build                    |  4 ++
+ src/libsystemd/sd-journal/test-journal-dump.c | 46 +++++++++++++++++++
+ 2 files changed, 50 insertions(+)
+ create mode 100644 src/libsystemd/sd-journal/test-journal-dump.c
+
+diff --git a/src/libsystemd/meson.build b/src/libsystemd/meson.build
+index fa28aa09fb..e5c8275fb0 100644
+--- a/src/libsystemd/meson.build
++++ b/src/libsystemd/meson.build
+@@ -291,6 +291,10 @@ libsystemd_tests += [
+                 'sources' : files('sd-journal/test-journal-append.c'),
+                 'type' : 'manual',
+         },
++        {
++                'sources' : files('sd-journal/test-journal-dump.c'),
++                'type' : 'manual',
++        },
+         {
+                 'sources' : files('sd-journal/test-journal-verify.c'),
+                 'timeout' : 90,
+diff --git a/src/libsystemd/sd-journal/test-journal-dump.c b/src/libsystemd/sd-journal/test-journal-dump.c
+new file mode 100644
+index 0000000000..bac2fb9a66
+--- /dev/null
++++ b/src/libsystemd/sd-journal/test-journal-dump.c
+@@ -0,0 +1,46 @@
++/* SPDX-License-Identifier: LGPL-2.1-or-later */
++
++#include "errno-util.h"
++#include "journal-file.h"
++#include "log.h"
++#include "main-func.h"
++#include "pager.h"
++#include "strv.h"
++
++static int run(int argc, char *argv[]) {
++        int r = 0;
++        unsigned n = 0;
++
++        _cleanup_(mmap_cache_unrefp) MMapCache *m = mmap_cache_new();
++        assert_se(m);
++
++        pager_open(/* flags= */ 0);
++
++        STRV_FOREACH(s, strv_skip(argv, 1)) {
++                JournalFile *f = NULL;
++
++                int k = journal_file_open(
++                                /* fd= */ -EBADF,
++                                *s,
++                                O_RDONLY,
++                                /* file_flags= */ 0,
++                                0666,
++                                /* compress_threshold_bytes= */ UINT64_MAX,
++                                /* metrics= */ NULL,
++                                m,
++                                /* template= */ NULL,
++                                &f);
++                if (k < 0)
++                        RET_GATHER(r, log_error_errno(k, "Failed to open %s, continuing: %m", *s));
++
++                if (n++ > 0)
++                        puts("");
++
++                journal_file_print_header(f);
++                journal_file_close(f);
++        }
++
++        return r;
++}
++
++DEFINE_MAIN_FUNCTION(run);

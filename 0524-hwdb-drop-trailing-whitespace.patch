@@ -1,0 +1,27 @@
+From 31206d6c5d671410e38e946eaf5a589fccf64d74 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Fri, 10 Oct 2025 12:19:04 +0200
+Subject: [PATCH] hwdb: drop trailing whitespace
+
+Fixup for 63254ed696d129cc46752e639ae761b758d7b251.
+
+(cherry picked from commit e06b9a1d5265d30061a431cadbdcfce9292c2e15)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 61dc4298c9..c325697151 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -779,7 +779,7 @@ sensor:modalias:acpi:*BOSC0200*:dmi:*:svnLENOVO*:pn80U1:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1
+ 
+ # Legion Go
+-sensor:modalias:platform:HID-SENSOR-200073:dmi:*svnLENOVO:pn83E1:* 
++sensor:modalias:platform:HID-SENSOR-200073:dmi:*svnLENOVO:pn83E1:*
+  ACCEL_MOUNT_MATRIX=0,1,0;-1,0,0;0,0,1
+ 
+ # Yoga 300-11IBR, display sensor

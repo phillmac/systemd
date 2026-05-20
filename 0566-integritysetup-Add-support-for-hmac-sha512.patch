@@ -1,0 +1,78 @@
+From 674e420bf7eac9e2fca698e0ff76b9db257f8bb2 Mon Sep 17 00:00:00 2001
+From: Ingo Franzki <ifranzki@linux.ibm.com>
+Date: Tue, 5 Mar 2024 08:28:40 +0100
+Subject: [PATCH] integritysetup: Add support for hmac-sha512
+
+Currently the only supported integrity algorithm using HMAC is 'hmac-sha256'.
+Add 'hmac-sha512' to the list of supported algorithms as well.
+
+(cherry picked from commit 7bf1cfe3b20037f3732d8854833b00f6a3511d95)
+
+Resolves: RHEL-27852
+---
+ man/integritytab.xml                | 6 +++---
+ src/integritysetup/integrity-util.c | 2 +-
+ src/integritysetup/integrity-util.h | 1 +
+ src/integritysetup/integritysetup.c | 2 ++
+ 4 files changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/man/integritytab.xml b/man/integritytab.xml
+index 32561e96f2..9fa34d8b0c 100644
+--- a/man/integritytab.xml
++++ b/man/integritytab.xml
+@@ -55,8 +55,8 @@
+ 
+     <para>The third field if present contains an absolute filename path to a key file or a <literal>-</literal>
+     to specify none.  When the filename is present, the "integrity-algorithm" defaults to <literal>hmac-sha256</literal>
+-    with the key length derived from the number of bytes in the key file.  At this time the only supported integrity algorithm
+-    when using key file is hmac-sha256.  The maximum size of the key file is 4096 bytes.
++    with the key length derived from the number of bytes in the key file.  At this time the only supported integrity algorithms
++    when using key file are hmac-sha256 and hmac-sha512.  The maximum size of the key file is 4096 bytes.
+     </para>
+ 
+      <para>The fourth field, if present, is a comma-delimited list of options or a <literal>-</literal> to specify none. The following options are
+@@ -125,7 +125,7 @@
+       </varlistentry>
+ 
+       <varlistentry>
+-        <term><option>integrity-algorithm=[crc32c|crc32|xxhash64|sha1|sha256|hmac-sha256]</option></term>
++        <term><option>integrity-algorithm=[crc32c|crc32|xxhash64|sha1|sha256|hmac-sha256|hmac-sha512]</option></term>
+ 
+         <listitem><para>
+         The algorithm used for integrity checking.  The default is crc32c. Must match option used during format.
+diff --git a/src/integritysetup/integrity-util.c b/src/integritysetup/integrity-util.c
+index 69f55c256d..fe79fe24fd 100644
+--- a/src/integritysetup/integrity-util.c
++++ b/src/integritysetup/integrity-util.c
+@@ -7,7 +7,7 @@
+ #include "percent-util.h"
+ 
+ static int supported_integrity_algorithm(char *user_supplied) {
+-        if (!STR_IN_SET(user_supplied, "crc32", "crc32c", "xxhash64", "sha1", "sha256", "hmac-sha256"))
++        if (!STR_IN_SET(user_supplied, "crc32", "crc32c", "xxhash64", "sha1", "sha256", "hmac-sha256", "hmac-sha512"))
+                 return log_error_errno(SYNTHETIC_ERRNO(EINVAL), "Unsupported integrity algorithm (%s)", user_supplied);
+         return 0;
+ }
+diff --git a/src/integritysetup/integrity-util.h b/src/integritysetup/integrity-util.h
+index 359d2556a4..f701b59273 100644
+--- a/src/integritysetup/integrity-util.h
++++ b/src/integritysetup/integrity-util.h
+@@ -15,4 +15,5 @@ int parse_integrity_options(
+                 char **ret_integrity_alg);
+ 
+ #define DM_HMAC_256 "hmac(sha256)"
++#define DM_HMAC_512 "hmac(sha512)"
+ #define DM_MAX_KEY_SIZE 4096            /* Maximum size of key allowed for dm-integrity */
+diff --git a/src/integritysetup/integritysetup.c b/src/integritysetup/integritysetup.c
+index a602886cb3..674131ed54 100644
+--- a/src/integritysetup/integritysetup.c
++++ b/src/integritysetup/integritysetup.c
+@@ -80,6 +80,8 @@ static const char *integrity_algorithm_select(const void *key_file_buf) {
+         if (arg_integrity_algorithm) {
+                 if (streq("hmac-sha256", arg_integrity_algorithm))
+                         return DM_HMAC_256;
++                if (streq("hmac-sha512", arg_integrity_algorithm))
++                        return DM_HMAC_512;
+                 return arg_integrity_algorithm;
+         } else if (key_file_buf)
+                 return DM_HMAC_256;

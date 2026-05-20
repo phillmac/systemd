@@ -1,0 +1,27 @@
+From 5e56183bbccb0e98e40098ce7a79e90afb4b068a Mon Sep 17 00:00:00 2001
+From: "Derek J. Clark" <derekjohn.clark@gmail.com>
+Date: Mon, 5 Jan 2026 20:07:21 -0800
+Subject: [PATCH] hwdb: Add missing vendor names for older AYANEO devices Adds
+ AYADEVICE and AYA NEO vendor names. Early founders editon and 2021 models
+ used these DMI values instead of AYANEO
+
+(cherry picked from commit 9573ad4e76d28b459123cfb4b5cffab474738ab3)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 82a04a8a8e..a760969574 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -320,6 +320,8 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnAYANEO:pnKUN:pvr*
+ # multi-scancode sequence. The specific preceding codes
+ # depend on the model, but the final scancode is always the
+ # same.
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnAYA NEO:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnAYADEVICE:*
+ evdev:name:AT Translated Set 2 keyboard:dmi:*:svnAYANEO:*
+  KEYBOARD_KEY_66=f15                                    # LC (All models)
+  KEYBOARD_KEY_67=f16                                    # RC (All models)

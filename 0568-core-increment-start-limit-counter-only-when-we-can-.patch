@@ -1,0 +1,456 @@
+From 3d5ed46c6a83e4b987aac568386fd16453b215d3 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 20 Oct 2025 19:40:28 +0900
+Subject: [PATCH] core: increment start limit counter only when we can start
+ the unit
+
+Otherwise, e.g. requesting to start a unit that is under stopping may
+enter the failed state.
+
+This makes
+- rename .can_start() -> .test_startable(), and make it allow to return
+  boolean and refuse to start units when it returns false,
+- refuse earlier to start units that are in the deactivating state, so
+  several redundant conditions in .start() can be dropped,
+- move checks for unit states mapped to UNIT_ACTIVATING from .start() to
+  .test_startable().
+
+Fixes #39247.
+
+(cherry picked from commit 8eefd0f4debc0bcfeea89dd39c43e3318f3f7ae7)
+
+Resolves: RHEL-115032
+---
+ src/core/automount.c                   |  6 ++--
+ src/core/mount.c                       | 23 +++++---------
+ src/core/path.c                        |  6 ++--
+ src/core/service.c                     | 24 ++++++---------
+ src/core/socket.c                      | 32 ++++++--------------
+ src/core/swap.c                        | 23 +++++---------
+ src/core/timer.c                       |  6 ++--
+ src/core/unit.c                        | 11 ++++---
+ src/core/unit.h                        |  4 +--
+ test/units/TEST-07-PID1.start-limit.sh | 42 ++++++++++++++++++++++++++
+ 10 files changed, 93 insertions(+), 84 deletions(-)
+ create mode 100755 test/units/TEST-07-PID1.start-limit.sh
+
+diff --git a/src/core/automount.c b/src/core/automount.c
+index ac81875442..6b888c2112 100644
+--- a/src/core/automount.c
++++ b/src/core/automount.c
+@@ -1040,7 +1040,7 @@ static bool automount_supported(void) {
+         return supported;
+ }
+ 
+-static int automount_can_start(Unit *u) {
++static int automount_test_startable(Unit *u) {
+         Automount *a = ASSERT_PTR(AUTOMOUNT(u));
+         int r;
+ 
+@@ -1050,7 +1050,7 @@ static int automount_can_start(Unit *u) {
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static const char* const automount_result_table[_AUTOMOUNT_RESULT_MAX] = {
+@@ -1116,5 +1116,5 @@ const UnitVTable automount_vtable = {
+                 },
+         },
+ 
+-        .can_start = automount_can_start,
++        .test_startable = automount_test_startable,
+ };
+diff --git a/src/core/mount.c b/src/core/mount.c
+index 4f7691626b..e5d02965be 100644
+--- a/src/core/mount.c
++++ b/src/core/mount.c
+@@ -1288,19 +1288,6 @@ static int mount_start(Unit *u) {
+         Mount *m = ASSERT_PTR(MOUNT(u));
+         int r;
+ 
+-        /* We cannot fulfill this request right now, try again later
+-         * please! */
+-        if (IN_SET(m->state,
+-                   MOUNT_UNMOUNTING,
+-                   MOUNT_UNMOUNTING_SIGTERM,
+-                   MOUNT_UNMOUNTING_SIGKILL,
+-                   MOUNT_CLEANING))
+-                return -EAGAIN;
+-
+-        /* Already on it! */
+-        if (IN_SET(m->state, MOUNT_MOUNTING, MOUNT_MOUNTING_DONE))
+-                return 0;
+-
+         assert(IN_SET(m->state, MOUNT_DEAD, MOUNT_FAILED));
+ 
+         r = unit_acquire_invocation_id(u);
+@@ -2292,17 +2279,21 @@ static int mount_can_clean(Unit *u, ExecCleanMask *ret) {
+         return exec_context_get_clean_mask(&m->exec_context, ret);
+ }
+ 
+-static int mount_can_start(Unit *u) {
++static int mount_test_startable(Unit *u) {
+         Mount *m = ASSERT_PTR(MOUNT(u));
+         int r;
+ 
++        /* It is already being started. */
++        if (IN_SET(m->state, MOUNT_MOUNTING, MOUNT_MOUNTING_DONE))
++                return false;
++
+         r = unit_test_start_limit(u);
+         if (r < 0) {
+                 mount_enter_dead(m, MOUNT_FAILURE_START_LIMIT_HIT, /* flush_result = */ false);
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static int mount_subsystem_ratelimited(Manager *m) {
+@@ -2467,7 +2458,7 @@ const UnitVTable mount_vtable = {
+                 },
+         },
+ 
+-        .can_start = mount_can_start,
++        .test_startable = mount_test_startable,
+ 
+         .notify_plymouth = true,
+ };
+diff --git a/src/core/path.c b/src/core/path.c
+index c9ea31a74e..1f8e2fe686 100644
+--- a/src/core/path.c
++++ b/src/core/path.c
+@@ -898,7 +898,7 @@ static void path_reset_failed(Unit *u) {
+         p->result = PATH_SUCCESS;
+ }
+ 
+-static int path_can_start(Unit *u) {
++static int path_test_startable(Unit *u) {
+         Path *p = ASSERT_PTR(PATH(u));
+         int r;
+ 
+@@ -908,7 +908,7 @@ static int path_can_start(Unit *u) {
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static void activation_details_path_done(ActivationDetails *details) {
+@@ -1042,7 +1042,7 @@ const UnitVTable path_vtable = {
+ 
+         .bus_set_property = bus_path_set_property,
+ 
+-        .can_start = path_can_start,
++        .test_startable = path_test_startable,
+ };
+ 
+ const ActivationDetailsVTable activation_details_path_vtable = {
+diff --git a/src/core/service.c b/src/core/service.c
+index 7d09bfc576..e1f3f2e012 100644
+--- a/src/core/service.c
++++ b/src/core/service.c
+@@ -2841,17 +2841,6 @@ static int service_start(Unit *u) {
+         Service *s = ASSERT_PTR(SERVICE(u));
+         int r;
+ 
+-        /* We cannot fulfill this request right now, try again later
+-         * please! */
+-        if (IN_SET(s->state,
+-                   SERVICE_STOP, SERVICE_STOP_WATCHDOG, SERVICE_STOP_SIGTERM, SERVICE_STOP_SIGKILL, SERVICE_STOP_POST,
+-                   SERVICE_FINAL_WATCHDOG, SERVICE_FINAL_SIGTERM, SERVICE_FINAL_SIGKILL, SERVICE_CLEANING))
+-                return -EAGAIN;
+-
+-        /* Already on it! */
+-        if (IN_SET(s->state, SERVICE_CONDITION, SERVICE_START_PRE, SERVICE_START, SERVICE_START_POST))
+-                return 0;
+-
+         if (s->state == SERVICE_AUTO_RESTART) {
+                 /* As mentioned in unit_start(), we allow manual starts to act as "hurry up" signals
+                  * for auto restart. We need to re-enqueue the job though, as the job type has changed
+@@ -5426,10 +5415,17 @@ static const char* service_finished_job(Unit *u, JobType t, JobResult result) {
+         return NULL;
+ }
+ 
+-static int service_can_start(Unit *u) {
++static int service_test_startable(Unit *u) {
+         Service *s = ASSERT_PTR(SERVICE(u));
+         int r;
+ 
++        /* First check the state, and do not increment start limit counter if the service cannot start due to
++         * that e.g. it is already being started. Note, the service states mapped to UNIT_ACTIVE,
++         * UNIT_RELOADING, UNIT_DEACTIVATING, UNIT_MAINTENANCE, and UNIT_REFRESHING are already filtered in
++         * unit_start(). Hence, here we only need to check states that mapped to UNIT_ACTIVATING. */
++        if (IN_SET(s->state, SERVICE_CONDITION, SERVICE_START_PRE, SERVICE_START, SERVICE_START_POST))
++                return false;
++
+         /* Make sure we don't enter a busy loop of some kind. */
+         r = unit_test_start_limit(u);
+         if (r < 0) {
+@@ -5437,7 +5433,7 @@ static int service_can_start(Unit *u) {
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static void service_release_resources(Unit *u) {
+@@ -5695,7 +5691,7 @@ const UnitVTable service_vtable = {
+                 .finished_job = service_finished_job,
+         },
+ 
+-        .can_start = service_can_start,
++        .test_startable = service_test_startable,
+ 
+         .notify_plymouth = true,
+ 
+diff --git a/src/core/socket.c b/src/core/socket.c
+index 1e224b2407..e52220ce3b 100644
+--- a/src/core/socket.c
++++ b/src/core/socket.c
+@@ -2474,25 +2474,6 @@ static int socket_start(Unit *u) {
+         Socket *s = ASSERT_PTR(SOCKET(u));
+         int r;
+ 
+-        /* We cannot fulfill this request right now, try again later
+-         * please! */
+-        if (IN_SET(s->state,
+-                   SOCKET_STOP_PRE,
+-                   SOCKET_STOP_PRE_SIGKILL,
+-                   SOCKET_STOP_PRE_SIGTERM,
+-                   SOCKET_STOP_POST,
+-                   SOCKET_FINAL_SIGTERM,
+-                   SOCKET_FINAL_SIGKILL,
+-                   SOCKET_CLEANING))
+-                return -EAGAIN;
+-
+-        /* Already on it! */
+-        if (IN_SET(s->state,
+-                   SOCKET_START_PRE,
+-                   SOCKET_START_CHOWN,
+-                   SOCKET_START_POST))
+-                return 0;
+-
+         /* Cannot run this without the service being around */
+         if (UNIT_ISSET(s->service)) {
+                 Service *service = ASSERT_PTR(SERVICE(UNIT_DEREF(s->service)));
+@@ -3497,17 +3478,24 @@ static int socket_can_clean(Unit *u, ExecCleanMask *ret) {
+         return exec_context_get_clean_mask(&s->exec_context, ret);
+ }
+ 
+-static int socket_can_start(Unit *u) {
++static int socket_test_startable(Unit *u) {
+         Socket *s = ASSERT_PTR(SOCKET(u));
+         int r;
+ 
++        /* It is already being started. */
++        if (IN_SET(s->state,
++                   SOCKET_START_PRE,
++                   SOCKET_START_CHOWN,
++                   SOCKET_START_POST))
++                return false;
++
+         r = unit_test_start_limit(u);
+         if (r < 0) {
+                 socket_enter_dead(s, SOCKET_FAILURE_START_LIMIT_HIT);
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static const char* const socket_exec_command_table[_SOCKET_EXEC_COMMAND_MAX] = {
+@@ -3638,5 +3626,5 @@ const UnitVTable socket_vtable = {
+                 },
+         },
+ 
+-        .can_start = socket_can_start,
++        .test_startable = socket_test_startable,
+ };
+diff --git a/src/core/swap.c b/src/core/swap.c
+index f2d1d5608c..eb596105ba 100644
+--- a/src/core/swap.c
++++ b/src/core/swap.c
+@@ -862,19 +862,6 @@ static int swap_start(Unit *u) {
+         int r;
+ 
+         assert(s);
+-
+-        /* We cannot fulfill this request right now, try again later please! */
+-        if (IN_SET(s->state,
+-                   SWAP_DEACTIVATING,
+-                   SWAP_DEACTIVATING_SIGTERM,
+-                   SWAP_DEACTIVATING_SIGKILL,
+-                   SWAP_CLEANING))
+-                return -EAGAIN;
+-
+-        /* Already on it! */
+-        if (s->state == SWAP_ACTIVATING)
+-                return 0;
+-
+         assert(IN_SET(s->state, SWAP_DEAD, SWAP_FAILED));
+ 
+         if (detect_container() > 0)
+@@ -1523,17 +1510,21 @@ static int swap_can_clean(Unit *u, ExecCleanMask *ret) {
+         return exec_context_get_clean_mask(&s->exec_context, ret);
+ }
+ 
+-static int swap_can_start(Unit *u) {
++static int swap_test_startable(Unit *u) {
+         Swap *s = ASSERT_PTR(SWAP(u));
+         int r;
+ 
++        /* It is already being started. */
++        if (s->state == SWAP_ACTIVATING)
++                return false;
++
+         r = unit_test_start_limit(u);
+         if (r < 0) {
+                 swap_enter_dead(s, SWAP_FAILURE_START_LIMIT_HIT);
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ int swap_get_priority(const Swap *s) {
+@@ -1654,7 +1645,7 @@ const UnitVTable swap_vtable = {
+                 },
+         },
+ 
+-        .can_start = swap_can_start,
++        .test_startable = swap_test_startable,
+ 
+         .notify_plymouth = true,
+ };
+diff --git a/src/core/timer.c b/src/core/timer.c
+index 4158a67b5e..a374236a2d 100644
+--- a/src/core/timer.c
++++ b/src/core/timer.c
+@@ -902,7 +902,7 @@ static int timer_can_clean(Unit *u, ExecCleanMask *ret) {
+         return 0;
+ }
+ 
+-static int timer_can_start(Unit *u) {
++static int timer_test_startable(Unit *u) {
+         Timer *t = ASSERT_PTR(TIMER(u));
+         int r;
+ 
+@@ -912,7 +912,7 @@ static int timer_can_start(Unit *u) {
+                 return r;
+         }
+ 
+-        return 1;
++        return true;
+ }
+ 
+ static void activation_details_timer_serialize(ActivationDetails *details, FILE *f) {
+@@ -1089,7 +1089,7 @@ const UnitVTable timer_vtable = {
+ 
+         .bus_set_property = bus_timer_set_property,
+ 
+-        .can_start = timer_can_start,
++        .test_startable = timer_test_startable,
+ };
+ 
+ const ActivationDetailsVTable activation_details_timer_vtable = {
+diff --git a/src/core/unit.c b/src/core/unit.c
+index 556ed0eefa..6b31599972 100644
+--- a/src/core/unit.c
++++ b/src/core/unit.c
+@@ -1895,7 +1895,7 @@ int unit_start(Unit *u, ActivationDetails *details) {
+         state = unit_active_state(u);
+         if (UNIT_IS_ACTIVE_OR_RELOADING(state))
+                 return -EALREADY;
+-        if (state == UNIT_MAINTENANCE)
++        if (IN_SET(state, UNIT_DEACTIVATING, UNIT_MAINTENANCE))
+                 return -EAGAIN;
+ 
+         /* Units that aren't loaded cannot be started */
+@@ -1942,10 +1942,11 @@ int unit_start(Unit *u, ActivationDetails *details) {
+         if (u->freezer_state != FREEZER_RUNNING)
+                 return -EDEADLK;
+ 
+-        /* Check our ability to start early so that failure conditions don't cause us to enter a busy loop. */
+-        if (UNIT_VTABLE(u)->can_start) {
+-                r = UNIT_VTABLE(u)->can_start(u);
+-                if (r < 0)
++        /* Check our ability to start early so that ratelimited or already starting/started units don't
++         * cause us to enter a busy loop. */
++        if (UNIT_VTABLE(u)->test_startable) {
++                r = UNIT_VTABLE(u)->test_startable(u);
++                if (r <= 0)
+                         return r;
+         }
+ 
+diff --git a/src/core/unit.h b/src/core/unit.h
+index b6f47c76d6..c47eabdaa7 100644
+--- a/src/core/unit.h
++++ b/src/core/unit.h
+@@ -710,8 +710,8 @@ typedef struct UnitVTable {
+         bool (*supported)(void);
+ 
+         /* If this function is set, it's invoked first as part of starting a unit to allow start rate
+-         * limiting checks to occur before we do anything else. */
+-        int (*can_start)(Unit *u);
++         * limiting checks and unit state checks to occur before we do anything else. */
++        int (*test_startable)(Unit *u);
+ 
+         /* Returns > 0 if the whole subsystem is ratelimited, and new start operations should not be started
+          * for this unit type right now. */
+diff --git a/test/units/TEST-07-PID1.start-limit.sh b/test/units/TEST-07-PID1.start-limit.sh
+new file mode 100755
+index 0000000000..f793d32876
+--- /dev/null
++++ b/test/units/TEST-07-PID1.start-limit.sh
+@@ -0,0 +1,42 @@
++#!/usr/bin/env bash
++# SPDX-License-Identifier: LGPL-2.1-or-later
++set -eux
++set -o pipefail
++
++# For issue #39247.
++
++at_exit() {
++    set +e
++
++    rm -rf /run/systemd/system/systemd-resolved.service.d/
++    systemctl daemon-reload
++    systemctl restart systemd-resolved.service
++}
++
++trap at_exit EXIT
++
++mkdir -p /run/systemd/system/systemd-resolved.service.d/
++cat >/run/systemd/system/systemd-resolved.service.d/99-start-limit.conf <<EOF
++[Unit]
++StartLimitBurst=5
++StartLimitInterval=30
++
++[Service]
++ExecStopPost=sleep 10
++EOF
++
++systemctl daemon-reload
++systemctl restart systemd-resolved.service
++systemctl reset-failed systemd-resolved.service
++systemctl status --no-pager systemd-resolved.service
++systemctl show systemd-resolved.service | grep StartLimit
++
++for i in {1..5}; do
++    echo "Start #$i"
++
++    systemctl stop --no-block systemd-resolved.service
++    if ! resolvectl; then
++        journalctl -o short-monotonic --no-hostname --no-pager -u systemd-resolved.service -n 15
++        exit 1
++    fi
++done

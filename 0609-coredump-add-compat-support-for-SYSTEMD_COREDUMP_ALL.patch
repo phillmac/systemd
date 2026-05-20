@@ -1,0 +1,40 @@
+From 0f03838ff135c027c249e8212f51957a4109cfc0 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Mon, 9 Jun 2025 15:22:33 +0200
+Subject: [PATCH] coredump: add compat support for
+ SYSTEMD_COREDUMP_ALLOW_NAMESPACE_CHANGE
+
+Set SYSTEMD_COREDUMP_ALLOW_NAMESPACE_CHANGE is an equivalent to
+EnterNamespace=yes in the configuration file.
+
+This compat support will be removed in RHEL-11.
+
+rhel-only: policy
+
+Related: RHEL-95219
+---
+ src/coredump/coredump.c | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 9665b3fe3e..0c51f62728 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -29,6 +29,7 @@
+ #include "coredump-vacuum.h"
+ #include "dirent-util.h"
+ #include "elf-util.h"
++#include "env-util.h"
+ #include "escape.h"
+ #include "fd-util.h"
+ #include "fileio.h"
+@@ -1812,6 +1813,9 @@ static int acquire_pid_mount_tree_fd(const Context *context, int *ret_fd) {
+         assert(context);
+         assert(ret_fd);
+ 
++        if (getenv_bool("SYSTEMD_COREDUMP_ALLOW_NAMESPACE_CHANGE") > 0)
++                arg_enter_namespace = true;
++
+         if (!arg_enter_namespace) {
+                 *ret_fd = -EHOSTDOWN;
+                 log_debug("EnterNamespace=no so we won't use mount tree of the crashed process for generating backtrace.");

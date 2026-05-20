@@ -1,0 +1,35 @@
+From bc638ff70f5e60655d1ed18da57ac414d099f36e Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Sun, 14 Dec 2025 23:16:10 +0100
+Subject: [PATCH] hwdb: sensor: Remove Lenovo IdeaPad Duet 3 accel mount matrix
+ (#40075)
+
+Same case as IdeaPad D330, matrix applied to solve issues in wayland
+compositors when is not the way because correct data is send by the
+sensor.
+
+As described in #39529, let's remove the matrix.
+
+(cherry picked from commit a0a64f6b673e877e9d78fd31b171d75388add6fa)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 5 -----
+ 1 file changed, 5 deletions(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index a0379abed0..177aee49a9 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -803,11 +803,6 @@ sensor:modalias:i2c:bmc150_accel:dmi:*:svnLENOVO:*:pvrLenovoYoga300-11IBR:*
+ sensor:modalias:acpi:ACCL0001*:dmi:*:svnLENOVO:pn60072:pvr851*:*
+  ACCEL_MOUNT_MATRIX=0, 1, 0; -1, 0, 0; 0, 0, 1
+ 
+-# IdeaPad Duet 3 10IGL5 (82AT) and 10IGL5-LTE (82HK)
+-sensor:modalias:acpi:SMO8B30*:dmi:*:svnLENOVO*:pn82AT:*
+-sensor:modalias:acpi:SMO8B30*:dmi:*:svnLENOVO*:pn82HK:*
+- ACCEL_MOUNT_MATRIX=0, 1, 0; -1, 0, 0; 0, 0, 1
+-
+ #########################################
+ # LINX
+ #########################################

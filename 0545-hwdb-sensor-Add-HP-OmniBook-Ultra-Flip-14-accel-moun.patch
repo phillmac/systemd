@@ -1,0 +1,31 @@
+From e7640818468bf9edd8ed54014bced2910d3e073c Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Sun, 14 Dec 2025 23:14:00 +0100
+Subject: [PATCH] hwdb: sensor: Add HP OmniBook Ultra Flip 14 accel mount
+ matrix (#40076)
+
+HP OmniBook Ultra Flip Laptop 14-fh0xxx tilt is inverted by default so
+screen tilt-face down is up and vice versa, invert the axis then.
+
+(cherry picked from commit 6855c4a7f74fc724f59503e47b72493cb044892e)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 19940da20c..a0379abed0 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -628,6 +628,10 @@ sensor:modalias:platform:lis3lv02d:dmi:*svn*Hewlett-Packard*:*
+ sensor:modalias:platform:lis3lv02d:dmi:*svn*HP*:*
+  ACCEL_LOCATION=base
+ 
++# HP OmniBook Ultra Flip Laptop 14-fh0xxx
++sensor:modalias:platform:HID-SENSOR-200073:dmi:*:svnHP:pnHPOmniBookUltraFlipLaptop14-fh0xxx:*
++ ACCEL_MOUNT_MATRIX=1, 0, 0; 0, 1, 0; 0, 0, -1
++
+ sensor:modalias:acpi:SMO8500*:dmi:*:svnHewlett-Packard:pnHPStream7Tablet:*
+ sensor:modalias:acpi:SMO8500*:dmi:*:svnHewlett-Packard:pnHPStream8Tablet:*
+  ACCEL_MOUNT_MATRIX=0, 1, 0; 1, 0, 0; 0, 0, 1

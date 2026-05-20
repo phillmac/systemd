@@ -1,0 +1,26 @@
+From bdbfe972548a78d6ac81986ccb70f54142fdd770 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 23:27:54 +0100
+Subject: [PATCH] update TODO
+
+(cherry picked from commit 35121184993fa7c9937a5c9654db3e64d5cb0815)
+
+Related: RHEL-143036
+---
+ TODO | 3 ---
+ 1 file changed, 3 deletions(-)
+
+diff --git a/TODO b/TODO
+index a20eb2c61e..d6c2cef2f1 100644
+--- a/TODO
++++ b/TODO
+@@ -1601,9 +1601,6 @@ Features:
+ * add growvol and makevol options for /etc/crypttab, similar to
+   x-systemd.growfs and x-systemd-makefs.
+ 
+-* userdb: allow username prefix searches in varlink API, allow realname and
+-  realname substr searches in varlink API
+-
+ * userdb: allow uid/gid range checks
+ 
+ * userdb: allow existence checks

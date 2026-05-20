@@ -1,0 +1,34 @@
+From b9f559717590db33f965a29ed245eb0a058746d1 Mon Sep 17 00:00:00 2001
+From: Armin Wolf <W_Armin@gmx.de>
+Date: Mon, 17 Nov 2025 04:02:28 +0100
+Subject: [PATCH] keymap: Ignore brightness keys on Dell Inspiron 3505 to avoid
+ double events
+
+On the Dell Inspiron 3505 both the atkbd and acpi-video input devices report
+an event for pressing the brightness up / down keys, resulting in user
+space seeing double events and increasing / decreasing the brightness 2 steps
+for each keypress.
+
+Fix this by adding the device to the already existing list of Dell
+devices that suffer from the same problem.
+
+Signed-off-by: Armin Wolf <W_Armin@gmx.de>
+(cherry picked from commit 2fc4278b969f95949f872e07280f4c310c9d9924)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index 8b5bc775fd..c2976deea4 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -444,6 +444,7 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnDell*:pnInspiron11-3168:pvr*
+ 
+ # Dell Inspiron 1520 and Latitude 2110
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnDell*:pnInspiron*1520:*
++evdev:atkbd:dmi:bvn*:bvr*:bd*:svnDell*:pnInspiron*3505:*
+ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnDell*:pnLatitude*2110:*
+  KEYBOARD_KEY_85=unknown  # Brightness Down, also emitted by acpi-video, ignore
+  KEYBOARD_KEY_86=unknown  # Brightness Up, also emitted by acpi-video, ignore

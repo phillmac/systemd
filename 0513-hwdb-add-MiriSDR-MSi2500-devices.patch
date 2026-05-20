@@ -1,0 +1,30 @@
+From 08d191a8f240cd5ced65bef1003173e982b055f7 Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Thu, 11 Sep 2025 02:38:06 +0200
+Subject: [PATCH] hwdb: add MiriSDR MSi2500 devices
+
+(cherry picked from commit 11c58b6774134fc06fb833ea1720fc0f5ca73453)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 7d4138fdc1..9ae41601a2 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -92,6 +92,13 @@ usb:v1D50p6089*
+ usb:v04B4p325C*
+  ID_SOFTWARE_RADIO=1
+ 
++##########################################
++# MiriSDR
++##########################################
++# Mirics MSi2500 default (e.g. VTX3D card)
++usb:v1DF7p2500*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # Nuand
+ ##########################################

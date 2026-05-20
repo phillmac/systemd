@@ -1,0 +1,39 @@
+From e9e9f36cc97fa78787305f8b4939a6b39b6b8154 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Wed, 10 Dec 2025 05:18:01 +0100
+Subject: [PATCH] hwdb: sensor: Remove Lenovo IdeaPad D330 accel mount matrix
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Reading values from iio-sensor we are getting bad values. This matrix was added because the panel was a vertical one but the normal position is horizontal and the sensor is not bad oriented.
+
+Removing the matrix ensure we have correct orientation values and prevent from misleads where the incorrect values we were getting messed up.
+
+For example mutter actually is setting incorrect screen rotation for devices with panel orientation quirks.
+
+I'm pretty sure that there are more devices where we have incorrectly "corrected" the sensor values when the only problem was the panel orientation.
+
+Signed-off-by: David Santamaría Rogado <howl.nsp@gmail.com>
+(cherry picked from commit a07b184e8ccbecafc1fce5a0cfffe87c6a497134)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 4 ----
+ 1 file changed, 4 deletions(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 12bfc890aa..870ef879bb 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -756,10 +756,6 @@ sensor:modalias:acpi:BMA250E*:dmi:bvnLENOVO:*:pvrLenovoMIIX3-1030:*
+ sensor:modalias:acpi:SMO8500*:dmi:bvnLENOVO:*:pvrLenovoMIIX3-830:*
+  ACCEL_MOUNT_MATRIX=-1, 0, 0; 0, 1, 0; 0, 0, 1
+ 
+-# IdeaPad D330-10IGM (both 81H3 and 81MD product names)
+-sensor:modalias:acpi:BOSC0200*:dmi:*:svnLENOVO:*:pvrLenovoideapadD330-10IGM:*
+- ACCEL_MOUNT_MATRIX=0, 1, 0; -1, 0, 0; 0, 0, 1
+-
+ # IdeaPad Miix 300
+ sensor:modalias:acpi:SMO8500*:dmi:bvnLENOVO:*:pvrMIIX300-*:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1

@@ -1,0 +1,34 @@
+From 764786b83c0729765ed529bf1169cf08fb2e9912 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekletar@users.noreply.github.com>
+Date: Wed, 20 Aug 2025 12:42:30 +0200
+Subject: [PATCH] coredump: drop RestrictSUIDSGID= option (#38640)
+
+systemd-coredump sandbox already has ProtectSystem=strict hence all non
+API filesystems are made read-only, thus RestrictSUIDSGID= doesn't buy
+us much.
+
+On top of that systemd-coredump's EnterNamespace= feature requires
+openat2() to work correctly and that is implicitly blocked by
+RestrictSUIDSGID=.
+
+Follow-up for 8f8148cb08bf9f2c0e1f7fe6a5e6eb383115957b
+
+(cherry picked from commit fb56da5b6eb80f4400ea7241fa98d90d245d7fde)
+
+Resolves: RHEL-113920
+---
+ units/systemd-coredump@.service.in | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/units/systemd-coredump@.service.in b/units/systemd-coredump@.service.in
+index c74dc7a5a1..f492c826fe 100644
+--- a/units/systemd-coredump@.service.in
++++ b/units/systemd-coredump@.service.in
+@@ -36,7 +36,6 @@ ProtectKernelLogs=yes
+ ProtectSystem=strict
+ RestrictAddressFamilies=AF_UNIX
+ RestrictRealtime=yes
+-RestrictSUIDSGID=yes
+ RuntimeMaxSec=5min
+ StateDirectory=systemd/coredump
+ SystemCallArchitectures=native

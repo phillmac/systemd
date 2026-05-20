@@ -1,0 +1,98 @@
+From d3f7e897bec268e21b83670c8e1e9c5d11b801de Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Tue, 23 Sep 2025 14:28:33 +0200
+Subject: [PATCH] test: rename TEST-53-ISSUE-16347 to TEST-53-TIMER
+
+And split the existing test into a separate subtest.
+
+(cherry picked from commit 953c347fb6f293acbd6da009646bfc071b68ddd7)
+
+Related: RHEL-118216
+---
+ .../meson.build                                      |  0
+ .../mkosi.configure                                  |  0
+ test/meson.build                                     |  2 +-
+ ...3-ISSUE-16347.sh => TEST-53-TIMER.issue-16347.sh} | 12 ++++--------
+ test/units/TEST-53-TIMER.sh                          | 11 +++++++++++
+ 5 files changed, 16 insertions(+), 9 deletions(-)
+ rename test/{TEST-53-ISSUE-16347 => TEST-53-TIMER}/meson.build (100%)
+ rename test/{TEST-53-ISSUE-16347 => TEST-53-TIMER}/mkosi.configure (100%)
+ rename test/units/{TEST-53-ISSUE-16347.sh => TEST-53-TIMER.issue-16347.sh} (82%)
+ create mode 100755 test/units/TEST-53-TIMER.sh
+
+diff --git a/test/TEST-53-ISSUE-16347/meson.build b/test/TEST-53-TIMER/meson.build
+similarity index 100%
+rename from test/TEST-53-ISSUE-16347/meson.build
+rename to test/TEST-53-TIMER/meson.build
+diff --git a/test/TEST-53-ISSUE-16347/mkosi.configure b/test/TEST-53-TIMER/mkosi.configure
+similarity index 100%
+rename from test/TEST-53-ISSUE-16347/mkosi.configure
+rename to test/TEST-53-TIMER/mkosi.configure
+diff --git a/test/meson.build b/test/meson.build
+index 8775a3a3df..c440bcb722 100644
+--- a/test/meson.build
++++ b/test/meson.build
+@@ -351,7 +351,7 @@ foreach dirname : [
+ #        'TEST-46-HOMED', # we don't ship systemd-homed
+         'TEST-50-DISSECT',
+         'TEST-52-HONORFIRSTSHUTDOWN',
+-        'TEST-53-ISSUE-16347',
++        'TEST-53-TIMER',
+         'TEST-54-CREDS',
+         'TEST-55-OOMD',
+         'TEST-58-REPART',
+diff --git a/test/units/TEST-53-ISSUE-16347.sh b/test/units/TEST-53-TIMER.issue-16347.sh
+similarity index 82%
+rename from test/units/TEST-53-ISSUE-16347.sh
+rename to test/units/TEST-53-TIMER.issue-16347.sh
+index 84cd66129d..8b266145cd 100755
+--- a/test/units/TEST-53-ISSUE-16347.sh
++++ b/test/units/TEST-53-TIMER.issue-16347.sh
+@@ -3,10 +3,9 @@
+ set -eux
+ set -o pipefail
+ 
+-: >/failed
+-
+ # Reset host date to current time, 3 days in the past.
+ date -s "-3 days"
++trap 'date -s "+3 days"' EXIT
+ 
+ # Run a timer for every 15 minutes.
+ systemd-run --unit test-timer --on-calendar "*:0/15:0" true
+@@ -17,15 +16,12 @@ now=$(date +%s)
+ time_delta=$((next_elapsed - now))
+ 
+ # Check that the timer will elapse in less than 20 minutes.
+-((0 < time_delta && time_delta < 1200)) || {
++if [[ "$time_delta" -lt 0 || "$time_delta" -gt 1200 ]]; then
+     echo 'Timer elapse outside of the expected 20 minute window.'
+     echo "  next_elapsed=${next_elapsed}"
+     echo "  now=${now}"
+     echo "  time_delta=${time_delta}"
+-    echo ''
+-} >>/failed
++    echo
+ 
+-if test ! -s /failed ; then
+-    rm -f /failed
+-    touch /testok
++    exit 1
+ fi
+diff --git a/test/units/TEST-53-TIMER.sh b/test/units/TEST-53-TIMER.sh
+new file mode 100755
+index 0000000000..9c2a033aa9
+--- /dev/null
++++ b/test/units/TEST-53-TIMER.sh
+@@ -0,0 +1,11 @@
++#!/usr/bin/env bash
++# SPDX-License-Identifier: LGPL-2.1-or-later
++set -eux
++set -o pipefail
++
++# shellcheck source=test/units/test-control.sh
++. "$(dirname "$0")"/test-control.sh
++
++run_subtests
++
++touch /testok

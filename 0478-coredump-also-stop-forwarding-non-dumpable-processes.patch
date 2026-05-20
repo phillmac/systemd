@@ -1,0 +1,52 @@
+From c4112c747b8efc7d2704daddedcc1d0816580359 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Zbigniew=20J=C4=99drzejewski-Szmek?= <zbyszek@in.waw.pl>
+Date: Mon, 5 May 2025 15:48:40 +0200
+Subject: [PATCH] coredump: also stop forwarding non-dumpable processes
+
+See the comment in the patch for details.
+
+Suggested-by: Qualys Security Advisory <qsa@qualys.com>
+
+(cherry picked from commit 8fc7b2a211eb13ef1a94250b28e1c79cab8bdcb9)
+
+Related: RHEL-104135
+---
+ src/coredump/coredump.c | 15 +++++++++++++--
+ 1 file changed, 13 insertions(+), 2 deletions(-)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index 19d4d02437..048eb53546 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -1560,10 +1560,21 @@ static int receive_ucred(int transport_fd, struct ucred *ret_ucred) {
+         return 0;
+ }
+ 
+-static int can_forward_coredump(pid_t pid) {
++static int can_forward_coredump(Context *context, pid_t pid) {
+         _cleanup_free_ char *cgroup = NULL, *path = NULL, *unit = NULL;
+         int r;
+ 
++        assert(context);
++
++        /* We don't use %F/pidfd to pin down the crashed process yet. We need to avoid a situation where the
++         * attacker crashes a SUID process or a root daemon and quickly replaces it with a namespaced process
++         * and we forward the initial part of the coredump to the attacker, inside the namespace.
++         *
++         * TODO: relax this check when %F is implemented and used.
++         */
++        if (context->dumpable != 1)
++                return false;
++
+         r = cg_pid_get_path(SYSTEMD_CGROUP_CONTROLLER, pid, &cgroup);
+         if (r < 0)
+                 return r;
+@@ -1607,7 +1618,7 @@ static int forward_coredump_to_container(Context *context) {
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to get namespace leader: %m");
+ 
+-        r = can_forward_coredump(leader_pid);
++        r = can_forward_coredump(context, leader_pid);
+         if (r < 0)
+                 return log_debug_errno(r, "Failed to check if coredump can be forwarded: %m");
+         if (r == 0)

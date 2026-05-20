@@ -1,0 +1,30 @@
+From b91f9505282461d35cdcb304a0326b8f7ad22e38 Mon Sep 17 00:00:00 2001
+From: smosia <0stas0@mail.ru>
+Date: Sat, 27 Dec 2025 14:22:27 +0300
+Subject: [PATCH] hwdb: touchpad config for Apple MacbookPro12,1 Early 2015
+
+(cherry picked from commit 4a0743e3983a2156ffa941a2c5f889c0c0d41920)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-evdev.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/60-evdev.hwdb b/hwdb.d/60-evdev.hwdb
+index 23caebe4b9..57b349bff3 100644
+--- a/hwdb.d/60-evdev.hwdb
++++ b/hwdb.d/60-evdev.hwdb
+@@ -132,6 +132,13 @@ evdev:input:b0003v05ACp025B*
+  EVDEV_ABS_35=::94
+  EVDEV_ABS_36=::92
+ 
++# MacbookPro12,1 (unibody, Early 2015)
++evdev:input:b0003v05ACp0273*
++ EVDEV_ABS_00=::97
++ EVDEV_ABS_01=::92
++ EVDEV_ABS_35=::97
++ EVDEV_ABS_36=::92
++
+ # MacBook8,1 (2015), MacBook9,1 (2016), MacBook10,1 (2017)
+ evdev:name:Apple SPI Touchpad:dmi:*:svnAppleInc.:pnMacBook8,1:*
+ evdev:name:Apple SPI Touchpad:dmi:*:svnAppleInc.:pnMacBook9,1:*

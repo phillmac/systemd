@@ -1,0 +1,52 @@
+From 551f1d97a7a038538dc1da50c8b6d8f25c6c236b Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 28 Jan 2025 10:09:32 +0900
+Subject: [PATCH] core/unit: remove path to transient unit file from unit name
+ maps on stop
+
+Fixes #35190.
+
+(cherry picked from commit fce94c5c563b8f6ede2b8f7f283d2d2faff4e062)
+
+Resolves: RHEL-126937
+---
+ src/core/unit.c | 15 ++++++++++++---
+ 1 file changed, 12 insertions(+), 3 deletions(-)
+
+diff --git a/src/core/unit.c b/src/core/unit.c
+index 01e4d3a64f..556ed0eefa 100644
+--- a/src/core/unit.c
++++ b/src/core/unit.c
+@@ -648,13 +648,11 @@ static void unit_clear_dependencies(Unit *u) {
+ 
+ static void unit_remove_transient(Unit *u) {
+         assert(u);
++        assert(u->manager);
+ 
+         if (!u->transient)
+                 return;
+ 
+-        if (u->fragment_path)
+-                (void) unlink(u->fragment_path);
+-
+         STRV_FOREACH(i, u->dropin_paths) {
+                 _cleanup_free_ char *p = NULL, *pp = NULL;
+ 
+@@ -671,6 +669,17 @@ static void unit_remove_transient(Unit *u) {
+                 (void) unlink(*i);
+                 (void) rmdir(p);
+         }
++
++        if (u->fragment_path) {
++                (void) unlink(u->fragment_path);
++                (void) unit_file_remove_from_name_map(
++                                &u->manager->lookup_paths,
++                                &u->manager->unit_cache_timestamp_hash,
++                                &u->manager->unit_id_map,
++                                &u->manager->unit_name_map,
++                                &u->manager->unit_path_cache,
++                                u->fragment_path);
++        }
+ }
+ 
+ static void unit_free_mounts_for(Unit *u) {

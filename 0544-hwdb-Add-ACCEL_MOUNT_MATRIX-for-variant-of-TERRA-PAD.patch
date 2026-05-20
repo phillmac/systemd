@@ -1,0 +1,35 @@
+From c025c989c4f92f314ba9fa96159c18af8e610078 Mon Sep 17 00:00:00 2001
+From: 0x06 <56885523+0x000006@users.noreply.github.com>
+Date: Thu, 11 Dec 2025 23:53:51 +0100
+Subject: [PATCH] hwdb: Add ACCEL_MOUNT_MATRIX for variant of TERRA PAD 1061
+
+Tested with monitor-sensor
+
+(cherry picked from commit 85e6b9838016abe7fc78e57d7da029affc38b800)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 870ef879bb..19940da20c 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -1254,9 +1254,16 @@ sensor:modalias:acpi:SMO8500*:dmi:bvnAmericanMegatrendsInc.:bvr5.6.5:bd11/20/201
+ #########################################
+ # Wortmann
+ #########################################
++
++# Wortmann AG TERRA PAD 1061
+ sensor:modalias:acpi:KIOX000A*:dmi:*:svnWortmann_AG:pnTERRA_PAD_1061:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; 1, 0, 0; 0, 0, -1
+ 
++# Wortmann AG TERRA PAD 1061
++# This is a variant with another sensor.
++sensor:modalias:acpi:SMO8500*:dmi:*:svnWortmann_AG:pnTERRA_PAD_1061:*
++ ACCEL_MOUNT_MATRIX=0, -1, 0; 1, 0, 0; 0, 0, 1
++
+ #########################################
+ # Yours
+ #########################################

@@ -1,0 +1,50 @@
+From bff1d44ba3d110b61ad087522f9baca5f531890c Mon Sep 17 00:00:00 2001
+From: David Tardon <dtardon@redhat.com>
+Date: Tue, 27 Jan 2026 14:41:27 +0100
+Subject: [PATCH] test: fix test with -Dnetworkd=false
+
+User and group systemd-network are created from
+sysusers.d/systemd-network.conf, which is only copied into the test
+image when building with -Dnetworkd=true. This means that if
+-Dnetworkd=false is used, the user and the group don't exist, which
+causes the test to fail.
+
+Use a locally created user and group to avoid that.
+
+(cherry picked from commit a11278ce639c67d08c737b31f5b2d5dcf6a420b5)
+
+Related: RHEL-143029
+---
+ test/units/TEST-74-AUX-UTILS.userdbctl.sh | 16 ++++++++++++++--
+ 1 file changed, 14 insertions(+), 2 deletions(-)
+
+diff --git a/test/units/TEST-74-AUX-UTILS.userdbctl.sh b/test/units/TEST-74-AUX-UTILS.userdbctl.sh
+index e4d21c2006..c6ecc4ea63 100755
+--- a/test/units/TEST-74-AUX-UTILS.userdbctl.sh
++++ b/test/units/TEST-74-AUX-UTILS.userdbctl.sh
+@@ -6,11 +6,23 @@ set -o pipefail
+ # shellcheck source=test/units/util.sh
+ . "$(dirname "$0")"/util.sh
+ 
++cleanup() {
++    set +e
++    userdel -r test-74-userdbctl
++    groupdel test-74-userdbctl
++}
++
++trap cleanup EXIT
++
++systemd-sysusers - <<EOF
++u test-74-userdbctl - "Test user for TEST-74-AUX-UTILS.userdbctl.sh" / /bin/bash
++EOF
++
+ # Make sure that -F shows same data as if we'd ask directly
+ userdbctl user root -j | userdbctl -F- user  | cmp - <(userdbctl user root)
+-userdbctl user systemd-network -j | userdbctl -F- user  | cmp - <(userdbctl user systemd-network)
++userdbctl user test-74-userdbctl -j | userdbctl -F- user  | cmp - <(userdbctl user test-74-userdbctl)
+ userdbctl user 65534 -j | userdbctl -F- user  | cmp - <(userdbctl user 65534)
+ 
+ userdbctl group root -j | userdbctl -F- group  | cmp - <(userdbctl group root)
+-userdbctl group systemd-network -j | userdbctl -F- group  | cmp - <(userdbctl group systemd-network)
++userdbctl group test-74-userdbctl -j | userdbctl -F- group  | cmp - <(userdbctl group test-74-userdbctl)
+ userdbctl group 65534 -j | userdbctl -F- group  | cmp - <(userdbctl group 65534)

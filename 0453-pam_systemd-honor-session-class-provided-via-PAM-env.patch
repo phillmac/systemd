@@ -1,0 +1,87 @@
+From f3a6a5afc55b525dc8796ba34097a4db49b852a0 Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Mon, 25 Aug 2025 15:09:36 +0200
+Subject: [PATCH] pam_systemd: honor session class provided via PAM environment
+
+Replaces #38638
+
+Co-authored-by: Lennart Poettering <lennart@poettering.net>
+(cherry picked from commit cf2630acaa87ded5ad99ea30ed4bd895e71ca503)
+
+Resolves: RHEL-109832
+---
+ man/pam_systemd.xml     | 13 +++++++++++++
+ src/login/pam_systemd.c | 13 +++++++++----
+ 2 files changed, 22 insertions(+), 4 deletions(-)
+
+diff --git a/man/pam_systemd.xml b/man/pam_systemd.xml
+index 183b37d676..3cc25bdf5b 100644
+--- a/man/pam_systemd.xml
++++ b/man/pam_systemd.xml
+@@ -147,6 +147,19 @@
+           </tgroup>
+         </table>
+ 
++        <para>If no session class is specified via either the PAM module option or via the
++        <varname>$XDG_SESSION_CLASS</varname> environment variable, the class is automatically chosen, depending on
++        various session parameters, such as the session type (if known), whether the session has a TTY or X11
++        display, and the user disposition. Note that various tools allow setting the session class for newly
++        allocated PAM sessions explicitly by means of the <varname>$XDG_SESSION_CLASS</varname> environment variable.
++        For example, classic UNIX cronjobs support environment variable assignments (see
++        <citerefentry project='man-pages'><refentrytitle>crontab</refentrytitle><manvolnum>5</manvolnum></citerefentry>),
++        which may be used to choose between the <constant>background</constant> and
++        <constant>background-light</constant> session class individually per cronjob, or
++        <command>run0 --setenv=XDG_SESSION_CLASS=user-light</command> may be used
++        to choose between <constant>user</constant> and <constant>user-light</constant> for invoked privileged sessions.
++        </para>
++
+         <xi:include href="version-info.xml" xpointer="v197"/></listitem>
+       </varlistentry>
+ 
+diff --git a/src/login/pam_systemd.c b/src/login/pam_systemd.c
+index 7cc64144eb..b3c84a835e 100644
+--- a/src/login/pam_systemd.c
++++ b/src/login/pam_systemd.c
+@@ -997,12 +997,14 @@ _public_ PAM_EXTERN int pam_sm_open_session(
+         desktop = getenv_harder(handle, "XDG_SESSION_DESKTOP", desktop_pam);
+         incomplete = getenv_harder_bool(handle, "XDG_SESSION_INCOMPLETE", false);
+ 
++        /* The session class can be overridden via the PAM environment, and we try to honor that selection. */
+         if (streq_ptr(service, "systemd-user")) {
+                 /* If we detect that we are running in the "systemd-user" PAM stack, then let's patch the class to
+                  * 'manager' if not set, simply for robustness reasons. */
+                 type = "unspecified";
+-                class = IN_SET(user_record_disposition(ur), USER_INTRINSIC, USER_SYSTEM, USER_DYNAMIC) ?
+-                        "manager-early" : "manager";
++                if (isempty(class))
++                        class = IN_SET(user_record_disposition(ur), USER_INTRINSIC, USER_SYSTEM, USER_DYNAMIC) ?
++                                "manager-early" : "manager";
+                 tty = NULL;
+ 
+         } else if (tty && strchr(tty, ':')) {
+@@ -1018,20 +1020,23 @@ _public_ PAM_EXTERN int pam_sm_open_session(
+                  * (as they otherwise even try to update it!) — but cron doesn't actually allocate a TTY for its forked
+                  * off processes.) */
+                 type = "unspecified";
+-                class = "background";
++                if (isempty(class))
++                        class = "background";
+                 tty = NULL;
+ 
+         } else if (streq_ptr(tty, "ssh")) {
+                 /* ssh has been setting PAM_TTY to "ssh" (for the same reason as cron does this, see above. For further
+                  * details look for "PAM_TTY_KLUDGE" in the openssh sources). */
+                 type = "tty";
+-                class = "user";
++                if (isempty(class))
++                        class = "user";
+                 tty = NULL; /* This one is particularly sad, as this means that ssh sessions — even though usually
+                              * associated with a pty — won't be tracked by their tty in logind. This is because ssh
+                              * does the PAM session registration early for new connections, and registers a pty only
+                              * much later (this is because it doesn't know yet if it needs one at all, as whether to
+                              * register a pty or not is negotiated much later in the protocol). */
+ 
++
+         } else if (tty)
+                 /* Chop off leading /dev prefix that some clients specify, but others do not. */
+                 tty = skip_dev_prefix(tty);

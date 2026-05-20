@@ -1,0 +1,4390 @@
+From ff17e618978e0d9796baed349e459600476be84e Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Wed, 17 Sep 2025 09:41:25 +0100
+Subject: [PATCH] hwdb: update
+
+ninja -C build update-hwdb
+
+(cherry picked from commit 106bdd888be2862184b1c48bf869f880929f0ebd)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/20-OUI.hwdb               | 433 ++++++++++++++++++++---
+ hwdb.d/20-acpi-vendor.hwdb       |   3 +
+ hwdb.d/20-acpi-vendor.hwdb.patch |  96 ++---
+ hwdb.d/20-usb-vendor-model.hwdb  |  21 ++
+ hwdb.d/acpi_id_registry.csv      |   3 +-
+ hwdb.d/ma-large.txt              | 517 +++++++++++++++++++++++++--
+ hwdb.d/ma-medium.txt             | 529 +++++++++++++++++-----------
+ hwdb.d/ma-small.txt              | 587 ++++++++++++++++++-------------
+ hwdb.d/usb.ids                   |  11 +-
+ 9 files changed, 1641 insertions(+), 559 deletions(-)
+
+diff --git a/hwdb.d/20-OUI.hwdb b/hwdb.d/20-OUI.hwdb
+index a6eef8ed62..ead3160b7f 100644
+--- a/hwdb.d/20-OUI.hwdb
++++ b/hwdb.d/20-OUI.hwdb
+@@ -11016,7 +11016,7 @@ OUI:000E71*
+  ID_OUI_FROM_DATABASE=Gemstar Technology Development Ltd.
+ 
+ OUI:000E72*
+- ID_OUI_FROM_DATABASE=Arca Technologies S.r.l.
++ ID_OUI_FROM_DATABASE=Sesami Technologies Srl
+ 
+ OUI:000E73*
+  ID_OUI_FROM_DATABASE=Tpack A/S
+@@ -39686,6 +39686,9 @@ OUI:00E5E4*
+ OUI:00E5F1*
+  ID_OUI_FROM_DATABASE=BUFFALO.INC
+ 
++OUI:00E607*
++ ID_OUI_FROM_DATABASE=AURCORE TECHNOLOGY INC.
++
+ OUI:00E60E*
+  ID_OUI_FROM_DATABASE=Extreme Networks Headquarters
+ 
+@@ -40118,6 +40121,9 @@ OUI:042DAD*
+ OUI:042DB4*
+  ID_OUI_FROM_DATABASE=First Property (Beijing) Co., Ltd Modern MOMA Branch
+ 
++OUI:042EC1*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:042F56*
+  ID_OUI_FROM_DATABASE=ATOCS (Shenzhen) LTD
+ 
+@@ -40368,7 +40374,7 @@ OUI:04585DD*
+  ID_OUI_FROM_DATABASE=HDS Otomasyon Güvenlik ve Yazılım Teknolojileri Sanayi Ticaret Limited Şirketi
+ 
+ OUI:04585DE*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:04586F*
+  ID_OUI_FROM_DATABASE=Sichuan Whayer information industry Co.,LTD
+@@ -40517,6 +40523,9 @@ OUI:047153*
+ OUI:047295*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
++OUI:0472EF*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:04749E*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -40713,7 +40722,7 @@ OUI:04A151*
+  ID_OUI_FROM_DATABASE=NETGEAR
+ 
+ OUI:04A16F0*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:04A16F1*
+  ID_OUI_FROM_DATABASE=iENSO Inc.
+@@ -41171,6 +41180,9 @@ OUI:04D590*
+ OUI:04D60E*
+  ID_OUI_FROM_DATABASE=FUNAI ELECTRIC CO., LTD.
+ 
++OUI:04D688*
++ ID_OUI_FROM_DATABASE=CIG SHANGHAI CO LTD
++
+ OUI:04D6AA*
+  ID_OUI_FROM_DATABASE=SAMSUNG ELECTRO-MECHANICS(THAILAND)
+ 
+@@ -41331,7 +41343,7 @@ OUI:04EEE86*
+  ID_OUI_FROM_DATABASE=NALSSEN INC.
+ 
+ OUI:04EEE87*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:04EEE88*
+  ID_OUI_FROM_DATABASE=MPEON Co.,Ltd
+@@ -42185,6 +42197,9 @@ OUI:083AB8*
+ OUI:083AF2*
+  ID_OUI_FROM_DATABASE=Espressif Inc.
+ 
++OUI:083BC1*
++ ID_OUI_FROM_DATABASE=Hangzhou Hikvision Digital Technology Co.,Ltd.
++
+ OUI:083BE9*
+  ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
+ 
+@@ -43632,7 +43647,7 @@ OUI:0C5CB57*
+  ID_OUI_FROM_DATABASE=Energybox Limited
+ 
+ OUI:0C5CB58*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:0C5CB59*
+  ID_OUI_FROM_DATABASE=Colordeve International
+@@ -44273,6 +44288,9 @@ OUI:0CC47E*
+ OUI:0CC56C*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
++OUI:0CC574*
++ ID_OUI_FROM_DATABASE=FRITZ! Technology GmbH
++
+ OUI:0CC655*
+  ID_OUI_FROM_DATABASE=Wuxi YSTen Technology Co.,Ltd.
+ 
+@@ -45360,7 +45378,7 @@ OUI:1063A37*
+  ID_OUI_FROM_DATABASE=NRS Co., Ltd.
+ 
+ OUI:1063A38*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:1063A39*
+  ID_OUI_FROM_DATABASE=Nexite
+@@ -45506,6 +45524,9 @@ OUI:107C61*
+ OUI:107D1A*
+  ID_OUI_FROM_DATABASE=Dell Inc.
+ 
++OUI:107DC8*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:1081B4*
+  ID_OUI_FROM_DATABASE=Hunan Greatwall Galaxy Science and Technology Co.,Ltd.
+ 
+@@ -48600,7 +48621,7 @@ OUI:18C3F4C*
+  ID_OUI_FROM_DATABASE=HANGZHOU ZHONGKEJIGUANG TECHNOLOGY CO., LTD
+ 
+ OUI:18C3F4D*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:18C3F4E*
+  ID_OUI_FROM_DATABASE=SHENZHEN MEGMEET ELECTRICAL CO., LTD
+@@ -50324,6 +50345,9 @@ OUI:1CC1DE*
+ OUI:1CC316*
+  ID_OUI_FROM_DATABASE=Xiamen Milesight IoT Co., Ltd.
+ 
++OUI:1CC3AB*
++ ID_OUI_FROM_DATABASE=Espressif Inc.
++
+ OUI:1CC3EB*
+  ID_OUI_FROM_DATABASE=GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
+ 
+@@ -51023,6 +51047,9 @@ OUI:204441*
+ OUI:204569*
+  ID_OUI_FROM_DATABASE=ITEL MOBILE LIMITED
+ 
++OUI:20463A*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:2046A1*
+  ID_OUI_FROM_DATABASE=VECOW Co., Ltd
+ 
+@@ -52523,6 +52550,9 @@ OUI:246C84*
+ OUI:246C8A*
+  ID_OUI_FROM_DATABASE=YUKAI Engineering
+ 
++OUI:246D10*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:246E96*
+  ID_OUI_FROM_DATABASE=Dell Inc.
+ 
+@@ -52754,6 +52784,45 @@ OUI:249F89*
+ OUI:24A074*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
++OUI:24A10D0*
++ ID_OUI_FROM_DATABASE=Lobaro GmbH
++
++OUI:24A10D1*
++ ID_OUI_FROM_DATABASE=Shenzhen Star Instrument Co., Ltd.
++
++OUI:24A10D2*
++ ID_OUI_FROM_DATABASE=Sony Honda Mobility Inc.
++
++OUI:24A10D3*
++ ID_OUI_FROM_DATABASE=Rhymebus corporation
++
++OUI:24A10D4*
++ ID_OUI_FROM_DATABASE=Dongguan Taijie Electronics Technology Co.,Ltd
++
++OUI:24A10D5*
++ ID_OUI_FROM_DATABASE=Avantel Limited
++
++OUI:24A10D6*
++ ID_OUI_FROM_DATABASE=Goertek Inc.
++
++OUI:24A10D8*
++ ID_OUI_FROM_DATABASE=Luxvisions lnnovation TechnologyCorp.Limited
++
++OUI:24A10D9*
++ ID_OUI_FROM_DATABASE=Tecnojest SrL
++
++OUI:24A10DA*
++ ID_OUI_FROM_DATABASE=Detroit Defense Inc.
++
++OUI:24A10DB*
++ ID_OUI_FROM_DATABASE=Private
++
++OUI:24A10DC*
++ ID_OUI_FROM_DATABASE=REVUPTECH PRIVATE LIMITED
++
++OUI:24A10DD*
++ ID_OUI_FROM_DATABASE=Amina Distribution AS
++
+ OUI:24A160*
+  ID_OUI_FROM_DATABASE=Espressif Inc.
+ 
+@@ -53750,6 +53819,9 @@ OUI:2848E7*
+ OUI:284992*
+  ID_OUI_FROM_DATABASE=Luminator Technology Group Global LLC
+ 
++OUI:284B54*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:284C53*
+  ID_OUI_FROM_DATABASE=Intune Networks
+ 
+@@ -53975,6 +54047,9 @@ OUI:2880A2*
+ OUI:28827C*
+  ID_OUI_FROM_DATABASE=Bosch Automative products(Suzhou)Co.,Ltd Changzhou Branch
+ 
++OUI:288328*
++ ID_OUI_FROM_DATABASE=EMALDO TECHNOLOGY(HK)LIMITED
++
+ OUI:288335*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
+@@ -55730,6 +55805,9 @@ OUI:2C8BF2*
+ OUI:2C8D37*
+  ID_OUI_FROM_DATABASE=Virtium
+ 
++OUI:2C8D48*
++ ID_OUI_FROM_DATABASE=Smart Innovation LLC
++
+ OUI:2C8DB1*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
+@@ -56381,6 +56459,9 @@ OUI:30055C*
+ OUI:30074D*
+  ID_OUI_FROM_DATABASE=SAMSUNG ELECTRO-MECHANICS(THAILAND)
+ 
++OUI:30075C*
++ ID_OUI_FROM_DATABASE=43403
++
+ OUI:3009C0*
+  ID_OUI_FROM_DATABASE=Motorola Mobility LLC, a Lenovo Company
+ 
+@@ -57134,6 +57215,9 @@ OUI:307A05*
+ OUI:307A57*
+  ID_OUI_FROM_DATABASE=Accuenergy (CANADA) Inc
+ 
++OUI:307AD2*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:307BAC*
+  ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
+ 
+@@ -57671,6 +57755,9 @@ OUI:30F527*
+ OUI:30F600*
+  ID_OUI_FROM_DATABASE=Sagemcom Broadband SAS
+ 
++OUI:30F65D*
++ ID_OUI_FROM_DATABASE=Hewlett Packard Enterprise
++
+ OUI:30F6B9*
+  ID_OUI_FROM_DATABASE=Ecocentric Energy
+ 
+@@ -58212,7 +58299,7 @@ OUI:3446638*
+  ID_OUI_FROM_DATABASE=Bluesoo Tech (HongKong) Co.,Limited
+ 
+ OUI:3446639*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:344663A*
+  ID_OUI_FROM_DATABASE=Shenzhen Shenhong Communication Technology Co., Ltd
+@@ -58971,7 +59058,7 @@ OUI:34C8D6D*
+  ID_OUI_FROM_DATABASE=eight
+ 
+ OUI:34C8D6E*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:34C93D*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+@@ -60164,6 +60251,9 @@ OUI:388B59*
+ OUI:388C50*
+  ID_OUI_FROM_DATABASE=LG Electronics
+ 
++OUI:388CEF*
++ ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
++
+ OUI:388D3D*
+  ID_OUI_FROM_DATABASE=Wistron Neweb Corporation
+ 
+@@ -60315,7 +60405,7 @@ OUI:38A8CD6*
+  ID_OUI_FROM_DATABASE=cal4care Pte Ltd
+ 
+ OUI:38A8CD7*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:38A8CD8*
+  ID_OUI_FROM_DATABASE=Max Way Electronics Co., Ltd.
+@@ -61121,6 +61211,9 @@ OUI:3C20F6*
+ OUI:3C219C*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
++OUI:3C227F*
++ ID_OUI_FROM_DATABASE=Quectel Wireless Solutions Co., Ltd.
++
+ OUI:3C22FB*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -62759,6 +62852,9 @@ OUI:404244*
+ OUI:4044CE*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
++OUI:4044F7*
++ ID_OUI_FROM_DATABASE=Nintendo Co.,Ltd
++
+ OUI:4044FD*
+  ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+ 
+@@ -64130,6 +64226,9 @@ OUI:4438E8*
+ OUI:4438F3*
+  ID_OUI_FROM_DATABASE=EM Microelectronic
+ 
++OUI:4439AA*
++ ID_OUI_FROM_DATABASE=G.Tech Technology Ltd.
++
+ OUI:4439C4*
+  ID_OUI_FROM_DATABASE=Universal Global Scientific Industrial Co., Ltd.
+ 
+@@ -65658,7 +65757,7 @@ OUI:485DED*
+  ID_OUI_FROM_DATABASE=Sichuan Tianyi Comheart Telecom Co.,LTD
+ 
+ OUI:485E0E0*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:485E0E1*
+  ID_OUI_FROM_DATABASE=Dongguan YEHUO Technology Co.,LTD
+@@ -67859,6 +67958,9 @@ OUI:4CD637*
+ OUI:4CD717*
+  ID_OUI_FROM_DATABASE=Dell Inc.
+ 
++OUI:4CD74A*
++ ID_OUI_FROM_DATABASE=Vantiva USA LLC
++
+ OUI:4CD7B6*
+  ID_OUI_FROM_DATABASE=Helmer Scientific
+ 
+@@ -70581,7 +70683,7 @@ OUI:54A4933*
+  ID_OUI_FROM_DATABASE=I-MOON TECHNOLOGY CO., LIMITED
+ 
+ OUI:54A4934*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:54A4935*
+  ID_OUI_FROM_DATABASE=AUSOUNDS INTELLIGENCE, LLC
+@@ -71027,6 +71129,9 @@ OUI:580205*
+ OUI:5803FB*
+  ID_OUI_FROM_DATABASE=Hangzhou Hikvision Digital Technology Co.,Ltd.
+ 
++OUI:58044F*
++ ID_OUI_FROM_DATABASE=TP-Link Systems Inc.
++
+ OUI:580454*
+  ID_OUI_FROM_DATABASE=ICOMM HK LIMITED
+ 
+@@ -71208,7 +71313,7 @@ OUI:5823BC3*
+  ID_OUI_FROM_DATABASE=SHSYSTEM.Co.,LTD
+ 
+ OUI:5823BC4*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:5823BC5*
+  ID_OUI_FROM_DATABASE=Shenzhen Zhixuan Network Technology Co., Ltd.
+@@ -71252,6 +71357,9 @@ OUI:58257A*
+ OUI:58263A*
+  ID_OUI_FROM_DATABASE=Silicon Laboratories
+ 
++OUI:582745*
++ ID_OUI_FROM_DATABASE=Angelbird Technologies GmbH
++
+ OUI:58278C*
+  ID_OUI_FROM_DATABASE=BUFFALO.INC
+ 
+@@ -71376,7 +71484,7 @@ OUI:5847CA5*
+  ID_OUI_FROM_DATABASE=Huizhou Jiemeisi Technology Co., Ltd
+ 
+ OUI:5847CA6*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:5847CA7*
+  ID_OUI_FROM_DATABASE=Shenzhen Meigao Electronic Equipment Co.,Ltd
+@@ -71525,6 +71633,9 @@ OUI:585B69*
+ OUI:585FF6*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:586010*
++ ID_OUI_FROM_DATABASE=shenzhen zovoton electronic co.,ltd
++
+ OUI:58605F*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -71796,7 +71907,7 @@ OUI:5895D87*
+  ID_OUI_FROM_DATABASE=Epiphan Systems Inc
+ 
+ OUI:5895D88*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:5895D89*
+  ID_OUI_FROM_DATABASE=Loftie
+@@ -74682,7 +74793,7 @@ OUI:60A4341*
+  ID_OUI_FROM_DATABASE=EEG Enterprises Inc
+ 
+ OUI:60A4342*
+- ID_OUI_FROM_DATABASE=Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
++ ID_OUI_FROM_DATABASE=Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
+ 
+ OUI:60A4343*
+  ID_OUI_FROM_DATABASE=Shenzhen lncar Technology Co.,Ltd
+@@ -74942,6 +75053,9 @@ OUI:60D2DD*
+ OUI:60D30A*
+  ID_OUI_FROM_DATABASE=Quatius Limited
+ 
++OUI:60D4AF*
++ ID_OUI_FROM_DATABASE=Honor Device Co., Ltd.
++
+ OUI:60D4E9*
+  ID_OUI_FROM_DATABASE=GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
+ 
+@@ -75756,7 +75870,7 @@ OUI:6462666*
+  ID_OUI_FROM_DATABASE=Pass & Seymour, Inc d/b/a Legrand
+ 
+ OUI:6462667*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:6462668*
+  ID_OUI_FROM_DATABASE=Leontech Limited
+@@ -75821,6 +75935,9 @@ OUI:64681A*
+ OUI:646876*
+  ID_OUI_FROM_DATABASE=Edifier International
+ 
++OUI:646911*
++ ID_OUI_FROM_DATABASE=APTIV SERVICES US, LLC
++
+ OUI:64694E*
+  ID_OUI_FROM_DATABASE=Texas Instruments
+ 
+@@ -76187,6 +76304,9 @@ OUI:64BC11*
+ OUI:64BC58*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
++OUI:64BD6D*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:64BE63*
+  ID_OUI_FROM_DATABASE=STORDIS GmbH
+ 
+@@ -76496,6 +76616,9 @@ OUI:64F987*
+ OUI:64F9C0*
+  ID_OUI_FROM_DATABASE=ANALOG DEVICES
+ 
++OUI:64FA2B*
++ ID_OUI_FROM_DATABASE=Sagemcom Broadband SAS
++
+ OUI:64FB01*
+  ID_OUI_FROM_DATABASE=Zhongshan Camry Electronic Company Limited
+ 
+@@ -76739,6 +76862,9 @@ OUI:682DDC*
+ OUI:682F67*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
++OUI:683036*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:6831FE*
+  ID_OUI_FROM_DATABASE=Teladin Co.,Ltd.
+ 
+@@ -78314,6 +78440,9 @@ OUI:6C4B90*
+ OUI:6C4BB4*
+  ID_OUI_FROM_DATABASE=HUMAX Co., Ltd.
+ 
++OUI:6C4CBC*
++ ID_OUI_FROM_DATABASE=TP-Link Systems Inc.
++
+ OUI:6C4CE2*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
+@@ -78563,6 +78692,9 @@ OUI:6C78C1*
+ OUI:6C79B8*
+  ID_OUI_FROM_DATABASE=Texas Instruments
+ 
++OUI:6C7A63*
++ ID_OUI_FROM_DATABASE=Arista Networks
++
+ OUI:6C7DB7*
+  ID_OUI_FROM_DATABASE=Cisco Meraki
+ 
+@@ -78602,6 +78734,9 @@ OUI:6C8720*
+ OUI:6C8814*
+  ID_OUI_FROM_DATABASE=Intel Corporate
+ 
++OUI:6C885F*
++ ID_OUI_FROM_DATABASE=Private
++
+ OUI:6C8AEC*
+  ID_OUI_FROM_DATABASE=Nantong Coship Electronics Co., Ltd.
+ 
+@@ -78657,7 +78792,7 @@ OUI:6C93084*
+  ID_OUI_FROM_DATABASE=Estelar s.r.o
+ 
+ OUI:6C93085*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:6C93086*
+  ID_OUI_FROM_DATABASE=Uconfree technology(shenzhen)limited
+@@ -79091,6 +79226,9 @@ OUI:6CE2D3*
+ OUI:6CE3B6*
+  ID_OUI_FROM_DATABASE=Nera Telecommunications Ltd.
+ 
++OUI:6CE4A4*
++ ID_OUI_FROM_DATABASE=Silicon Laboratories
++
+ OUI:6CE4CE*
+  ID_OUI_FROM_DATABASE=Villiger Security Solutions AG
+ 
+@@ -79553,6 +79691,9 @@ OUI:703C69*
+ OUI:703D15*
+  ID_OUI_FROM_DATABASE=Hangzhou H3C Technologies Co., Limited
+ 
++OUI:703E76*
++ ID_OUI_FROM_DATABASE=Arcadyan Corporation
++
+ OUI:703E97*
+  ID_OUI_FROM_DATABASE=Iton Technology Corp.
+ 
+@@ -79644,7 +79785,7 @@ OUI:7050AF*
+  ID_OUI_FROM_DATABASE=SKY UK LIMITED
+ 
+ OUI:7050E70*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:7050E71*
+  ID_OUI_FROM_DATABASE=Annapurna labs
+@@ -94608,7 +94749,7 @@ OUI:7813058*
+  ID_OUI_FROM_DATABASE=Shenzhen AV-Display Co.,Ltd
+ 
+ OUI:7813059*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:781305A*
+  ID_OUI_FROM_DATABASE=Leonardo SpA - Montevarchi
+@@ -94863,7 +95004,7 @@ OUI:78392D6*
+  ID_OUI_FROM_DATABASE=Annapurna labs
+ 
+ OUI:78392D7*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:78392D8*
+  ID_OUI_FROM_DATABASE=Dreamtek
+@@ -95327,6 +95468,9 @@ OUI:787835D*
+ OUI:787835E*
+  ID_OUI_FROM_DATABASE=NEOARK Corporation
+ 
++OUI:787984*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:787A6F*
+  ID_OUI_FROM_DATABASE=Juice Technology AG
+ 
+@@ -98234,6 +98378,9 @@ OUI:8056F2*
+ OUI:805719*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
++OUI:805722*
++ ID_OUI_FROM_DATABASE=Wuxi Sunning Smart Devices Co., Ltd
++
+ OUI:8058C5*
+  ID_OUI_FROM_DATABASE=NovaTec Kommunikationstechnik GmbH
+ 
+@@ -99593,6 +99740,9 @@ OUI:845A81*
+ OUI:845B12*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
++OUI:845C31*
++ ID_OUI_FROM_DATABASE=Dell Inc.
++
+ OUI:845C93*
+  ID_OUI_FROM_DATABASE=Chabrier Services
+ 
+@@ -99662,6 +99812,9 @@ OUI:846EBC*
+ OUI:846FCE*
+  ID_OUI_FROM_DATABASE=GUANGDONG OPPO MOBILE TELECOMMUNICATIONS CORP.,LTD
+ 
++OUI:847003*
++ ID_OUI_FROM_DATABASE=Axon Networks Inc.
++
+ OUI:847051*
+  ID_OUI_FROM_DATABASE=ALPSALPINE CO,.LTD
+ 
+@@ -99932,6 +100085,9 @@ OUI:8493A0*
+ OUI:8493B2*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:8493EC*
++ ID_OUI_FROM_DATABASE=Guangzhou Shiyuan Electronic Technology Company Limited
++
+ OUI:849437*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
+@@ -101484,7 +101640,7 @@ OUI:88A6EFB*
+  ID_OUI_FROM_DATABASE=Beijing ThinRedline Technology Co.,Ltd.
+ 
+ OUI:88A6EFC*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:88A6EFD*
+  ID_OUI_FROM_DATABASE=Hash Mining s.r.o.
+@@ -102629,6 +102785,9 @@ OUI:8C1F640CD*
+ OUI:8C1F640CE*
+  ID_OUI_FROM_DATABASE=Digitella Inc.
+ 
++OUI:8C1F640D0*
++ ID_OUI_FROM_DATABASE=Lumiplan-Duhamel
++
+ OUI:8C1F640D2*
+  ID_OUI_FROM_DATABASE=biosilver .co.,ltd
+ 
+@@ -102920,6 +103079,9 @@ OUI:8C1F64177*
+ OUI:8C1F64179*
+  ID_OUI_FROM_DATABASE=Agrowtek Inc.
+ 
++OUI:8C1F6417A*
++ ID_OUI_FROM_DATABASE=Sichuan ZhikongLingxin Technology Co., Ltd.
++
+ OUI:8C1F6417B*
+  ID_OUI_FROM_DATABASE=Bavaria Digital Technik GmbH
+ 
+@@ -103130,6 +103292,9 @@ OUI:8C1F641FC*
+ OUI:8C1F641FE*
+  ID_OUI_FROM_DATABASE=Burk Technology
+ 
++OUI:8C1F641FF*
++ ID_OUI_FROM_DATABASE=ReCar LLC DBA Slate Auto
++
+ OUI:8C1F64201*
+  ID_OUI_FROM_DATABASE=Hiwin Mikrosystem Corp.
+ 
+@@ -103388,6 +103553,9 @@ OUI:8C1F64298*
+ OUI:8C1F64299*
+  ID_OUI_FROM_DATABASE=Integer.pl S.A.
+ 
++OUI:8C1F6429A*
++ ID_OUI_FROM_DATABASE=Power Electronics Espana, S.L.
++
+ OUI:8C1F6429B*
+  ID_OUI_FROM_DATABASE=TT electronics integrated manufacturing services (Suzhou) Limited
+ 
+@@ -103433,6 +103601,9 @@ OUI:8C1F642A9*
+ OUI:8C1F642AC*
+  ID_OUI_FROM_DATABASE=DCO SYSTEMS LTD
+ 
++OUI:8C1F642AF*
++ ID_OUI_FROM_DATABASE=A-Best Co.,Lid.
++
+ OUI:8C1F642B1*
+  ID_OUI_FROM_DATABASE=U -MEI-DAH INT'L ENTERPRISE CO.,LTD.
+ 
+@@ -103580,6 +103751,9 @@ OUI:8C1F64303*
+ OUI:8C1F64304*
+  ID_OUI_FROM_DATABASE=Jemac Sweden AB
+ 
++OUI:8C1F64305*
++ ID_OUI_FROM_DATABASE=VivoKey Technologies Inc.
++
+ OUI:8C1F64306*
+  ID_OUI_FROM_DATABASE=Corigine,Inc.
+ 
+@@ -103688,6 +103862,9 @@ OUI:8C1F64347*
+ OUI:8C1F64349*
+  ID_OUI_FROM_DATABASE=WAVES SYSTEM
+ 
++OUI:8C1F6434A*
++ ID_OUI_FROM_DATABASE=Raspberry Pi (Trading) Ltd
++
+ OUI:8C1F6434B*
+  ID_OUI_FROM_DATABASE=Infrared Inspection Systems
+ 
+@@ -103976,6 +104153,9 @@ OUI:8C1F643D9*
+ OUI:8C1F643DB*
+  ID_OUI_FROM_DATABASE=BRS Sistemas Eletrônicos
+ 
++OUI:8C1F643DD*
++ ID_OUI_FROM_DATABASE=DORLET SAU
++
+ OUI:8C1F643E0*
+  ID_OUI_FROM_DATABASE=YPP Corporation
+ 
+@@ -104135,6 +104315,9 @@ OUI:8C1F6443A*
+ OUI:8C1F6443D*
+  ID_OUI_FROM_DATABASE=Solid State Supplies Ltd
+ 
++OUI:8C1F6443F*
++ ID_OUI_FROM_DATABASE=beespace Technologies Limited
++
+ OUI:8C1F64440*
+  ID_OUI_FROM_DATABASE=MB connect line GmbH Fernwartungssysteme
+ 
+@@ -105263,9 +105446,6 @@ OUI:8C1F646BD*
+ OUI:8C1F646BF*
+  ID_OUI_FROM_DATABASE=Automata GmbH & Co. KG
+ 
+-OUI:8C1F646C1*
+- ID_OUI_FROM_DATABASE=Guangzhou Vannove Technology Co., Ltd
+-
+ OUI:8C1F646C6*
+  ID_OUI_FROM_DATABASE=FIT
+ 
+@@ -105338,9 +105518,6 @@ OUI:8C1F646E4*
+ OUI:8C1F646E7*
+  ID_OUI_FROM_DATABASE=WiTricity Corporation
+ 
+-OUI:8C1F646E8*
+- ID_OUI_FROM_DATABASE=Combined Public Communications, LLC
+-
+ OUI:8C1F646E9*
+  ID_OUI_FROM_DATABASE=SHENZHEN sunforest Co.LTD
+ 
+@@ -105638,6 +105815,9 @@ OUI:8C1F64787*
+ OUI:8C1F64789*
+  ID_OUI_FROM_DATABASE=DEUTA Werke GmbH
+ 
++OUI:8C1F6478B*
++ ID_OUI_FROM_DATABASE=SENSO2ME NV
++
+ OUI:8C1F6478F*
+  ID_OUI_FROM_DATABASE=Connection Systems
+ 
+@@ -106412,6 +106592,9 @@ OUI:8C1F64941*
+ OUI:8C1F64943*
+  ID_OUI_FROM_DATABASE=Autark GmbH
+ 
++OUI:8C1F64944*
++ ID_OUI_FROM_DATABASE=BRS Sistemas Eletrônicos
++
+ OUI:8C1F64945*
+  ID_OUI_FROM_DATABASE=Deqin Showcase
+ 
+@@ -106457,6 +106640,9 @@ OUI:8C1F6495C*
+ OUI:8C1F6495E*
+  ID_OUI_FROM_DATABASE=Landis+Gyr Equipamentos de Medição Ltda
+ 
++OUI:8C1F64961*
++ ID_OUI_FROM_DATABASE=JMV BHARAT PRIVATE LIMITED
++
+ OUI:8C1F64962*
+  ID_OUI_FROM_DATABASE=Umano Medical Inc.
+ 
+@@ -107207,6 +107393,9 @@ OUI:8C1F64B18*
+ OUI:8C1F64B19*
+  ID_OUI_FROM_DATABASE=DITRON S.r.l.
+ 
++OUI:8C1F64B1A*
++ ID_OUI_FROM_DATABASE=Panoramic Power
++
+ OUI:8C1F64B1B*
+  ID_OUI_FROM_DATABASE=Nov'in
+ 
+@@ -107249,6 +107438,9 @@ OUI:8C1F64B2D*
+ OUI:8C1F64B2F*
+  ID_OUI_FROM_DATABASE=Mtechnology - Gamma Commerciale Srl
+ 
++OUI:8C1F64B30*
++ ID_OUI_FROM_DATABASE=Fujian ONETHING Technology Co.,Ltd.
++
+ OUI:8C1F64B32*
+  ID_OUI_FROM_DATABASE=Plug Power
+ 
+@@ -107372,6 +107564,9 @@ OUI:8C1F64B7C*
+ OUI:8C1F64B7D*
+  ID_OUI_FROM_DATABASE=Scheurich GmbH
+ 
++OUI:8C1F64B80*
++ ID_OUI_FROM_DATABASE=Private
++
+ OUI:8C1F64B81*
+  ID_OUI_FROM_DATABASE=Prolife Equipamentos Médicos Ltda.
+ 
+@@ -107396,6 +107591,9 @@ OUI:8C1F64B88*
+ OUI:8C1F64B8B*
+  ID_OUI_FROM_DATABASE=DogWatch Inc
+ 
++OUI:8C1F64B8C*
++ ID_OUI_FROM_DATABASE=Chipset Communication Co.,Ltd.
++
+ OUI:8C1F64B8D*
+  ID_OUI_FROM_DATABASE=Tongye lnnovation Science and Technology (Shenzhen) Co.,Ltd
+ 
+@@ -107762,6 +107960,9 @@ OUI:8C1F64C44*
+ OUI:8C1F64C45*
+  ID_OUI_FROM_DATABASE=Flextroincs International (Taiwain Ltd
+ 
++OUI:8C1F64C46*
++ ID_OUI_FROM_DATABASE=Inex Technologies
++
+ OUI:8C1F64C4A*
+  ID_OUI_FROM_DATABASE=SGi Technology Group Ltd.
+ 
+@@ -107981,6 +108182,9 @@ OUI:8C1F64CC5*
+ OUI:8C1F64CC6*
+  ID_OUI_FROM_DATABASE=Genius Vision Digital Private Limited
+ 
++OUI:8C1F64CC9*
++ ID_OUI_FROM_DATABASE=Benchmark Electronics BV
++
+ OUI:8C1F64CCB*
+  ID_OUI_FROM_DATABASE=suzhou yuecrown Electronic Technology Co.,LTD
+ 
+@@ -108044,6 +108248,9 @@ OUI:8C1F64CEB*
+ OUI:8C1F64CEC*
+  ID_OUI_FROM_DATABASE=Zhuhai Huaya machinery Technology Co., LTD
+ 
++OUI:8C1F64CED*
++ ID_OUI_FROM_DATABASE=NHA TRANG HITECH COMPANY,  LTD
++
+ OUI:8C1F64CEE*
+  ID_OUI_FROM_DATABASE=DISPLAX S.A.
+ 
+@@ -108395,6 +108602,9 @@ OUI:8C1F64DB5*
+ OUI:8C1F64DB7*
+  ID_OUI_FROM_DATABASE=Lambda Systems Inc.
+ 
++OUI:8C1F64DB8*
++ ID_OUI_FROM_DATABASE=Beijing Dangong Technology Co., Ltd
++
+ OUI:8C1F64DB9*
+  ID_OUI_FROM_DATABASE=Ermes Elettronica s.r.l.
+ 
+@@ -108518,6 +108728,9 @@ OUI:8C1F64DFC*
+ OUI:8C1F64DFE*
+  ID_OUI_FROM_DATABASE=Nuvation Energy
+ 
++OUI:8C1F64DFF*
++ ID_OUI_FROM_DATABASE=VINGLOOP TECHNOLOGY LTD
++
+ OUI:8C1F64E00*
+  ID_OUI_FROM_DATABASE=DVB-TECH S.R.L.
+ 
+@@ -108584,6 +108797,9 @@ OUI:8C1F64E24*
+ OUI:8C1F64E26*
+  ID_OUI_FROM_DATABASE=HyperSilicon Co.,Ltd
+ 
++OUI:8C1F64E2A*
++ ID_OUI_FROM_DATABASE=WHITEBOX TECHNOLOGY HONG KONG LTD
++
+ OUI:8C1F64E2B*
+  ID_OUI_FROM_DATABASE=Glotech Exim Private Limited
+ 
+@@ -110364,7 +110580,7 @@ OUI:8CAE49D*
+  ID_OUI_FROM_DATABASE=Larch Networks
+ 
+ OUI:8CAE49E*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:8CAE4C*
+  ID_OUI_FROM_DATABASE=Plugable Technologies
+@@ -111125,6 +111341,9 @@ OUI:903E7F*
+ OUI:903EAB*
+  ID_OUI_FROM_DATABASE=Commscope
+ 
++OUI:903F86*
++ ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
++
+ OUI:903FC3*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
+@@ -114083,6 +114302,9 @@ OUI:982CBC*
+ OUI:982CBE*
+  ID_OUI_FROM_DATABASE=2Wire Inc
+ 
++OUI:982CC6*
++ ID_OUI_FROM_DATABASE=SERNET (SUZHOU) TECHNOLOGIES CORPORATION
++
+ OUI:982D56*
+  ID_OUI_FROM_DATABASE=Resolution Audio
+ 
+@@ -116459,21 +116681,51 @@ OUI:9CE33F*
+ OUI:9CE374*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
++OUI:9CE4500*
++ ID_OUI_FROM_DATABASE=Shenzhen Chengzhao Technology Co., Ltd.
++
+ OUI:9CE4501*
+  ID_OUI_FROM_DATABASE=AIO SYSTEMS
+ 
++OUI:9CE4502*
++ ID_OUI_FROM_DATABASE=Shenzhen Lixun Technology Co., Ltd.
++
++OUI:9CE4503*
++ ID_OUI_FROM_DATABASE=Marelli AL&S ALIT-TZ
++
++OUI:9CE4504*
++ ID_OUI_FROM_DATABASE=Strato Automation Inc.
++
++OUI:9CE4505*
++ ID_OUI_FROM_DATABASE=Neways Advanced Applications
++
+ OUI:9CE4506*
+  ID_OUI_FROM_DATABASE=Shenzhen GW Technology Co., LTD
+ 
++OUI:9CE4507*
++ ID_OUI_FROM_DATABASE=BEIJING TRANSTREAMS TECHNOLOGY CO.,LTD
++
+ OUI:9CE4508*
+  ID_OUI_FROM_DATABASE=ROHOTEK(shenzhen) Technology co., LTD
+ 
++OUI:9CE4509*
++ ID_OUI_FROM_DATABASE=Shenzhen HQVT TECHNOLOGY Co.,LTD
++
+ OUI:9CE450A*
+  ID_OUI_FROM_DATABASE=AUO DISPLAY PLUS CORPORATION
+ 
++OUI:9CE450B*
++ ID_OUI_FROM_DATABASE=Shenzhen Coslight Technology Co.,Ltd.
++
+ OUI:9CE450C*
+  ID_OUI_FROM_DATABASE=XTX Markets Technologies Limited
+ 
++OUI:9CE450D*
++ ID_OUI_FROM_DATABASE=BCD SRL
++
++OUI:9CE450E*
++ ID_OUI_FROM_DATABASE=Shenzhen Kuki Electric Co., Ltd.
++
+ OUI:9CE5490*
+  ID_OUI_FROM_DATABASE=SPEEDTECH CORP.
+ 
+@@ -117566,6 +117818,9 @@ OUI:A08E24*
+ OUI:A08E78*
+  ID_OUI_FROM_DATABASE=Sagemcom Broadband SAS
+ 
++OUI:A090B5*
++ ID_OUI_FROM_DATABASE=Tiinlab Corporation
++
+ OUI:A090DE*
+  ID_OUI_FROM_DATABASE=VEEDIMS,LLC
+ 
+@@ -118055,6 +118310,9 @@ OUI:A0E25A*
+ OUI:A0E295*
+  ID_OUI_FROM_DATABASE=DAT System Co.,Ltd
+ 
++OUI:A0E390*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:A0E453*
+  ID_OUI_FROM_DATABASE=Sony Corporation
+ 
+@@ -118137,7 +118395,7 @@ OUI:A0F6FD*
+  ID_OUI_FROM_DATABASE=Texas Instruments
+ 
+ OUI:A0F7C3*
+- ID_OUI_FROM_DATABASE=FICOSA ELECTRONICS SLU
++ ID_OUI_FROM_DATABASE=Ficosa Automotive SLU
+ 
+ OUI:A0F849*
+  ID_OUI_FROM_DATABASE=Cisco Systems, Inc
+@@ -118184,6 +118442,9 @@ OUI:A0FF22*
+ OUI:A0FF70*
+  ID_OUI_FROM_DATABASE=Vantiva USA LLC
+ 
++OUI:A0FFFD*
++ ID_OUI_FROM_DATABASE=HMD Global Oy
++
+ OUI:A4004E*
+  ID_OUI_FROM_DATABASE=Cisco Systems, Inc
+ 
+@@ -118214,6 +118475,9 @@ OUI:A4059E*
+ OUI:A405D6*
+  ID_OUI_FROM_DATABASE=Commscope
+ 
++OUI:A405FD*
++ ID_OUI_FROM_DATABASE=Bouffalo Lab (Nanjing) Co., Ltd.
++
+ OUI:A406E9*
+  ID_OUI_FROM_DATABASE=Texas Instruments
+ 
+@@ -120674,6 +120938,9 @@ OUI:A8BE27*
+ OUI:A8BF3C*
+  ID_OUI_FROM_DATABASE=HDV Phoelectron Technology Limited
+ 
++OUI:A8C050*
++ ID_OUI_FROM_DATABASE=Quectel Wireless Solutions Co.,Ltd.
++
+ OUI:A8C092*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
+@@ -121244,6 +121511,9 @@ OUI:AC37C9*
+ OUI:AC3870*
+  ID_OUI_FROM_DATABASE=Lenovo Mobile Communication Technology Ltd.
+ 
++OUI:AC393D*
++ ID_OUI_FROM_DATABASE=eero inc.
++
+ OUI:AC3971*
+  ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+ 
+@@ -122216,6 +122486,9 @@ OUI:ACEAEA*
+ OUI:ACEB51*
+  ID_OUI_FROM_DATABASE=Universal Electronics, Inc.
+ 
++OUI:ACEBE6*
++ ID_OUI_FROM_DATABASE=Espressif Inc.
++
+ OUI:ACEC80*
+  ID_OUI_FROM_DATABASE=Commscope
+ 
+@@ -122513,6 +122786,9 @@ OUI:B01F81F*
+ OUI:B01F8C*
+  ID_OUI_FROM_DATABASE=Hewlett Packard Enterprise
+ 
++OUI:B01FF4*
++ ID_OUI_FROM_DATABASE=Sagemcom Broadband SAS
++
+ OUI:B0216F*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -122673,7 +122949,7 @@ OUI:B046FC*
+  ID_OUI_FROM_DATABASE=MitraStar Technology Corp.
+ 
+ OUI:B0475E0*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:B0475E1*
+  ID_OUI_FROM_DATABASE=tintech
+@@ -123125,6 +123401,9 @@ OUI:B0A460*
+ OUI:B0A4F0*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
++OUI:B0A604*
++ ID_OUI_FROM_DATABASE=Espressif Inc.
++
+ OUI:B0A651*
+  ID_OUI_FROM_DATABASE=Cisco Systems, Inc
+ 
+@@ -123581,6 +123860,9 @@ OUI:B0E7DE*
+ OUI:B0E892*
+  ID_OUI_FROM_DATABASE=Seiko Epson Corporation
+ 
++OUI:B0E8E8*
++ ID_OUI_FROM_DATABASE=Silicon Laboratories
++
+ OUI:B0E97E*
+  ID_OUI_FROM_DATABASE=Advanced Micro Peripherals
+ 
+@@ -123800,6 +124082,9 @@ OUI:B40418*
+ OUI:B40421*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
++OUI:B40429*
++ ID_OUI_FROM_DATABASE=Guangzhou Shiyuan Electronic Technology Company Limited
++
+ OUI:B4055D*
+  ID_OUI_FROM_DATABASE=IEIT SYSTEMS Co., Ltd.
+ 
+@@ -124277,6 +124562,9 @@ OUI:B45459*
+ OUI:B45570*
+  ID_OUI_FROM_DATABASE=Borea
+ 
++OUI:B45575*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:B4565D*
+  ID_OUI_FROM_DATABASE=Chipsea Technologies (Shenzhen) Corp.
+ 
+@@ -124742,6 +125030,9 @@ OUI:B4B686*
+ OUI:B4B742*
+  ID_OUI_FROM_DATABASE=Amazon Technologies Inc.
+ 
++OUI:B4B853*
++ ID_OUI_FROM_DATABASE=Honor Device Co., Ltd.
++
+ OUI:B4B859*
+  ID_OUI_FROM_DATABASE=Texa Spa
+ 
+@@ -126293,6 +126584,9 @@ OUI:B8F934*
+ OUI:B8FBAF*
+  ID_OUI_FROM_DATABASE=Xiamen IPRT Technology CO.,LTD
+ 
++OUI:B8FBB3*
++ ID_OUI_FROM_DATABASE=TP-Link Systems Inc.
++
+ OUI:B8FC28*
+  ID_OUI_FROM_DATABASE=Valeo Vision Systems
+ 
+@@ -127121,6 +127415,9 @@ OUI:BC89A6*
+ OUI:BC89A7*
+  ID_OUI_FROM_DATABASE=Apple, Inc.
+ 
++OUI:BC89F8*
++ ID_OUI_FROM_DATABASE=GD Midea Air-Conditioning Equipment Co.,Ltd.
++
+ OUI:BC8AA3*
+  ID_OUI_FROM_DATABASE=NHN Entertainment
+ 
+@@ -127946,6 +128243,12 @@ OUI:C02E25*
+ OUI:C02E26*
+  ID_OUI_FROM_DATABASE=iRhythm Technologies, Inc.
+ 
++OUI:C02E5F*
++ ID_OUI_FROM_DATABASE=Zyxel Communications Corporation
++
++OUI:C02EDF*
++ ID_OUI_FROM_DATABASE=AltoBeam Inc.
++
+ OUI:C02FF1*
+  ID_OUI_FROM_DATABASE=Volta Networks
+ 
+@@ -128100,7 +128403,7 @@ OUI:C0482FA*
+  ID_OUI_FROM_DATABASE=Willstrong Solutions Private Limited
+ 
+ OUI:C0482FB*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:C0482FC*
+  ID_OUI_FROM_DATABASE=Lunar USA Inc.
+@@ -129281,6 +129584,9 @@ OUI:C414A2*
+ OUI:C41688*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
++OUI:C4168F*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:C416C8*
+  ID_OUI_FROM_DATABASE=HUAWEI TECHNOLOGIES CO.,LTD
+ 
+@@ -129602,6 +129908,9 @@ OUI:C45A86*
+ OUI:C45AB1*
+  ID_OUI_FROM_DATABASE=Dell Inc.
+ 
++OUI:C45BAC*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:C45BBE*
+  ID_OUI_FROM_DATABASE=Espressif Inc.
+ 
+@@ -130065,7 +130374,7 @@ OUI:C498946*
+  ID_OUI_FROM_DATABASE=Aetina Corporation
+ 
+ OUI:C498947*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:C498948*
+  ID_OUI_FROM_DATABASE=Pliem (Shanghai) Intelligent Technology Co., Ltd
+@@ -130761,7 +131070,7 @@ OUI:C4FFBC5*
+  ID_OUI_FROM_DATABASE=comtime GmbH
+ 
+ OUI:C4FFBC6*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:C4FFBC7*
+  ID_OUI_FROM_DATABASE=Critical Link
+@@ -135653,6 +135962,9 @@ OUI:D425CCD*
+ OUI:D425CCE*
+  ID_OUI_FROM_DATABASE=Coperion
+ 
++OUI:D425DE*
++ ID_OUI_FROM_DATABASE=New H3C Technologies Co., Ltd
++
+ OUI:D42751*
+  ID_OUI_FROM_DATABASE=Infopia Co., Ltd
+ 
+@@ -135689,6 +136001,9 @@ OUI:D42C46*
+ OUI:D42DC5*
+  ID_OUI_FROM_DATABASE=i-PRO Co., Ltd.
+ 
++OUI:D42DCC*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:D42F23*
+  ID_OUI_FROM_DATABASE=Akenori PTE Ltd
+ 
+@@ -136928,6 +137243,9 @@ OUI:D4FC13*
+ OUI:D4FE28*
+  ID_OUI_FROM_DATABASE=Silicon Laboratories
+ 
++OUI:D4FF1A*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:D4FF26*
+  ID_OUI_FROM_DATABASE=OHSUNG
+ 
+@@ -137666,6 +137984,9 @@ OUI:D88F76*
+ OUI:D890E8*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
++OUI:D8911D*
++ ID_OUI_FROM_DATABASE=Jiangsu Yuwell POCTech Biotechnology Co.,Ltd
++
+ OUI:D8912A*
+  ID_OUI_FROM_DATABASE=Zyxel Communications Corporation
+ 
+@@ -138840,7 +139161,7 @@ OUI:DC76C32*
+  ID_OUI_FROM_DATABASE=IRE SOLUTION
+ 
+ OUI:DC76C33*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:DC76C34*
+  ID_OUI_FROM_DATABASE=seadee
+@@ -139734,7 +140055,7 @@ OUI:E0233BA*
+  ID_OUI_FROM_DATABASE=ShenZhen Chainway Information Technology Co., Ltd.
+ 
+ OUI:E0233BB*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:E0233BC*
+  ID_OUI_FROM_DATABASE=Chengdu ChengFeng   Technology co,. Ltd.
+@@ -141119,6 +141440,9 @@ OUI:E42D7B*
+ OUI:E42F26*
+  ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
+ 
++OUI:E42F37*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:E42F56*
+  ID_OUI_FROM_DATABASE=OptoMET GmbH
+ 
+@@ -143048,6 +143372,9 @@ OUI:E8B2AC*
+ OUI:E8B2FE*
+  ID_OUI_FROM_DATABASE=HUMAX Co., Ltd.
+ 
++OUI:E8B3EE*
++ ID_OUI_FROM_DATABASE=Pixelent Inc.
++
+ OUI:E8B3EF*
+  ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
+ 
+@@ -143171,6 +143498,9 @@ OUI:E8C2DD*
+ OUI:E8C320*
+  ID_OUI_FROM_DATABASE=Austco Marketing & Service (USA) ltd.
+ 
++OUI:E8C386*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:E8C417*
+  ID_OUI_FROM_DATABASE=Fiberhome Telecommunication Technologies Co.,LTD
+ 
+@@ -144099,7 +144429,7 @@ OUI:EC74CD0*
+  ID_OUI_FROM_DATABASE=Nexxus Networks Pte Ltd
+ 
+ OUI:EC74CD1*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:EC74CD2*
+  ID_OUI_FROM_DATABASE=L.T.H. Electronics Limited
+@@ -145298,6 +145628,9 @@ OUI:F03D03*
+ OUI:F03D29*
+  ID_OUI_FROM_DATABASE=Actility
+ 
++OUI:F03E05*
++ ID_OUI_FROM_DATABASE=Murata Manufacturing Co., Ltd.
++
+ OUI:F03E90*
+  ID_OUI_FROM_DATABASE=Ruckus Wireless
+ 
+@@ -145544,6 +145877,9 @@ OUI:F06FCE*
+ OUI:F0704F*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
++OUI:F07084*
++ ID_OUI_FROM_DATABASE=Actiontec Electronics Inc.
++
+ OUI:F0728C*
+  ID_OUI_FROM_DATABASE=Samsung Electronics Co.,Ltd
+ 
+@@ -146553,7 +146889,7 @@ OUI:F420559*
+  ID_OUI_FROM_DATABASE=Lens Technology (Xiangtan) Co.,Ltd
+ 
+ OUI:F42055A*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:F42055B*
+  ID_OUI_FROM_DATABASE=Synaps Technology S.r.l.
+@@ -147455,6 +147791,9 @@ OUI:F4B52F*
+ OUI:F4B549*
+  ID_OUI_FROM_DATABASE=Xiamen Yeastar Digital Technology Co., Ltd
+ 
++OUI:F4B599*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:F4B5AA*
+  ID_OUI_FROM_DATABASE=zte corporation
+ 
+@@ -148133,6 +148472,9 @@ OUI:F829C0*
+ OUI:F82A53*
+  ID_OUI_FROM_DATABASE=GD Midea Air-Conditioning Equipment Co.,Ltd.
+ 
++OUI:F82AE2*
++ ID_OUI_FROM_DATABASE=Apple, Inc.
++
+ OUI:F82B7F*
+  ID_OUI_FROM_DATABASE=Huawei Device Co., Ltd.
+ 
+@@ -148173,7 +148515,7 @@ OUI:F82BE6A*
+  ID_OUI_FROM_DATABASE=TECHWIN SOLUTIONS PVT LTD
+ 
+ OUI:F82BE6B*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:F82BE6C*
+  ID_OUI_FROM_DATABASE=MaiaEdge, Inc.
+@@ -149313,7 +149655,7 @@ OUI:F8EF5D*
+  ID_OUI_FROM_DATABASE=Motorola Mobility LLC, a Lenovo Company
+ 
+ OUI:F8EFB1*
+- ID_OUI_FROM_DATABASE=Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
++ ID_OUI_FROM_DATABASE=Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
+ 
+ OUI:F8F005*
+  ID_OUI_FROM_DATABASE=Newport Media Inc.
+@@ -149345,6 +149687,9 @@ OUI:F8F25A*
+ OUI:F8F295*
+  ID_OUI_FROM_DATABASE=Annapurna labs
+ 
++OUI:F8F2F0*
++ ID_OUI_FROM_DATABASE=Chipsea Technologies (Shenzhen) Crop.
++
+ OUI:F8F3D3*
+  ID_OUI_FROM_DATABASE=Shenzhen Gotron electronic CO.,LTD
+ 
+@@ -150140,6 +150485,9 @@ OUI:FC94E3*
+ OUI:FC956A*
+  ID_OUI_FROM_DATABASE=OCTAGON SYSTEMS CORP.
+ 
++OUI:FC963E*
++ ID_OUI_FROM_DATABASE=EM Microelectronic
++
+ OUI:FC9643*
+  ID_OUI_FROM_DATABASE=Juniper Networks
+ 
+@@ -150530,6 +150878,9 @@ OUI:FCCF43*
+ OUI:FCCF62*
+  ID_OUI_FROM_DATABASE=IBM Corp
+ 
++OUI:FCCF9F*
++ ID_OUI_FROM_DATABASE=EM Microelectronic
++
+ OUI:FCD202*
+  ID_OUI_FROM_DATABASE=Realme Chongqing Mobile Telecommunications Corp.,Ltd.
+ 
+@@ -150678,7 +151029,7 @@ OUI:FCE4982*
+  ID_OUI_FROM_DATABASE=ART Finex Co.,Ltd.
+ 
+ OUI:FCE4983*
+- ID_OUI_FROM_DATABASE=Shenzhen C & D Electronics Co., Ltd.
++ ID_OUI_FROM_DATABASE=Shanghai Kanghai Information System CO.,LTD.
+ 
+ OUI:FCE4984*
+  ID_OUI_FROM_DATABASE=TScale Electronics Mfg. (Kunshan) Co., Ltd
+diff --git a/hwdb.d/20-acpi-vendor.hwdb b/hwdb.d/20-acpi-vendor.hwdb
+index e552bd7320..c5d5b5f3d6 100644
+--- a/hwdb.d/20-acpi-vendor.hwdb
++++ b/hwdb.d/20-acpi-vendor.hwdb
+@@ -396,6 +396,9 @@ acpi:UBLX*:
+ acpi:UBOO*:
+  ID_VENDOR_FROM_DATABASE=Das U-Boot
+ 
++acpi:ULRV*:
++ ID_VENDOR_FROM_DATABASE=UltraRISC Technology (Shanghai) Co., Ltd
++
+ acpi:VAIO*:
+  ID_VENDOR_FROM_DATABASE=VAIO Corporation
+ 
+diff --git a/hwdb.d/20-acpi-vendor.hwdb.patch b/hwdb.d/20-acpi-vendor.hwdb.patch
+index 25fdf91556..02103f47f8 100644
+--- a/hwdb.d/20-acpi-vendor.hwdb.patch
++++ b/hwdb.d/20-acpi-vendor.hwdb.patch
+@@ -1,5 +1,5 @@
+---- 20-acpi-vendor.hwdb.base	2025-09-05 09:10:01.771007528 +0200
+-+++ 20-acpi-vendor.hwdb	2025-09-05 09:10:01.786007236 +0200
++--- 20-acpi-vendor.hwdb.base	2025-09-17 09:39:11.942879943 +0100
+++++ 20-acpi-vendor.hwdb	2025-09-17 09:39:11.950880802 +0100
+ @@ -3,6 +3,8 @@
+  # Data imported from:
+  #     https://uefi.org/uefi-pnp-export
+@@ -19,7 +19,7 @@
+  acpi:AMDI*:
+   ID_VENDOR_FROM_DATABASE=AMD
+  
+-@@ -424,6 +423,9 @@
++@@ -427,6 +426,9 @@
+  acpi:AAA*:
+   ID_VENDOR_FROM_DATABASE=Avolites Ltd
+  
+@@ -29,7 +29,7 @@
+  acpi:AAE*:
+   ID_VENDOR_FROM_DATABASE=Anatek Electronics Inc.
+  
+-@@ -451,6 +453,9 @@
++@@ -454,6 +456,9 @@
+  acpi:ABO*:
+   ID_VENDOR_FROM_DATABASE=D-Link Systems Inc
+  
+@@ -39,7 +39,7 @@
+  acpi:ABS*:
+   ID_VENDOR_FROM_DATABASE=Abaco Systems, Inc.
+  
+-@@ -496,7 +501,7 @@
++@@ -499,7 +504,7 @@
+  acpi:ACO*:
+   ID_VENDOR_FROM_DATABASE=Allion Computer Inc.
+  
+@@ -48,7 +48,7 @@
+   ID_VENDOR_FROM_DATABASE=Aspen Tech Inc
+  
+  acpi:ACR*:
+-@@ -775,6 +780,9 @@
++@@ -778,6 +783,9 @@
+  acpi:AMT*:
+   ID_VENDOR_FROM_DATABASE=AMT International Industry
+  
+@@ -58,7 +58,7 @@
+  acpi:AMX*:
+   ID_VENDOR_FROM_DATABASE=AMX LLC
+  
+-@@ -823,6 +831,9 @@
++@@ -826,6 +834,9 @@
+  acpi:AOA*:
+   ID_VENDOR_FROM_DATABASE=AOpen Inc.
+  
+@@ -68,7 +68,7 @@
+  acpi:AOE*:
+   ID_VENDOR_FROM_DATABASE=Advanced Optics Electronics, Inc.
+  
+-@@ -832,6 +843,9 @@
++@@ -835,6 +846,9 @@
+  acpi:AOT*:
+   ID_VENDOR_FROM_DATABASE=Alcatel
+  
+@@ -78,7 +78,7 @@
+  acpi:APC*:
+   ID_VENDOR_FROM_DATABASE=American Power Conversion
+  
+-@@ -1013,7 +1027,7 @@
++@@ -1016,7 +1030,7 @@
+   ID_VENDOR_FROM_DATABASE=ALPS ALPINE CO., LTD.
+  
+  acpi:AUO*:
+@@ -87,7 +87,7 @@
+  
+  acpi:AUR*:
+   ID_VENDOR_FROM_DATABASE=Aureal Semiconductor
+-@@ -1093,6 +1107,9 @@
++@@ -1096,6 +1110,9 @@
+  acpi:AXE*:
+   ID_VENDOR_FROM_DATABASE=Axell Corporation
+  
+@@ -97,7 +97,7 @@
+  acpi:AXI*:
+   ID_VENDOR_FROM_DATABASE=American Magnetics
+  
+-@@ -1252,6 +1269,9 @@
++@@ -1255,6 +1272,9 @@
+  acpi:BML*:
+   ID_VENDOR_FROM_DATABASE=BIOMED Lab
+  
+@@ -107,7 +107,7 @@
+  acpi:BMS*:
+   ID_VENDOR_FROM_DATABASE=BIOMEDISYS
+  
+-@@ -1264,6 +1284,9 @@
++@@ -1267,6 +1287,9 @@
+  acpi:BNO*:
+   ID_VENDOR_FROM_DATABASE=Bang & Olufsen
+  
+@@ -117,7 +117,7 @@
+  acpi:BNS*:
+   ID_VENDOR_FROM_DATABASE=Boulder Nonlinear Systems
+  
+-@@ -1510,6 +1533,9 @@
++@@ -1513,6 +1536,9 @@
+  acpi:CHA*:
+   ID_VENDOR_FROM_DATABASE=Chase Research PLC
+  
+@@ -127,7 +127,7 @@
+  acpi:CHD*:
+   ID_VENDOR_FROM_DATABASE=ChangHong Electric Co.,Ltd
+  
+-@@ -1675,6 +1701,9 @@
++@@ -1678,6 +1704,9 @@
+  acpi:COD*:
+   ID_VENDOR_FROM_DATABASE=CODAN Pty. Ltd.
+  
+@@ -137,7 +137,7 @@
+  acpi:COI*:
+   ID_VENDOR_FROM_DATABASE=Codec Inc.
+  
+-@@ -2093,7 +2122,7 @@
++@@ -2096,7 +2125,7 @@
+   ID_VENDOR_FROM_DATABASE=Dragon Information Technology
+  
+  acpi:DJE*:
+@@ -146,7 +146,7 @@
+  
+  acpi:DJP*:
+   ID_VENDOR_FROM_DATABASE=Maygay Machines, Ltd
+-@@ -2446,6 +2475,9 @@
++@@ -2449,6 +2478,9 @@
+  acpi:EIN*:
+   ID_VENDOR_FROM_DATABASE=Elegant Invention
+  
+@@ -156,7 +156,7 @@
+  acpi:EKA*:
+   ID_VENDOR_FROM_DATABASE=MagTek Inc.
+  
+-@@ -2716,6 +2748,9 @@
++@@ -2719,6 +2751,9 @@
+  acpi:FCG*:
+   ID_VENDOR_FROM_DATABASE=First International Computer Ltd
+  
+@@ -166,7 +166,7 @@
+  acpi:FCS*:
+   ID_VENDOR_FROM_DATABASE=Focus Enhancements, Inc.
+  
+-@@ -3092,7 +3127,7 @@
++@@ -3095,7 +3130,7 @@
+   ID_VENDOR_FROM_DATABASE=General Standards Corporation
+  
+  acpi:GSM*:
+@@ -175,7 +175,7 @@
+  
+  acpi:GSN*:
+   ID_VENDOR_FROM_DATABASE=Grandstream Networks, Inc.
+-@@ -3202,6 +3237,9 @@
++@@ -3205,6 +3240,9 @@
+  acpi:HEC*:
+   ID_VENDOR_FROM_DATABASE=Hisense Electric Co., Ltd.
+  
+@@ -185,7 +185,7 @@
+  acpi:HEL*:
+   ID_VENDOR_FROM_DATABASE=Hitachi Micro Systems Europe Ltd
+  
+-@@ -3337,6 +3375,9 @@
++@@ -3340,6 +3378,9 @@
+  acpi:HSD*:
+   ID_VENDOR_FROM_DATABASE=HannStar Display Corp
+  
+@@ -195,7 +195,7 @@
+  acpi:HSM*:
+   ID_VENDOR_FROM_DATABASE=AT&T Microelectronics
+  
+-@@ -3463,6 +3504,9 @@
++@@ -3466,6 +3507,9 @@
+  acpi:ICI*:
+   ID_VENDOR_FROM_DATABASE=Infotek Communication Inc
+  
+@@ -205,7 +205,7 @@
+  acpi:ICM*:
+   ID_VENDOR_FROM_DATABASE=Intracom SA
+  
+-@@ -3559,6 +3603,9 @@
++@@ -3562,6 +3606,9 @@
+  acpi:IKE*:
+   ID_VENDOR_FROM_DATABASE=Ikegami Tsushinki Co. Ltd.
+  
+@@ -215,7 +215,7 @@
+  acpi:IKS*:
+   ID_VENDOR_FROM_DATABASE=Ikos Systems Inc
+  
+-@@ -3607,6 +3654,9 @@
++@@ -3610,6 +3657,9 @@
+  acpi:IMX*:
+   ID_VENDOR_FROM_DATABASE=arpara Technology Co., Ltd.
+  
+@@ -225,7 +225,7 @@
+  acpi:INA*:
+   ID_VENDOR_FROM_DATABASE=Inventec Corporation
+  
+-@@ -4135,6 +4185,9 @@
++@@ -4138,6 +4188,9 @@
+  acpi:LAN*:
+   ID_VENDOR_FROM_DATABASE=Sodeman Lancom Inc
+  
+@@ -235,7 +235,7 @@
+  acpi:LAS*:
+   ID_VENDOR_FROM_DATABASE=LASAT Comm. A/S
+  
+-@@ -4186,6 +4239,9 @@
++@@ -4189,6 +4242,9 @@
+  acpi:LED*:
+   ID_VENDOR_FROM_DATABASE=Long Engineering Design Inc
+  
+@@ -245,7 +245,7 @@
+  acpi:LEG*:
+   ID_VENDOR_FROM_DATABASE=Legerity, Inc
+  
+-@@ -4204,6 +4260,9 @@
++@@ -4207,6 +4263,9 @@
+  acpi:LGD*:
+   ID_VENDOR_FROM_DATABASE=LG Display
+  
+@@ -255,7 +255,7 @@
+  acpi:LGI*:
+   ID_VENDOR_FROM_DATABASE=Logitech Inc
+  
+-@@ -4270,6 +4329,9 @@
++@@ -4273,6 +4332,9 @@
+  acpi:LND*:
+   ID_VENDOR_FROM_DATABASE=Land Computer Company Ltd
+  
+@@ -265,7 +265,7 @@
+  acpi:LNK*:
+   ID_VENDOR_FROM_DATABASE=Link Tech Inc
+  
+-@@ -4304,7 +4366,7 @@
++@@ -4307,7 +4369,7 @@
+   ID_VENDOR_FROM_DATABASE=Design Technology
+  
+  acpi:LPL*:
+@@ -274,7 +274,7 @@
+  
+  acpi:LSC*:
+   ID_VENDOR_FROM_DATABASE=LifeSize Communications
+-@@ -4480,6 +4542,9 @@
++@@ -4483,6 +4545,9 @@
+  acpi:MCX*:
+   ID_VENDOR_FROM_DATABASE=Millson Custom Solutions Inc.
+  
+@@ -284,7 +284,7 @@
+  acpi:MDA*:
+   ID_VENDOR_FROM_DATABASE=Media4 Inc
+  
+-@@ -4726,6 +4791,9 @@
++@@ -4729,6 +4794,9 @@
+  acpi:MOM*:
+   ID_VENDOR_FROM_DATABASE=Momentum Data Systems
+  
+@@ -294,7 +294,7 @@
+  acpi:MOS*:
+   ID_VENDOR_FROM_DATABASE=Moses Corporation
+  
+-@@ -4966,6 +5034,9 @@
++@@ -4969,6 +5037,9 @@
+  acpi:NAL*:
+   ID_VENDOR_FROM_DATABASE=Network Alchemy
+  
+@@ -304,7 +304,7 @@
+  acpi:NAT*:
+   ID_VENDOR_FROM_DATABASE=NaturalPoint Inc.
+  
+-@@ -5506,6 +5577,9 @@
++@@ -5509,6 +5580,9 @@
+  acpi:PCX*:
+   ID_VENDOR_FROM_DATABASE=PC Xperten
+  
+@@ -314,7 +314,7 @@
+  acpi:PDM*:
+   ID_VENDOR_FROM_DATABASE=Psion Dacom Plc.
+  
+-@@ -5569,9 +5643,6 @@
++@@ -5572,9 +5646,6 @@
+  acpi:PHE*:
+   ID_VENDOR_FROM_DATABASE=Philips Medical Systems Boeblingen GmbH
+  
+@@ -324,7 +324,7 @@
+  acpi:PHL*:
+   ID_VENDOR_FROM_DATABASE=Philips Consumer Electronics Company
+  
+-@@ -5662,9 +5733,6 @@
++@@ -5665,9 +5736,6 @@
+  acpi:PNL*:
+   ID_VENDOR_FROM_DATABASE=Panelview, Inc.
+  
+@@ -334,7 +334,7 @@
+  acpi:PNR*:
+   ID_VENDOR_FROM_DATABASE=Planar Systems, Inc.
+  
+-@@ -6142,9 +6210,6 @@
++@@ -6145,9 +6213,6 @@
+  acpi:RTI*:
+   ID_VENDOR_FROM_DATABASE=Rancho Tech Inc
+  
+@@ -344,7 +344,7 @@
+  acpi:RTL*:
+   ID_VENDOR_FROM_DATABASE=Realtek Semiconductor Company Ltd
+  
+-@@ -6319,9 +6384,6 @@
++@@ -6322,9 +6387,6 @@
+  acpi:SEE*:
+   ID_VENDOR_FROM_DATABASE=SeeColor Corporation
+  
+@@ -354,7 +354,7 @@
+  acpi:SEI*:
+   ID_VENDOR_FROM_DATABASE=Seitz & Associates Inc
+  
+-@@ -6805,6 +6867,9 @@
++@@ -6808,6 +6870,9 @@
+  acpi:SVD*:
+   ID_VENDOR_FROM_DATABASE=SVD Computer
+  
+@@ -364,7 +364,7 @@
+  acpi:SVI*:
+   ID_VENDOR_FROM_DATABASE=Sun Microsystems
+  
+-@@ -6889,6 +6954,9 @@
++@@ -6892,6 +6957,9 @@
+  acpi:SZM*:
+   ID_VENDOR_FROM_DATABASE=Shenzhen MTC Co., Ltd
+  
+@@ -374,7 +374,7 @@
+  acpi:TAA*:
+   ID_VENDOR_FROM_DATABASE=Tandberg
+  
+-@@ -6979,6 +7047,9 @@
++@@ -6982,6 +7050,9 @@
+  acpi:TDG*:
+   ID_VENDOR_FROM_DATABASE=Six15 Technologies
+  
+@@ -384,7 +384,7 @@
+  acpi:TDM*:
+   ID_VENDOR_FROM_DATABASE=Tandem Computer Europe Inc
+  
+-@@ -7021,6 +7092,9 @@
++@@ -7024,6 +7095,9 @@
+  acpi:TEV*:
+   ID_VENDOR_FROM_DATABASE=Televés, S.A.
+  
+@@ -394,7 +394,7 @@
+  acpi:TEZ*:
+   ID_VENDOR_FROM_DATABASE=Tech Source Inc.
+  
+-@@ -7150,9 +7224,6 @@
++@@ -7153,9 +7227,6 @@
+  acpi:TNC*:
+   ID_VENDOR_FROM_DATABASE=TNC Industrial Company Ltd
+  
+@@ -404,7 +404,7 @@
+  acpi:TNM*:
+   ID_VENDOR_FROM_DATABASE=TECNIMAGEN SA
+  
+-@@ -7465,14 +7536,14 @@
++@@ -7468,14 +7539,14 @@
+  acpi:UNC*:
+   ID_VENDOR_FROM_DATABASE=Unisys Corporation
+  
+@@ -425,7 +425,7 @@
+  
+  acpi:UNI*:
+   ID_VENDOR_FROM_DATABASE=Uniform Industry Corp.
+-@@ -7507,6 +7578,9 @@
++@@ -7510,6 +7581,9 @@
+  acpi:USA*:
+   ID_VENDOR_FROM_DATABASE=Utimaco Safeware AG
+  
+@@ -435,7 +435,7 @@
+  acpi:USD*:
+   ID_VENDOR_FROM_DATABASE=U.S. Digital Corporation
+  
+-@@ -7768,9 +7842,6 @@
++@@ -7771,9 +7845,6 @@
+  acpi:WAL*:
+   ID_VENDOR_FROM_DATABASE=Wave Access
+  
+@@ -445,7 +445,7 @@
+  acpi:WAV*:
+   ID_VENDOR_FROM_DATABASE=Wavephore
+  
+-@@ -7898,7 +7969,7 @@
++@@ -7901,7 +7972,7 @@
+   ID_VENDOR_FROM_DATABASE=WyreStorm Technologies LLC
+  
+  acpi:WYS*:
+@@ -454,7 +454,7 @@
+  
+  acpi:WYT*:
+   ID_VENDOR_FROM_DATABASE=Wooyoung Image & Information Co.,Ltd.
+-@@ -7912,9 +7983,6 @@
++@@ -7915,9 +7986,6 @@
+  acpi:XDM*:
+   ID_VENDOR_FROM_DATABASE=XDM Ltd.
+  
+@@ -464,7 +464,7 @@
+  acpi:XES*:
+   ID_VENDOR_FROM_DATABASE=Extreme Engineering Solutions, Inc.
+  
+-@@ -7948,9 +8016,6 @@
++@@ -7951,9 +8019,6 @@
+  acpi:XNT*:
+   ID_VENDOR_FROM_DATABASE=XN Technologies, Inc.
+  
+@@ -474,7 +474,7 @@
+  acpi:XQU*:
+   ID_VENDOR_FROM_DATABASE=SHANGHAI SVA-DAV ELECTRONICS CO., LTD
+  
+-@@ -8017,6 +8082,9 @@
++@@ -8020,6 +8085,9 @@
+  acpi:ZBX*:
+   ID_VENDOR_FROM_DATABASE=Zebax Technologies
+  
+diff --git a/hwdb.d/20-usb-vendor-model.hwdb b/hwdb.d/20-usb-vendor-model.hwdb
+index c10e6ef61c..88620b0ab0 100644
+--- a/hwdb.d/20-usb-vendor-model.hwdb
++++ b/hwdb.d/20-usb-vendor-model.hwdb
+@@ -40403,9 +40403,15 @@ usb:v0B0Dp0000*
+ usb:v0B0E*
+  ID_VENDOR_FROM_DATABASE=GN Netcom
+ 
++usb:v0B0Ep0301*
++ ID_MODEL_FROM_DATABASE=Jabra EVOLVE 20
++
+ usb:v0B0Ep0305*
+  ID_MODEL_FROM_DATABASE=Jabra EVOLVE Link MS
+ 
++usb:v0B0Ep030C*
++ ID_MODEL_FROM_DATABASE=Jabra EVOLVE 65
++
+ usb:v0B0Ep0311*
+  ID_MODEL_FROM_DATABASE=Jabra EVOLVE 65
+ 
+@@ -40460,6 +40466,21 @@ usb:v0B0Ep2456*
+ usb:v0B0Ep245E*
+  ID_MODEL_FROM_DATABASE=Jabra Link 370
+ 
++usb:v0B0Ep248A*
++ ID_MODEL_FROM_DATABASE=Jabra Elite 85h
++
++usb:v0B0Ep24B8*
++ ID_MODEL_FROM_DATABASE=Jabra Evolve2 65
++
++usb:v0B0Ep24BB*
++ ID_MODEL_FROM_DATABASE=Jabra Evolve2 85
++
++usb:v0B0Ep24C9*
++ ID_MODEL_FROM_DATABASE=Jabra Link 380
++
++usb:v0B0Ep24CA*
++ ID_MODEL_FROM_DATABASE=Jabra Link 380
++
+ usb:v0B0Ep620C*
+  ID_MODEL_FROM_DATABASE=Jabra BT620s
+ 
+diff --git a/hwdb.d/acpi_id_registry.csv b/hwdb.d/acpi_id_registry.csv
+index 73a463f761..52ad2ea02e 100644
+--- a/hwdb.d/acpi_id_registry.csv
++++ b/hwdb.d/acpi_id_registry.csv
+@@ -137,4 +137,5 @@ IDEMIA,IDEM,06/26/2018
+ "JUMPtec GmbH",JUMP,04/22/2025
+ "Fsas Technologies Inc.",FSAS,04/30/2025
+ "JP Morgan Chase N.A.",JPMC,05/30/2025
+-"Roku, Inc.",ROKU,07/15/2025
+\ No newline at end of file
++"Roku, Inc.",ROKU,07/15/2025
++"UltraRISC Technology (Shanghai) Co., Ltd",ULRV,09/15/2025
+\ No newline at end of file
+diff --git a/hwdb.d/ma-large.txt b/hwdb.d/ma-large.txt
+index f9601fe6a9..95980161e5 100644
+--- a/hwdb.d/ma-large.txt
++++ b/hwdb.d/ma-large.txt
+@@ -203,12 +203,6 @@ DCD160     (base 16)		Tianjin Changdatong Technology Co.,LTD
+ 				Shenzhen   Guangdong  518040
+ 				CN
+ 
+-00-0E-72   (hex)		Arca Technologies S.r.l.
+-000E72     (base 16)		Arca Technologies S.r.l.
+-				via Statale 17
+-				Bollengo  Torino  10012
+-				IT
+-
+ E0-C2-B7   (hex)		Masimo Corporation
+ E0C2B7     (base 16)		Masimo Corporation
+ 				52 Discovery
+@@ -45800,12 +45794,6 @@ DCD83B     (base 16)		Cisco Systems, Inc
+ 				Tallinn  Harju maakond  15551
+ 				EE
+ 
+-A0-F7-C3   (hex)		FICOSA ELECTRONICS SLU
+-A0F7C3     (base 16)		FICOSA ELECTRONICS SLU
+-				Pol. Ind. Can Mitjans,Vial San Jordi s/n
+-				Viladecavalls  Barcelona  08232
+-				ES
+-
+ EC-46-84   (hex)		Microsoft Corporation
+ EC4684     (base 16)		Microsoft Corporation
+ 				One Microsoft Way
+@@ -45836,6 +45824,120 @@ C86C9A     (base 16)		SNUC System
+ 				Round Rock  TX  78681
+ 				US
+ 
++00-0E-72   (hex)		Sesami Technologies Srl
++000E72     (base 16)		Sesami Technologies Srl
++				via Statale 17
++				Bollengo  Torino  10012
++				IT
++
++44-39-AA   (hex)		G.Tech Technology Ltd.
++4439AA     (base 16)		G.Tech Technology Ltd.
++				No.8,Jinyuan 1st Road,Tangjiawan Town, High-tech Zone
++				Zhuhai  Guangdong  519085
++				CN
++
++58-27-45   (hex)		Angelbird Technologies GmbH
++582745     (base 16)		Angelbird Technologies GmbH
++				Steinebach 18
++				Dornbirn  Vorarlberg  6850
++				AT
++
++98-2C-C6   (hex)		SERNET (SUZHOU) TECHNOLOGIES CORPORATION
++982CC6     (base 16)		SERNET (SUZHOU) TECHNOLOGIES CORPORATION
++				NO.8 Tangzhuang Road,Suzhou Industrial Park,Su ZhouCity,JiangSu Province,China
++				Suzhou    215021
++				CN
++
++30-F6-5D   (hex)		Hewlett Packard Enterprise
++30F65D     (base 16)		Hewlett Packard Enterprise
++				6280 America Center Dr
++				San Jose  CA  95002
++				US
++
++F0-3E-05   (hex)		Murata Manufacturing Co., Ltd.
++F03E05     (base 16)		Murata Manufacturing Co., Ltd.
++				1-10-1, Higashikotari
++				Nagaokakyo-shi  Kyoto  617-8555
++				JP
++
++64-FA-2B   (hex)		Sagemcom Broadband SAS
++64FA2B     (base 16)		Sagemcom Broadband SAS
++				250, route de l'Empereur
++				Rueil Malmaison Cedex  hauts de seine  92848
++				FR
++
++B0-A6-04   (hex)		Espressif Inc.
++B0A604     (base 16)		Espressif Inc.
++				Room 204, Building 2, 690 Bibo Rd, Pudong New Area
++				Shanghai  Shanghai  201203
++				CN
++
++C0-2E-DF   (hex)		AltoBeam Inc.
++C02EDF     (base 16)		AltoBeam Inc.
++				B808, Tsinghua Tongfang Hi-Tech Plaza, Haidian
++				Beijing  Beijing  100083
++				CN
++
++70-3E-76   (hex)		Arcadyan Corporation
++703E76     (base 16)		Arcadyan Corporation
++				No.8, Sec.2, Guangfu Rd.
++				Hsinchu City  Hsinchu  30071
++				TW
++
++20-46-3A   (hex)		Apple, Inc.
++20463A     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++04-72-EF   (hex)		Apple, Inc.
++0472EF     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++D4-FF-1A   (hex)		Apple, Inc.
++D4FF1A     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++10-7D-C8   (hex)		Apple, Inc.
++107DC8     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++C4-5B-AC   (hex)		Apple, Inc.
++C45BAC     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++F4-B5-99   (hex)		Apple, Inc.
++F4B599     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++24-6D-10   (hex)		Apple, Inc.
++246D10     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++A0-F7-C3   (hex)		Ficosa Automotive SLU
++A0F7C3     (base 16)		Ficosa Automotive SLU
++				Pol. Ind. Can Mitjans,Vial San Jordi s/n
++				Viladecavalls  Barcelona  08232
++				ES
++
++B8-FB-B3   (hex)		TP-Link Systems Inc.
++B8FBB3     (base 16)		TP-Link Systems Inc.
++				10 Mauchly
++				 Irvine  CA  92618
++				US
++
+ 00-01-30   (hex)		Extreme Networks Headquarters
+ 000130     (base 16)		Extreme Networks Headquarters
+ 				2121 RDU Center Drive 
+@@ -90941,12 +91043,6 @@ EC97E0     (base 16)		Hangzhou Ezviz Software Co.,Ltd.
+ 				Sunnyvale  CA  94089
+ 				US
+ 
+-A4-F0-0F   (hex)		Espressif Inc.
+-A4F00F     (base 16)		Espressif Inc.
+-				Room 204, Building 2, 690 Bibo Rd, Pudong New Area
+-				Shanghai  Shanghai  201203
+-				CN
+-
+ EC-96-BF   (hex)		Kontron eSystems GmbH
+ EC96BF     (base 16)		Kontron eSystems GmbH
+ 				Bahnhofstraße 100
+@@ -90965,6 +91061,117 @@ F09258     (base 16)		China Electronics Cloud Computing Technology Co., Ltd
+ 				Wuhan  Hubei  430090
+ 				CN
+ 
++A4-F0-0F   (hex)		Espressif Inc.
++A4F00F     (base 16)		Espressif Inc.
++				Room 204, Building 2, 690 Bibo Rd, Pudong New Area
++				Shanghai  Shanghai  201203
++				CN
++
++2C-8D-48   (hex)		Smart Innovation LLC
++2C8D48     (base 16)		Smart Innovation LLC
++				7F,Tower B,Jianxing
++				ShenZhen  GuangZhou  518055
++				CN
++
++38-8C-EF   (hex)		Samsung Electronics Co.,Ltd
++388CEF     (base 16)		Samsung Electronics Co.,Ltd
++				129, Samsung-ro, Youngtongl-Gu
++				Suwon  Gyeonggi-Do  16677
++				KR
++
++58-60-10   (hex)		shenzhen zovoton electronic co.,ltd
++586010     (base 16)		shenzhen zovoton electronic co.,ltd
++				1F 4 Blok, jinrui zhonghe industrial park, huarong road, tongsheng community, dalang street, longhua district, Shenzhen city, Guangdong province, china
++				shenzhen  guangdong  518100
++				CN
++
++0C-C5-74   (hex)		FRITZ! Technology GmbH
++0CC574     (base 16)		FRITZ! Technology GmbH
++				Alt-Moabit 95
++				Berlin  Berlin  10559
++				DE
++
++84-70-03   (hex)		Axon Networks Inc.
++847003     (base 16)		Axon Networks Inc.
++				15420 Laguna Canyon rd.
++				Irvine  CA  92618
++				US
++
++A0-FF-FD   (hex)		HMD Global Oy
++A0FFFD     (base 16)		HMD Global Oy
++				Bertel Jungin aukio 9
++				Espoo    02600
++				FI
++
++30-7A-D2   (hex)		Apple, Inc.
++307AD2     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++D4-2D-CC   (hex)		Apple, Inc.
++D42DCC     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++04-2E-C1   (hex)		Apple, Inc.
++042EC1     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++B4-55-75   (hex)		Apple, Inc.
++B45575     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++68-30-36   (hex)		Apple, Inc.
++683036     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++28-4B-54   (hex)		Apple, Inc.
++284B54     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++6C-E4-A4   (hex)		Silicon Laboratories
++6CE4A4     (base 16)		Silicon Laboratories
++				 400 West Cesar Chavez
++				Austin  TX  78701
++				US
++
++90-3F-86   (hex)		New H3C Technologies Co., Ltd
++903F86     (base 16)		New H3C Technologies Co., Ltd
++				466 Changhe Road, Binjiang District
++				Hangzhou  Zhejiang  310052
++				CN
++
++6C-88-5F   (hex)		Private
++6C885F     (base 16)		Private
++
++60-D4-AF   (hex)		Honor Device Co., Ltd.
++60D4AF     (base 16)		Honor Device Co., Ltd.
++				Suite 3401, Unit A, Building 6, Shum Yip Sky Park, No. 8089, Hongli West Road, Xiangmihu Street, Futian District 
++				Shenzhen   Guangdong  518040
++				CN
++
++A0-E3-90   (hex)		Apple, Inc.
++A0E390     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++6C-4C-BC   (hex)		TP-Link Systems Inc.
++6C4CBC     (base 16)		TP-Link Systems Inc.
++				10 Mauchly
++				 Irvine  CA  92618
++				US
++
+ 6C-87-20   (hex)		New H3C Technologies Co., Ltd
+ 6C8720     (base 16)		New H3C Technologies Co., Ltd
+ 				466 Changhe Road, Binjiang District
+@@ -135389,12 +135596,6 @@ A4DB4C     (base 16)		RAI Institute
+ 				San Francisco  CA  94107
+ 				US
+ 
+-F8-EF-B1   (hex)		Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
+-F8EFB1     (base 16)		Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
+-				Room 809, Building B, No. 567 Yueming Road, Xixing Street,
+-				Hangzhou  Binjiang Distric  310000
+-				CN
+-
+ 2C-91-AB   (hex)		AVM Audiovisuelles Marketing und Computersysteme GmbH
+ 2C91AB     (base 16)		AVM Audiovisuelles Marketing und Computersysteme GmbH
+ 				Alt-Moabit 95 
+@@ -136283,6 +136484,90 @@ E8F60A     (base 16)		Espressif Inc.
+ 				Shanghai  Shanghai  201203
+ 				CN
+ 
++BC-89-F8   (hex)		GD Midea Air-Conditioning Equipment Co.,Ltd.
++BC89F8     (base 16)		GD Midea Air-Conditioning Equipment Co.,Ltd.
++				Midea Global Innovation Center,Beijiao Town,Shunde
++				Foshan  Guangdong  528311
++				CN
++
++80-57-22   (hex)		Wuxi Sunning Smart Devices Co., Ltd
++805722     (base 16)		Wuxi Sunning Smart Devices Co., Ltd
++				No.52, Zone C, Huigu Pioneer Park, Huishan Economic  Development Zone, Wuxi
++				Wuxi   jiangsu  214174
++				CN
++
++F8-EF-B1   (hex)		Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
++F8EFB1     (base 16)		Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
++				Room 809, Building B, No. 567 Yueming Road, Xixing Street,
++				Hangzhou  Binjiang Distric  310000
++				CN
++
++C0-2E-5F   (hex)		Zyxel Communications Corporation
++C02E5F     (base 16)		Zyxel Communications Corporation
++				No. 6 Innovation Road II, Science Park
++				Hsichu  Taiwan  300
++				TW
++
++24-A1-0D   (hex)		IEEE Registration Authority
++24A10D     (base 16)		IEEE Registration Authority
++				445 Hoes Lane
++				Piscataway  NJ  08554
++				US
++
++A8-C0-50   (hex)		Quectel Wireless Solutions Co.,Ltd.
++A8C050     (base 16)		Quectel Wireless Solutions Co.,Ltd.
++				7th Floor, Hongye Building, No.1801 Hongmei Road, Xuhui District
++				Shanghai    200233
++				CN
++
++1C-C3-AB   (hex)		Espressif Inc.
++1CC3AB     (base 16)		Espressif Inc.
++				Room 204, Building 2, 690 Bibo Rd, Pudong New Area
++				Shanghai  Shanghai  201203
++				CN
++
++08-3B-C1   (hex)		Hangzhou Hikvision Digital Technology Co.,Ltd.
++083BC1     (base 16)		Hangzhou Hikvision Digital Technology Co.,Ltd.
++				No.555 Qianmo Road 
++				Hangzhou  Zhejiang  310052
++				CN
++
++B4-B8-53   (hex)		Honor Device Co., Ltd.
++B4B853     (base 16)		Honor Device Co., Ltd.
++				Suite 3401, Unit A, Building 6, Shum Yip Sky Park, No. 8089, Hongli West Road, Xiangmihu Street, Futian District 
++				Shenzhen   Guangdong  518040
++				CN
++
++F8-F2-F0   (hex)		Chipsea Technologies (Shenzhen) Crop.
++F8F2F0     (base 16)		Chipsea Technologies (Shenzhen) Crop.
++				Room 301, Building 1, Shenzhen Bay Innovation and Technology Center, Keyuan Avenue, High-tech Zone Community, Yuehai Subdistrict, Nanshan District, Shenzhen
++				Shenzhen    518000
++				CN
++
++E4-2F-37   (hex)		Apple, Inc.
++E42F37     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++64-BD-6D   (hex)		Apple, Inc.
++64BD6D     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++E8-C3-86   (hex)		Apple, Inc.
++E8C386     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++58-04-4F   (hex)		TP-Link Systems Inc.
++58044F     (base 16)		TP-Link Systems Inc.
++				10 Mauchly
++				 Irvine  CA  92618
++				US
++
+ B0-0C-9D   (hex)		Quectel Wireless Solutions Co.,Ltd.
+ B00C9D     (base 16)		Quectel Wireless Solutions Co.,Ltd.
+ 				7th Floor, Hongye Building, No.1801 Hongmei Road, Xuhui District
+@@ -182090,12 +182375,6 @@ EC8152     (base 16)		HUAWEI TECHNOLOGIES CO.,LTD
+ 				San Jose  CA  94568
+ 				US
+ 
+-54-D6-0D   (hex)		Hangzhou Ezviz Software Co.,Ltd.
+-54D60D     (base 16)		Hangzhou Ezviz Software Co.,Ltd.
+-				17th Floor, Building D, No.188 Qizhi East Stree, Xixing Subdistrict, Binjiang District
+-				Hangzhou  Zhejiang  310051
+-				CN
+-
+ 58-8F-CF   (hex)		Hangzhou Ezviz Software Co.,Ltd.
+ 588FCF     (base 16)		Hangzhou Ezviz Software Co.,Ltd.
+ 				17th Floor, Building D, No.188 Qizhi East Stree, Xixing Subdistrict, Binjiang District
+@@ -182114,11 +182393,11 @@ EC8152     (base 16)		HUAWEI TECHNOLOGIES CO.,LTD
+ 				Shanghai     201206
+ 				CN
+ 
+-00-0B-0F   (hex)		Bosch Rexroth AG
+-000B0F     (base 16)		Bosch Rexroth AG
+-				Bgm.-Dr.Nebel-Str.2
+-				Lohr am Main    97816 
+-				NL
++54-D6-0D   (hex)		Hangzhou Ezviz Software Co.,Ltd.
++54D60D     (base 16)		Hangzhou Ezviz Software Co.,Ltd.
++				17th Floor, Building D, No.188 Qizhi East Stree, Xixing Subdistrict, Binjiang District
++				Hangzhou  Zhejiang  310051
++				CN
+ 
+ D4-0D-AB   (hex)		Shenzhen Cudy Technology Co., Ltd.
+ D40DAB     (base 16)		Shenzhen Cudy Technology Co., Ltd.
+@@ -182132,6 +182411,96 @@ D40DAB     (base 16)		Shenzhen Cudy Technology Co., Ltd.
+ 				shenzhen   guangdong  518057
+ 				CN
+ 
++00-0B-0F   (hex)		Bosch Rexroth AG
++000B0F     (base 16)		Bosch Rexroth AG
++				Bgm.-Dr.Nebel-Str.2
++				Lohr am Main    97816 
++				NL
++
++84-93-EC   (hex)		Guangzhou Shiyuan Electronic Technology Company Limited
++8493EC     (base 16)		Guangzhou Shiyuan Electronic Technology Company Limited
++				No.6, 4th Yunpu Road, Yunpu industry District
++				Guangzhou  Guangdong  510530
++				CN
++
++F0-70-84   (hex)		Actiontec Electronics Inc.
++F07084     (base 16)		Actiontec Electronics Inc.
++				2445 Augustine Dr #501
++				Santa Clara   CA  95054
++				US
++
++40-44-F7   (hex)		Nintendo Co.,Ltd
++4044F7     (base 16)		Nintendo Co.,Ltd
++				11-1 HOKOTATE-CHO KAMITOBA,MINAMI-KU
++				KYOTO  KYOTO  601-8501
++				JP
++
++A4-05-FD   (hex)		Bouffalo Lab (Nanjing) Co., Ltd.
++A405FD     (base 16)		Bouffalo Lab (Nanjing) Co., Ltd.
++				5F, Gongxiang Space, No.100 Tuanjie Road, Nanjing, China
++				Nanjing  Jiangsu  211800
++				CN
++
++3C-22-7F   (hex)		Quectel Wireless Solutions Co., Ltd.
++3C227F     (base 16)		Quectel Wireless Solutions Co., Ltd.
++				Building 5, Shanghai Business Park Phase III (Area B), No.1016 Tianlin Road, Minhang District
++				Shanghai    200233
++				CN
++
++A0-90-B5   (hex)		Tiinlab Corporation
++A090B5     (base 16)		Tiinlab Corporation
++				Building A Room 201 Cooperation District between Shenzhen and HongKong,Qianwan Road No.1,Shenzhen City, Business Address:No. 3333, Liuxian AvenueTower A, 35th Floor,Tanglang City, Nanshan District, Shenzhen, China
++				Shenzhen  Guangdong  518000
++				CN
++
++28-83-28   (hex)		EMALDO TECHNOLOGY(HK)LIMITED
++288328     (base 16)		EMALDO TECHNOLOGY(HK)LIMITED
++				13/F., Golden Dragon Comm. Bldg., 522 Nathan Road, Yau Ma Tei, Kowloon
++				HONG KONG    999077
++				HK
++
++B0-1F-F4   (hex)		Sagemcom Broadband SAS
++B01FF4     (base 16)		Sagemcom Broadband SAS
++				250, route de l'Empereur
++				Rueil Malmaison Cedex  hauts de seine  92848
++				FR
++
++AC-EB-E6   (hex)		Espressif Inc.
++ACEBE6     (base 16)		Espressif Inc.
++				Room 204, Building 2, 690 Bibo Rd, Pudong New Area
++				Shanghai  Shanghai  201203
++				CN
++
++E8-B3-EE   (hex)		Pixelent Inc.
++E8B3EE     (base 16)		Pixelent Inc.
++				#402 HanGuk Mediventure Center
++				76, Dongnae-ro, Dong-gu  Daegu  41061
++				KR
++
++6C-7A-63   (hex)		Arista Networks
++6C7A63     (base 16)		Arista Networks
++				5453 Great America Parkway
++				Santa Clara  CA  95054
++				US
++
++C4-16-8F   (hex)		Apple, Inc.
++C4168F     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++F8-2A-E2   (hex)		Apple, Inc.
++F82AE2     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
++
++84-5C-31   (hex)		Dell Inc.
++845C31     (base 16)		Dell Inc.
++				One Dell Way
++				Round Rock   TX  78682
++				US
++
+ C8-5C-E2   (hex)		IEEE Registration Authority
+ C85CE2     (base 16)		IEEE Registration Authority
+ 				445 Hoes Lane
+@@ -227558,8 +227927,86 @@ E88F16     (base 16)		Skullcandy
+ 				Copenhagen    2450
+ 				DK
+ 
++D8-91-1D   (hex)		Jiangsu Yuwell POCTech Biotechnology Co.,Ltd
++D8911D     (base 16)		Jiangsu Yuwell POCTech Biotechnology Co.,Ltd
++				No.5 Baisheng Road Development Zone, 212300 Danyang, Jiangsu, PEOPLE’S REPUBLIC OF CHINA
++				Danyang    212300
++				CN
++
++30-07-5C   (hex)		43403
++30075C     (base 16)		43403
++				8 Floor, Bd B, information port, Langshan RD, Nanshan district, 
++				Shenzhen  Guangdong  518057
++				CN
++
++AC-39-3D   (hex)		eero inc.
++AC393D     (base 16)		eero inc.
++				660 3rd Street 
++				San Francisco  CA  94107
++				US
++
++00-E6-07   (hex)		AURCORE TECHNOLOGY INC.
++00E607     (base 16)		AURCORE TECHNOLOGY INC.
++				25691 ATLANTIC OCEAN DRIVE UNIT B10
++				LAKE FOREST  CA  92630
++				US
++
+ 2C-27-E4   (hex)		Luxshare Precision Industry (Xuancheng) Co.,Ltd.
+ 2C27E4     (base 16)		Luxshare Precision Industry (Xuancheng) Co.,Ltd.
+ 				Address: No.5 Baishou Road, Xuancheng High-Tech Industrial Development Zone
+ 				Xuancheng  Anhui  242000
+ 				CN
++
++4C-D7-4A   (hex)		Vantiva USA LLC
++4CD74A     (base 16)		Vantiva USA LLC
++				4855 Peachtree Industrial Blvd, Suite 200
++				Norcross  GA  30902
++				US
++
++FC-96-3E   (hex)		EM Microelectronic
++FC963E     (base 16)		EM Microelectronic
++				Rue des Sors 3
++				Marin-Epagnier  Neuchatel  2074
++				CH
++
++FC-CF-9F   (hex)		EM Microelectronic
++FCCF9F     (base 16)		EM Microelectronic
++				Rue des Sors 3
++				Marin-Epagnier  Neuchatel  2074
++				CH
++
++B4-04-29   (hex)		Guangzhou Shiyuan Electronic Technology Company Limited
++B40429     (base 16)		Guangzhou Shiyuan Electronic Technology Company Limited
++				No.6, 4th Yunpu Road, Yunpu industry District
++				Guangzhou  Guangdong  510530
++				CN
++
++D4-25-DE   (hex)		New H3C Technologies Co., Ltd
++D425DE     (base 16)		New H3C Technologies Co., Ltd
++				466 Changhe Road, Binjiang District
++				Hangzhou  Zhejiang  310052
++				CN
++
++B0-E8-E8   (hex)		Silicon Laboratories
++B0E8E8     (base 16)		Silicon Laboratories
++				 400 West Cesar Chavez
++				Austin  TX  78701
++				US
++
++64-69-11   (hex)		APTIV SERVICES US, LLC
++646911     (base 16)		APTIV SERVICES US, LLC
++				5725 Innovation Drive
++				Troy  MI  48098
++				US
++
++04-D6-88   (hex)		CIG SHANGHAI CO LTD
++04D688     (base 16)		CIG SHANGHAI CO LTD
++				5th Floor, Building 8 No 2388 Chenhang Road 
++				SHANGHAI    201114
++				CN
++
++78-79-84   (hex)		Apple, Inc.
++787984     (base 16)		Apple, Inc.
++				1 Infinite Loop
++				Cupertino  CA  95014
++				US
+diff --git a/hwdb.d/ma-medium.txt b/hwdb.d/ma-medium.txt
+index 21cb91040f..511feb246d 100644
+--- a/hwdb.d/ma-medium.txt
++++ b/hwdb.d/ma-medium.txt
+@@ -968,12 +968,6 @@ C00000-CFFFFF     (base 16)		BlueEyes Technology
+ 				Suresnes    92150
+ 				FR
+ 
+-6C-93-08   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-500000-5FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 6C-93-08   (hex)		WATERFORD CONSULTANTS LLC
+ 100000-1FFFFF     (base 16)		WATERFORD CONSULTANTS LLC
+ 				7430 NEW TECHNOLOGY WAY, Suite 150
+@@ -1634,12 +1628,6 @@ A4-53-EE   (hex)		Stellamore
+ 				Shenzhen  Guangdong  518100
+ 				CN
+ 
+-8C-AE-49   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-E00000-EFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 88-5F-E8   (hex)		Apoidea Technology Co., Ltd.
+ 100000-1FFFFF     (base 16)		Apoidea Technology Co., Ltd.
+ 				No. 111, Boyun Road
+@@ -5969,12 +5957,6 @@ A00000-AFFFFF     (base 16)		Fancom
+ 				Panningen  Limburg  5981 XW
+ 				NL
+ 
+-78-39-2D   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-700000-7FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ C8-98-DB   (hex)		Quantum Co., Ltd.
+ 600000-6FFFFF     (base 16)		Quantum Co., Ltd.
+ 				909-15, Ganam-ro, Ganam-eup
+@@ -6200,12 +6182,6 @@ C00000-CFFFFF     (base 16)		Huizhou KDT Intelligent Display Technology Co. Ltd
+ 				Huizhou  Guangdong  516006
+ 				CN
+ 
+-34-C8-D6   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-E00000-EFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 34-C8-D6   (hex)		Illumina
+ 800000-8FFFFF     (base 16)		Illumina
+ 				5200 Illumina Way
+@@ -6386,12 +6362,6 @@ B00000-BFFFFF     (base 16)		Shen zhen shi shang mei dian zi shang wu you xian g
+ 				Shenzhen  Guangdong Province  518100
+ 				CN
+ 
+-10-63-A3   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-800000-8FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 5C-87-D8   (hex)		Shenzhen Beiens Import and Export Co.,Ltd
+ 300000-3FFFFF     (base 16)		Shenzhen Beiens Import and Export Co.,Ltd
+ 				Suite 503, Building U3, Junxiang U8 Intelligent Manufacturing Industrial Park, Guxing Community, Xixiang Street, Baoan District, Shenzhen
+@@ -7028,12 +6998,6 @@ F8-2B-E6   (hex)		ViewSonic Corp
+ 				LA  CA  92821
+ 				US
+ 
+-F8-2B-E6   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-B00000-BFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ F8-2B-E6   (hex)		Flextronics Computing（SuZhou)Co.,LTD.
+ 200000-2FFFFF     (base 16)		Flextronics Computing（SuZhou)Co.,LTD.
+ 				No.1 Guanpu Road, Guoxiang Street, Wuzhong District,Suzhou, Jiangsu, China
+@@ -7205,12 +7169,6 @@ B00000-BFFFFF     (base 16)		Chengdu Juxun Electronic Technology Co.,Ltd
+ 				Chengdu  Sichuan  610500
+ 				CN
+ 
+-04-58-5D   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-E00000-EFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ B0-CC-CE   (hex)		Steelco SpA
+ 000000-0FFFFF     (base 16)		Steelco SpA
+ 				via Balegante 27
+@@ -7367,6 +7325,66 @@ F4-97-9D   (hex)		Smart Access Designs, LLC
+ 				Cheshire  CT  06410
+ 				US
+ 
++F8-2B-E6   (hex)		Shanghai Kanghai Information System CO.,LTD.
++B00000-BFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++04-58-5D   (hex)		Shanghai Kanghai Information System CO.,LTD.
++E00000-EFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++78-39-2D   (hex)		Shanghai Kanghai Information System CO.,LTD.
++700000-7FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++34-C8-D6   (hex)		Shanghai Kanghai Information System CO.,LTD.
++E00000-EFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++10-63-A3   (hex)		Shanghai Kanghai Information System CO.,LTD.
++800000-8FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++8C-AE-49   (hex)		Shanghai Kanghai Information System CO.,LTD.
++E00000-EFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++6C-93-08   (hex)		Shanghai Kanghai Information System CO.,LTD.
++500000-5FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++9C-E4-50   (hex)		Strato Automation Inc.
++400000-4FFFFF     (base 16)		Strato Automation Inc.
++				1550-B Rue de Coulomb
++				Boucherville  Quebec  J4B 7Z7
++				CA
++
++9C-E4-50   (hex)		Neways Advanced Applications
++500000-5FFFFF     (base 16)		Neways Advanced Applications
++				Science Park Eindhoven 5004
++				Son    5692EA
++				NL
++
++24-A1-0D   (hex)		Lobaro GmbH
++000000-0FFFFF     (base 16)		Lobaro GmbH
++				Stadtdeich 7
++				Hamburg      20097
++				DE
++
+ B8-4C-87   (hex)		Shenzhen Link-all Technology Co., Ltd
+ 300000-3FFFFF     (base 16)		Shenzhen Link-all Technology Co., Ltd
+ 				Floor 5th, Block 9th, Sunny Industrial Zone, Xili Town, Nanshan District, Shenzhen, China 
+@@ -8663,12 +8681,6 @@ C00000-CFFFFF     (base 16)		Beijing Aumiwalker technology CO.,LTD
+ 				SINGAPORE  SINGAPORE  380118
+ 				SG
+ 
+-38-A8-CD   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-700000-7FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 38-A8-CD   (hex)		ACiiST Smart Networks Ltd.
+ 000000-0FFFFF     (base 16)		ACiiST Smart Networks Ltd.
+ 				119 Ha'Mamshichim
+@@ -13463,12 +13475,6 @@ EC-5B-CD   (hex)		Doosan Bobcat North America
+ 				Minatoku  Tokyo  1080073
+ 				JP
+ 
+-F4-20-55   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-A00000-AFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 24-86-25   (hex)		Shanghai Xizhi Technology Co., Ltd.
+ 000000-0FFFFF     (base 16)		Shanghai Xizhi Technology Co., Ltd.
+ 				Room 401, Building A, Lenovo Innovation And Technology Park, No. 696, Songtao Road
+@@ -13622,12 +13628,6 @@ B0-47-5E   (hex)		MIVO Technology AB
+ 				Stockholm    11419
+ 				SE
+ 
+-B0-47-5E   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-000000-0FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ AC-EF-92   (hex)		PROGNOST Systems GmbH
+ 500000-5FFFFF     (base 16)		PROGNOST Systems GmbH
+ 				Daimlerstrasse 10
+@@ -13736,12 +13736,6 @@ A4-59-D3   (hex)		FrontAct Co., Ltd.
+ 				wuhan  hubei  430206
+ 				CN
+ 
+-58-23-BC   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-400000-4FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ BC-DF-E1   (hex)		Shenzhen Valley Ventures Co.,Ltd.
+ 100000-1FFFFF     (base 16)		Shenzhen Valley Ventures Co.,Ltd.
+ 				905,Building 4，Tianan Cloud park, Bantian street, Longgang district
+@@ -14066,12 +14060,6 @@ B00000-BFFFFF     (base 16)		GIGA Copper Networks GmbH
+ 				Düsseldorf    40470
+ 				DE
+ 
+-FC-E4-98   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-300000-3FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ FC-E4-98   (hex)		TScale Electronics Mfg. (Kunshan) Co., Ltd
+ 400000-4FFFFF     (base 16)		TScale Electronics Mfg. (Kunshan) Co., Ltd
+ 				No. 99 Jingwei Road, Zhoushi
+@@ -14222,12 +14210,84 @@ E00000-EFFFFF     (base 16)		Advant sp. z o.o.
+ 				Shenzhen  Guangdong  518101
+ 				CN
+ 
++F4-20-55   (hex)		Shanghai Kanghai Information System CO.,LTD.
++A00000-AFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++B0-47-5E   (hex)		Shanghai Kanghai Information System CO.,LTD.
++000000-0FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++58-23-BC   (hex)		Shanghai Kanghai Information System CO.,LTD.
++400000-4FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++38-A8-CD   (hex)		Shanghai Kanghai Information System CO.,LTD.
++700000-7FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
+ 9C-E4-50   (hex)		AIO SYSTEMS
+ 100000-1FFFFF     (base 16)		AIO SYSTEMS
+ 				158 Jan smuts drive,Walter streetRosebank quarter 
+ 				Johannesburg    2196
+ 				ZA
+ 
++9C-E4-50   (hex)		Shenzhen Lixun Technology Co., Ltd.
++200000-2FFFFF     (base 16)		Shenzhen Lixun Technology Co., Ltd.
++				Room 209, Building D, Xinda Creative Park, Qianjin 2nd Road and Baotian 2nd Road, Bao'an District
++				Shenzhen    518102
++				CN
++
++24-A1-0D   (hex)		REVUPTECH PRIVATE LIMITED 
++C00000-CFFFFF     (base 16)		REVUPTECH PRIVATE LIMITED 
++				G 232, G.B. NAGAR SECTOR 63 NOIDA 
++				NOIDA   UTTAR PRADESH  201301
++				IN
++
++9C-E4-50   (hex)		Marelli AL&S ALIT-TZ
++300000-3FFFFF     (base 16)		Marelli AL&S ALIT-TZ
++				Via dell'industria 17
++				Tolmezzo  Italy/Udine  33028
++				IT
++
++FC-E4-98   (hex)		Shanghai Kanghai Information System CO.,LTD.
++300000-3FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++9C-E4-50   (hex)		BCD SRL
++D00000-DFFFFF     (base 16)		BCD SRL
++				Galvez 1060
++				Rosario  FOREIGN  2000
++				AR
++
++24-A1-0D   (hex)		Tecnojest SrL
++900000-9FFFFF     (base 16)		Tecnojest SrL
++				Viale Europa, 128 Spoltore
++				Spoltore    65010
++				IT
++
++24-A1-0D   (hex)		Detroit Defense Inc.
++A00000-AFFFFF     (base 16)		Detroit Defense Inc.
++				300 E Big Beaver Rd Suite 100
++				Troy  MI  48083
++				US
++
++24-A1-0D   (hex)		Goertek Inc.
++600000-6FFFFF     (base 16)		Goertek Inc.
++				No. 999 Liyuan Street, High-Tech Industrial Development District
++				Weifang  Shandong  261000
++				CN
++
+ B8-4C-87   (hex)		Altronix , Corp
+ A00000-AFFFFF     (base 16)		Altronix , Corp
+ 				140 58th St. Bldg A, Ste 2N
+@@ -15086,12 +15146,6 @@ A00000-AFFFFF     (base 16)		Shenzhen Yunlianxin Technology Co., Ltd.
+ 				Mail box 15123  Haifa  3508409
+ 				IL
+ 
+-18-C3-F4   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-D00000-DFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 18-C3-F4   (hex)		Shenzhen Yecon-Tech Co.,Ltd.
+ 700000-7FFFFF     (base 16)		Shenzhen Yecon-Tech Co.,Ltd.
+ 				Building 2,Cuigang Industrial Zone 6,Huaide Community,Fuyong Town,Baoan District, Shenzhen City, Guangdong province, China
+@@ -15254,12 +15308,6 @@ B00000-BFFFFF     (base 16)		Beijing Shannoncyber Technology Co.,Ltd
+ 				Chengdu  Sichuan  650000
+ 				CN
+ 
+-70-50-E7   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-000000-0FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 80-02-F4   (hex)		Jiangsu Vedkang Medicl Sclence and Technology Co.,Ltd
+ D00000-DFFFFF     (base 16)		Jiangsu Vedkang Medicl Sclence and Technology Co.,Ltd
+ 				No. 52, Guoxiang Road, Wujin economic development zone
+@@ -16082,12 +16130,6 @@ C00000-CFFFFF     (base 16)		Ariston Thermo s.p.a.
+ 				Fabriano  Ancona  60044
+ 				IT
+ 
+-0C-5C-B5   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-800000-8FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 0C-5C-B5   (hex)		iH&S Technology Limited
+ 300000-3FFFFF     (base 16)		iH&S Technology Limited
+ 				iH&S Technology Limited
+@@ -16412,12 +16454,6 @@ DC-4A-9E   (hex)		Advanced Electronics Ltd
+ 				Newcastle    NE12 8EW
+ 				GB
+ 
+-58-95-D8   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-800000-8FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ FC-CD-2F   (hex)		Eltek brojila d.o.o.
+ E00000-EFFFFF     (base 16)		Eltek brojila d.o.o.
+ 				Svetice 24
+@@ -16874,12 +16910,6 @@ B00000-BFFFFF     (base 16)		Signal Hound
+ 				Vista  CA  92081
+ 				US
+ 
+-64-62-66   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-700000-7FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 14-AE-85   (hex)		Trimble LEM
+ 800000-8FFFFF     (base 16)		Trimble LEM
+ 				10368 Westmoor Dr
+@@ -18170,12 +18200,6 @@ C00000-CFFFFF     (base 16)		AndroVideo Inc.
+ 				Jinhua  Zhejiang  321000
+ 				CN
+ 
+-C4-FF-BC   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-600000-6FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ C4-FF-BC   (hex)		ShenZhen ZYT Technology co., Ltd
+ 800000-8FFFFF     (base 16)		ShenZhen ZYT Technology co., Ltd
+ 				Floor four,Build C,FuSen Industrial park, HangCheng Avenue,Baoan District
+@@ -20777,12 +20801,6 @@ B00000-BFFFFF     (base 16)		Vital Oricraft Flows Technology Co., Ltd.
+ 				Qingyuan  Guangdong  511500
+ 				CN
+ 
+-48-5E-0E   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-000000-0FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 48-5E-0E   (hex)		MHE Electronics
+ 400000-4FFFFF     (base 16)		MHE Electronics
+ 				49Alexander Rd, Westmead
+@@ -21041,12 +21059,6 @@ B00000-BFFFFF     (base 16)		Hitachi Rail GTS Austria GmbH
+ 				Vienna    1200
+ 				AT
+ 
+-EC-74-CD   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-100000-1FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ EC-74-CD   (hex)		Standard Backhaul Communications
+ 500000-5FFFFF     (base 16)		Standard Backhaul Communications
+ 				333 South Highland Ave
+@@ -21341,12 +21353,6 @@ FC-A2-DF   (hex)		Beijing KSL Electromechanical Technology Development Co.,Ltd
+ 				Beijing    100071
+ 				CN
+ 
+-60-A4-34   (hex)		Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
+-200000-2FFFFF     (base 16)		Hangzhou Zhongxinhui lntelligent Technology Co.,Ltd.
+-				Room 809, Building B, No. 567 Yueming Road, Xixing Street,
+-				Hangzhou  Binjiang Distric  310000
+-				CN
+-
+ FC-A2-DF   (hex)		Orion Power Systems, Inc.
+ E00000-EFFFFF     (base 16)		Orion Power Systems, Inc.
+ 				2939 W. Beaver Street
+@@ -21569,18 +21575,111 @@ E0-23-3B   (hex)		PluralFusion INC
+ 				Hochiminh  Hochiminh  70000
+ 				VN
+ 
++64-62-66   (hex)		Shanghai Kanghai Information System CO.,LTD.
++700000-7FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++58-95-D8   (hex)		Shanghai Kanghai Information System CO.,LTD.
++800000-8FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++0C-5C-B5   (hex)		Shanghai Kanghai Information System CO.,LTD.
++800000-8FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++70-50-E7   (hex)		Shanghai Kanghai Information System CO.,LTD.
++000000-0FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++18-C3-F4   (hex)		Shanghai Kanghai Information System CO.,LTD.
++D00000-DFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
+ 50-FA-CB   (hex)		Darveen Technology Limited
+ 400000-4FFFFF     (base 16)		Darveen Technology Limited
+ 				3/F, 2nd Building Hui Sheng Da industrial park, Qingcui road, Longhua district, Shenzhen
+ 				Shenzhen  Guangdong  518000
+ 				CN
+ 
++48-5E-0E   (hex)		Shanghai Kanghai Information System CO.,LTD.
++000000-0FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++EC-74-CD   (hex)		Shanghai Kanghai Information System CO.,LTD.
++100000-1FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++C4-FF-BC   (hex)		Shanghai Kanghai Information System CO.,LTD.
++600000-6FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
+ 50-FA-CB   (hex)		Shenzhen Evertones Quantum Technology Co., Ltd.
+ 100000-1FFFFF     (base 16)		Shenzhen Evertones Quantum Technology Co., Ltd.
+ 				Room 3907, Tower B, Digital Innovation Center, Beizhan Community, Minzhi Sub-district, Longhua District
+ 				Shenzhen  Guangdong  518131
+ 				CN
+ 
++24-A1-0D   (hex)		Shenzhen Star Instrument Co., Ltd. 
++100000-1FFFFF     (base 16)		Shenzhen Star Instrument Co., Ltd. 
++				23/F., Coastal Building(west), Haide 3rd Road, Nanshan District
++				Shenzhen   GuangDong   518054
++				CN
++
++24-A1-0D   (hex)		Private
++B00000-BFFFFF     (base 16)		Private
++
++60-A4-34   (hex)		Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
++200000-2FFFFF     (base 16)		Hangzhou Zhongxinghui Intelligent Technology Co., Ltd.
++				Room 809, Building B, No. 567 Yueming Road, Xixing Street,
++				Hangzhou  Binjiang Distric  310000
++				CN
++
++9C-E4-50   (hex)		BEIJING TRANSTREAMS TECHNOLOGY CO.,LTD
++700000-7FFFFF     (base 16)		BEIJING TRANSTREAMS TECHNOLOGY CO.,LTD
++				Room 1401, 14th Floor, Building 8, No. 8 Kegu 1st Street, Beijing Economic and Technological Development Zone
++				Beijing  Beijing  100176
++				CN
++
++9C-E4-50   (hex)		Shenzhen Kuki Electric Co., Ltd.
++E00000-EFFFFF     (base 16)		Shenzhen Kuki Electric Co., Ltd.
++				No.6 Shichang Road,Xinqiao Street Baoan District,Shenzhen,Guangdong
++				Shenzhen  Guangdong  518125
++				CN
++
++9C-E4-50   (hex)		Shenzhen HQVT TECHNOLOGY Co.,LTD
++900000-9FFFFF     (base 16)		Shenzhen HQVT TECHNOLOGY Co.,LTD
++				3/F,Building 8 ,Taihua Wutong Island,Xixiang,Bao'an District
++				China  Guang Dong  518000
++				CN
++
++9C-E4-50   (hex)		Shenzhen Coslight Technology Co.,Ltd.
++B00000-BFFFFF     (base 16)		Shenzhen Coslight Technology Co.,Ltd.
++				Room 101, Factory Building, No. 2 Guangtian Road, Luotian Community, Yanluo Sub-district, Bao'an District, Shenzhen
++				Shenzhen    518000
++				CN
++
++24-A1-0D   (hex)		Sony Honda Mobility Inc.
++200000-2FFFFF     (base 16)		Sony Honda Mobility Inc.
++				Midtown-East 9th floor, 9-7-2 Akasaka
++				Minato-ku  Tokyo  107-0052
++				JP
++
+ D0-14-11   (hex)		P.B. Elettronica srl
+ 100000-1FFFFF     (base 16)		P.B. Elettronica srl
+ 				Via Santorelli, 8
+@@ -21671,12 +21770,6 @@ B00000-BFFFFF     (base 16)		Beijing ThinRedline Technology Co.,Ltd.
+ 				Beijing  Beijing  100015
+ 				CN
+ 
+-88-A6-EF   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-C00000-CFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ D0-15-BB   (hex)		Beijing Guangshu Zhiying Technology Development Co., Ltd.
+ 200000-2FFFFF     (base 16)		Beijing Guangshu Zhiying Technology Development Co., Ltd.
+ 				Room910,Environment Building,16 Guangqumen Inner Street,Dongcheng District
+@@ -22658,12 +22751,6 @@ DC-36-43   (hex)		Hefei EA Excelsior Information Security Co., Ltd.
+ 				Shenzhen    518000
+ 				CN
+ 
+-04-EE-E8   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-700000-7FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ DC-36-43   (hex)		Hangzhou Chingan Tech Co., Ltd.
+ 500000-5FFFFF     (base 16)		Hangzhou Chingan Tech Co., Ltd.
+ 				4F, BLDG. 4, 16# XIYUAN YI ROAD HANGZHOU, ZHEJIANG,CHINA 310030
+@@ -24086,12 +24173,6 @@ D00000-DFFFFF     (base 16)		OMNISENSE SYSTEMS PRIVATE LIMITED TAIWAN BRANCH
+ 				Budakalasz    2011
+ 				HU
+ 
+-54-A4-93   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-400000-4FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 54-A4-93   (hex)		ShenZhen Smart&Aspiration Co.,LTD
+ 100000-1FFFFF     (base 16)		ShenZhen Smart&Aspiration Co.,LTD
+ 				Guanlan
+@@ -28055,12 +28136,6 @@ C0-48-2F   (hex)		Chengdu Dingfeng Huizhi Technology Co., Ltd
+ 				Chengdu  Sichuan  610213
+ 				CN
+ 
+-C0-48-2F   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-B00000-BFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 24-A3-F0   (hex)		P4S
+ E00000-EFFFFF     (base 16)		P4S
+ 				27 bis rue des Plantes 
+@@ -28658,17 +28733,47 @@ B00000-BFFFFF     (base 16)		Combined Public Communications, LLC
+ 				Guro-gu  Seoul  08394
+ 				KR
+ 
++50-FA-CB   (hex)		Vortex Infotech Private Limited
++D00000-DFFFFF     (base 16)		Vortex Infotech Private Limited
++				101, Corporate Arena, Sitaram Patkar Marg, Behind Mahindra Eminente Society, Goregaon west.
++				Mumbai  Maharashtra  400104
++				IN
++
++54-A4-93   (hex)		Shanghai Kanghai Information System CO.,LTD.
++400000-4FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++04-EE-E8   (hex)		Shanghai Kanghai Information System CO.,LTD.
++700000-7FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
+ 50-FA-CB   (hex)		1208815047
+ 600000-6FFFFF     (base 16)		1208815047
+ 				5F, 547, SAMSEONG-RO, GANGNAM-GU,SEOUL, SOUTH KOREA
+ 				seoul    06156
+ 				KR
+ 
+-50-FA-CB   (hex)		Vortex Infotech Private Limited
+-D00000-DFFFFF     (base 16)		Vortex Infotech Private Limited
+-				101, Corporate Arena, Sitaram Patkar Marg, Behind Mahindra Eminente Society, Goregaon west.
+-				Mumbai  Maharashtra  400104
+-				IN
++24-A1-0D   (hex)		Amina Distribution AS
++D00000-DFFFFF     (base 16)		Amina Distribution AS
++				Strandsvingen 14A
++				Stavanger    4032
++				NO
++
++88-A6-EF   (hex)		Shanghai Kanghai Information System CO.,LTD.
++C00000-CFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++C0-48-2F   (hex)		Shanghai Kanghai Information System CO.,LTD.
++B00000-BFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
+ 
+ C8-5C-E2   (hex)		Fela Management AG 
+ 000000-0FFFFF     (base 16)		Fela Management AG 
+@@ -29369,12 +29474,6 @@ D00000-DFFFFF     (base 16)		Jiangsu AIDriving Co.,Ltd.
+ D0-96-86   (hex)		Private
+ 700000-7FFFFF     (base 16)		Private
+ 
+-C4-98-94   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-700000-7FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ C4-98-94   (hex)		shenzhen lanodo technology Co., Ltd
+ 500000-5FFFFF     (base 16)		shenzhen lanodo technology Co., Ltd
+ 				Room 501 Building D, Qiaoan Industry park, No 308 Wuhe Road, Guanlan, Longhua District
+@@ -29429,12 +29528,6 @@ A00000-AFFFFF     (base 16)		VIE STYLE,INC,
+ 				Xiamen  Fujian  361100
+ 				CN
+ 
+-58-47-CA   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-600000-6FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 58-47-CA   (hex)		Kingnuo Intelligent Technology (Jiaxing) Co., Ltd.
+ 900000-9FFFFF     (base 16)		Kingnuo Intelligent Technology (Jiaxing) Co., Ltd.
+ 				ROOM.1202,Yongyue Building, YOUCHEGANG TOWN?XIUZHOU DISTRICT
+@@ -30227,12 +30320,6 @@ E00000-EFFFFF     (base 16)		Dongguan zhenxing electronic technology co.,limited
+ 				DonggUAN    523768
+ 				CN
+ 
+-78-13-05   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-900000-9FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ E8-78-29   (hex)		Galcon
+ 200000-2FFFFF     (base 16)		Galcon
+ 				Kfar Blum  israel
+@@ -35081,12 +35168,6 @@ EC-5B-CD   (hex)		Sfera Labs S.r.l.
+ 				Rillieux-La-Pape  FRANCE  69140
+ 				FR
+ 
+-34-46-63   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-900000-9FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 34-46-63   (hex)		Bluesoo Tech (HongKong) Co.,Limited
+ 800000-8FFFFF     (base 16)		Bluesoo Tech (HongKong) Co.,Limited
+ 				Room 05, 28 / F, good view business centre, 2-16 Garden Street, Mong Kok, Kowloon, Hongkong.
+@@ -35543,12 +35624,6 @@ D00000-DFFFFF     (base 16)		Annapurna labs
+ 				Mail box 15123  Haifa  3508409
+ 				IL
+ 
+-04-A1-6F   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-000000-0FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 04-A1-6F   (hex)		Xiamen Akubela Innovation Technology CO., Ltd.
+ 400000-4FFFFF     (base 16)		Xiamen Akubela Innovation Technology CO., Ltd.
+ 				9/F, No.56 Guanri Road, Software Park II, Xiamen 361009, China
+@@ -35633,12 +35708,6 @@ DC-76-C3   (hex)		Bangyan Technology Co., Ltd
+ 				Shenzhen  Guangdong  518100
+ 				CN
+ 
+-DC-76-C3   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-300000-3FFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ C0-83-59   (hex)		UNA Digital Inc.
+ 400000-4FFFFF     (base 16)		UNA Digital Inc.
+ 				5F, 41-20, Burim-ro 170beon-gil
+@@ -35837,12 +35906,6 @@ FC-E4-98   (hex)		E Haute Intelligent Technology Co., Ltd
+ 				shanwei  guangdong  516600
+ 				CN
+ 
+-E0-23-3B   (hex)		Shenzhen C & D Electronics Co., Ltd.
+-B00000-BFFFFF     (base 16)		Shenzhen C & D Electronics Co., Ltd.
+-				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
+-				ShenZhen  GuangDong  518000
+-				CN
+-
+ 48-08-EB   (hex)		Guangdong Three Link Technology Co., Ltd
+ 200000-2FFFFF     (base 16)		Guangdong Three Link Technology Co., Ltd
+ 				3 floor, A1 Building, No. 75 Jianshe Road, Nankeng Village, Qishi Town
+@@ -35890,3 +35953,75 @@ A00000-AFFFFF     (base 16)		AUO DISPLAY PLUS CORPORATION
+ 				No. 1, Gongye E. 3rd Rd., East Dist., Hsinchu Science Park
+ 				Hsinchu  Taiwan  30075
+ 				TW
++
++9C-E4-50   (hex)		Shenzhen Chengzhao Technology Co., Ltd.
++000000-0FFFFF     (base 16)		Shenzhen Chengzhao Technology Co., Ltd.
++				Building A, No. 13 Huayin Road, Hualang Community, Dalang Subdistrict, Longhua District
++				Shenzhen  Guangdong  518000
++				CN
++
++C4-98-94   (hex)		Shanghai Kanghai Information System CO.,LTD.
++700000-7FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++34-46-63   (hex)		Shanghai Kanghai Information System CO.,LTD.
++900000-9FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++04-A1-6F   (hex)		Shanghai Kanghai Information System CO.,LTD.
++000000-0FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++78-13-05   (hex)		Shanghai Kanghai Information System CO.,LTD.
++900000-9FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++58-47-CA   (hex)		Shanghai Kanghai Information System CO.,LTD.
++600000-6FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++DC-76-C3   (hex)		Shanghai Kanghai Information System CO.,LTD.
++300000-3FFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++E0-23-3B   (hex)		Shanghai Kanghai Information System CO.,LTD.
++B00000-BFFFFF     (base 16)		Shanghai Kanghai Information System CO.,LTD.
++				9th FIoor, Building 9, No.1 Qingxiang road, BaoNeng Science and TechnoIogy Industrial Park, Longhua New District
++				ShenZhen  GuangDong  518000
++				CN
++
++24-A1-0D   (hex)		Avantel Limited
++500000-5FFFFF     (base 16)		Avantel Limited
++				Plot No. S-119M, E-CITYMaheshwaram Mandal, Raviryal, Rangareddy
++				HYDERABAD   Telangana  501510
++				IN
++
++24-A1-0D   (hex)		Rhymebus corporation
++300000-3FFFFF     (base 16)		Rhymebus corporation
++				No. 17, 33rd Road, Taichung Industrial Park
++				Taichung    40768
++				TW
++
++24-A1-0D   (hex)		Dongguan Taijie Electronics Technology Co.,Ltd
++400000-4FFFFF     (base 16)		Dongguan Taijie Electronics Technology Co.,Ltd
++				5F, 6# Building, Sanjia Industrial Park, Dongkeng Town
++				Dongguan  Guangdong  523000
++				CN
++
++24-A1-0D   (hex)		Luxvisions lnnovation TechnologyCorp.Limited
++800000-8FFFFF     (base 16)		Luxvisions lnnovation TechnologyCorp.Limited
++				No. 69, Yongsheng Road, Huangpu District, Guangzhou
++				Guangzhou  Guangdong Province  510000
++				CN
+diff --git a/hwdb.d/ma-small.txt b/hwdb.d/ma-small.txt
+index a7d7846a87..cca323ea42 100644
+--- a/hwdb.d/ma-small.txt
++++ b/hwdb.d/ma-small.txt
+@@ -7787,6 +7787,12 @@ DD2000-DD2FFF     (base 16)		SHIELD-CCTV CO.,LTD.
+ 				Poway  CA  92064
+ 				US
+ 
++8C-1F-64   (hex)		Taicang T&W Electronics
++FFB000-FFBFFF     (base 16)		Taicang T&W Electronics
++				89# Jiang Nan RD
++				Suzhou  Jiangsu  215412
++				CN
++
+ 8C-1F-64   (hex)		Shenzhen zhushida Technology lnformation Co.,Ltd
+ A5D000-A5DFFF     (base 16)		Shenzhen zhushida Technology lnformation Co.,Ltd
+ 				701, Building D, Zone B, Junxing Industrial Zone, Junxing Industrial Zone, Oyster Road, Zhancheng Community, Fuhai Street,
+@@ -7799,11 +7805,11 @@ A5D000-A5DFFF     (base 16)		Shenzhen zhushida Technology lnformation Co.,Ltd
+ 				SHENZHEN  Bao'an District  518000
+ 				CN
+ 
+-8C-1F-64   (hex)		Taicang T&W Electronics
+-FFB000-FFBFFF     (base 16)		Taicang T&W Electronics
+-				89# Jiang Nan RD
+-				Suzhou  Jiangsu  215412
+-				CN
++8C-1F-64   (hex)		Oriux
++20A000-20AFFF     (base 16)		Oriux
++				5825 N. Sam Houston Pkwy WSuite 220 Houston TX 77086 United S
++				Houston  TX  77086
++				US
+ 
+ 8C-1F-64   (hex)		Breas Medical AB
+ 5A1000-5A1FFF     (base 16)		Breas Medical AB
+@@ -7811,36 +7817,18 @@ FFB000-FFBFFF     (base 16)		Taicang T&W Electronics
+ 				Mölnlycke    SE-435 33
+ 				SE
+ 
+-8C-1F-64   (hex)		Oriux
+-20A000-20AFFF     (base 16)		Oriux
+-				5825 N. Sam Houston Pkwy WSuite 220 Houston TX 77086 United S
+-				Houston  TX  77086
+-				US
+-
+ 8C-1F-64   (hex)		ENBIK Technology Co., Ltd
+ 85A000-85AFFF     (base 16)		ENBIK Technology Co., Ltd
+ 				2F., No.542, Sec. 1, Minsheng N. Rd.,
+ 				Taoyuan City  Taoyuan City  333016
+ 				TW
+ 
+-8C-1F-64   (hex)		ibg Prüfcomputer GmbH
+-627000-627FFF     (base 16)		ibg Prüfcomputer GmbH
+-				Pretzfelder Str. 27
+-				Ebermannstadt    91320
+-				DE
+-
+ 8C-1F-64   (hex)		Amazon Robotics MTAC Matrix NPI
+ DC4000-DC4FFF     (base 16)		Amazon Robotics MTAC Matrix NPI
+ 				50 Otis Street
+ 				Westborough  MA  01581
+ 				US
+ 
+-8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+-316000-316FFF     (base 16)		Potter Electric Signal Co. LLC
+-				1609 Park 370 Place
+-				Hazelwood  MO  63042
+-				US
+-
+ 8C-1F-64   (hex)		Eiden Co.,Ltd.
+ 3D7000-3D7FFF     (base 16)		Eiden Co.,Ltd.
+ 				2-7-1 kurigi,asao-ku,kawasaki-shi
+@@ -7853,6 +7841,18 @@ C09000-C09FFF     (base 16)		S.E.I. CO.,LTD.
+ 				Izunokuni  Shizuoka  4102133
+ 				JP
+ 
++8C-1F-64   (hex)		ibg Prüfcomputer GmbH
++627000-627FFF     (base 16)		ibg Prüfcomputer GmbH
++				Pretzfelder Str. 27
++				Ebermannstadt    91320
++				DE
++
++8C-1F-64   (hex)		Potter Electric Signal Co. LLC
++316000-316FFF     (base 16)		Potter Electric Signal Co. LLC
++				1609 Park 370 Place
++				Hazelwood  MO  63042
++				US
++
+ 8C-1F-64   (hex)		Boon Arthur Engineering Pte Ltd
+ D8A000-D8AFFF     (base 16)		Boon Arthur Engineering Pte Ltd
+ 				629 Aljunied Road #06-06 Cititech Industrial Building
+@@ -7878,31 +7878,31 @@ C74000-C74FFF     (base 16)		Nippon Techno Lab Inc
+ 				JP
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-986000-986FFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road
++9B1000-9B1FFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road 
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-605000-605FFF     (base 16)		Aplex Technology Inc.
++F00000-F00FFF     (base 16)		Aplex Technology Inc.
+ 				15F-1, No.186, Jian Yi Road 
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-F00000-F00FFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road 
++986000-986FFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-2EE000-2EEFFF     (base 16)		Aplex Technology Inc.
++605000-605FFF     (base 16)		Aplex Technology Inc.
+ 				15F-1, No.186, Jian Yi Road 
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-9B1000-9B1FFF     (base 16)		Aplex Technology Inc.
++2EE000-2EEFFF     (base 16)		Aplex Technology Inc.
+ 				15F-1, No.186, Jian Yi Road 
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+@@ -7931,23 +7931,17 @@ CCF000-CCFFFF     (base 16)		Tiptop Platform P. Ltd
+ 				Jaipur  Rajasthan  302001
+ 				IN
+ 
+-8C-1F-64   (hex)		Taesung Media
+-8DB000-8DBFFF     (base 16)		Taesung Media
+-				Room 20, 306, Dalseo-daero 109-gil
+-				Dalseo-gu  Daegu   42709
+-				KR
+-
+ 8C-1F-64   (hex)		Thermaco Incorporated
+ F20000-F20FFF     (base 16)		Thermaco Incorporated
+ 				646 GREENSBORO ST
+ 				ASHEBORO  NC  27203-4739
+ 				US
+ 
+-8C-1F-64   (hex)		Kite Rise Technologies GmbH
+-508000-508FFF     (base 16)		Kite Rise Technologies GmbH
+-				Kaerntner Strasse 355B/1.OG
+-				Graz    8054
+-				AT
++8C-1F-64   (hex)		Taesung Media
++8DB000-8DBFFF     (base 16)		Taesung Media
++				Room 20, 306, Dalseo-daero 109-gil
++				Dalseo-gu  Daegu   42709
++				KR
+ 
+ 8C-1F-64   (hex)		Omnilink Tecnologia S/A
+ 023000-023FFF     (base 16)		Omnilink Tecnologia S/A
+@@ -7955,11 +7949,11 @@ F20000-F20FFF     (base 16)		Thermaco Incorporated
+ 				Barueri  SP  06455-020
+ 				BR
+ 
+-8C-1F-64   (hex)		GETQCALL
+-37A000-37AFFF     (base 16)		GETQCALL
+-				23 Lorraine Drive 
+-				North York   ON  M2N6Z6
+-				CA
++8C-1F-64   (hex)		Kite Rise Technologies GmbH
++508000-508FFF     (base 16)		Kite Rise Technologies GmbH
++				Kaerntner Strasse 355B/1.OG
++				Graz    8054
++				AT
+ 
+ 8C-1F-64   (hex)		Vinfast Trading and Production JSC
+ F80000-F80FFF     (base 16)		Vinfast Trading and Production JSC
+@@ -7967,18 +7961,18 @@ F80000-F80FFF     (base 16)		Vinfast Trading and Production JSC
+ 				Hai Phong  Hai Phong  180000
+ 				VN
+ 
++8C-1F-64   (hex)		GETQCALL
++37A000-37AFFF     (base 16)		GETQCALL
++				23 Lorraine Drive 
++				North York   ON  M2N6Z6
++				CA
++
+ 8C-1F-64   (hex)		YDIIT Co., Ltd.
+ 1FA000-1FAFFF     (base 16)		YDIIT Co., Ltd.
+ 				#3010, U-Tower, 120, Heungdeokjungang-ro, Giheung-gu,
+ 				Yongin  Gyeonggi  16950
+ 				KR
+ 
+-8C-1F-64   (hex)		BEST
+-0A2000-0A2FFF     (base 16)		BEST
+-				16, Deogyang-daero 1556beon-gil, Yeongtong-gu, ,  E-dong 1401ho, South Korea
+-				수원  Gyeonggi-do  16690
+-				KR
+-
+ 8C-1F-64   (hex)		AUREKA SMART LIVING W.L.L
+ 689000-689FFF     (base 16)		AUREKA SMART LIVING W.L.L
+ 				Office 22, Bldg 288C, Avenue 16, Hidd
+@@ -7991,6 +7985,42 @@ CD7000-CD7FFF     (base 16)		Embedded Designs Services India Pvt Ltd
+ 				Faridabad  Haryana  121001
+ 				IN
+ 
++8C-1F-64   (hex)		BEST
++0A2000-0A2FFF     (base 16)		BEST
++				16, Deogyang-daero 1556beon-gil, Yeongtong-gu, ,  E-dong 1401ho, South Korea
++				수원  Gyeonggi-do  16690
++				KR
++
++8C-1F-64   (hex)		Sichuan ZhikongLingxin Technology Co., Ltd.
++17A000-17AFFF     (base 16)		Sichuan ZhikongLingxin Technology Co., Ltd.
++				No. 22, 5th Floor, Unit 1, Building 3, No.666 Guandong 1st Street, Chengdu Hightech Zone, China (Sichuan) Pilot Free Trade Zone.
++				Chengdu  Sichuan  610095
++				CN
++
++8C-1F-64   (hex)		Beijing Dangong Technology Co., Ltd
++DB8000-DB8FFF     (base 16)		Beijing Dangong Technology Co., Ltd
++				Room 3018, Building B, Hongfu International Innovation Center, Hongfu Technology Park, Beiqing Road, Changping District, Beijing
++				Beijing  Beijing  100084
++				CN
++
++8C-1F-64   (hex)		Benchmark Electronics BV
++CC9000-CC9FFF     (base 16)		Benchmark Electronics BV
++				Lelyweg 10
++				Almelo  Overijssel  7602 EA
++				NL
++
++8C-1F-64   (hex)		Raspberry Pi (Trading) Ltd
++34A000-34AFFF     (base 16)		Raspberry Pi (Trading) Ltd
++				Maurice Wilkes Building, St Johns Innovation Park
++				Cambridge  Cambridgeshire  CB4 0DS
++				GB
++
++8C-1F-64   (hex)		WHITEBOX TECHNOLOGY HONG KONG LTD
++E2A000-E2AFFF     (base 16)		WHITEBOX TECHNOLOGY HONG KONG LTD
++				UNIT B 11/F, Yam Tze Commercial Building, 23 Thomson Road
++				Wan Chai  Hong Kong  Hong Kong
++				HK
++
+ 8C-1F-64   (hex)		Jacobs Technology, Inc.
+ A98000-A98FFF     (base 16)		Jacobs Technology, Inc.
+ 				7765 Old Telegraph Road
+@@ -15761,18 +15791,18 @@ F03000-F03FFF     (base 16)		Faust ApS
+ 				Helsinki    00150
+ 				FI
+ 
+-8C-1F-64   (hex)		NARI TECH Co., Ltd
+-888000-888FFF     (base 16)		NARI TECH Co., Ltd
+-				947, Hanam-daero
+-				Hanam-si  Gyeonggi-do  12982
+-				KR
+-
+ 8C-1F-64   (hex)		Mitsubishi Electric System & Service Co., Ltd.
+ E05000-E05FFF     (base 16)		Mitsubishi Electric System & Service Co., Ltd.
+ 				1-26-43 Yada, Higashi-ku,
+ 				Nagoya  Aichi  461-0040
+ 				JP
+ 
++8C-1F-64   (hex)		NARI TECH Co., Ltd
++888000-888FFF     (base 16)		NARI TECH Co., Ltd
++				947, Hanam-daero
++				Hanam-si  Gyeonggi-do  12982
++				KR
++
+ 8C-1F-64   (hex)		NSK Co.,Ltd.
+ 2A3000-2A3FFF     (base 16)		NSK Co.,Ltd.
+ 				1-10-15 Daiko,Higashi-ku
+@@ -15797,36 +15827,36 @@ B41000-B41FFF     (base 16)		STATE GRID INTELLIGENCE TECHNOLOGY CO.,LTD.
+ 				Muenster  North Rhine-Westphalia  48163
+ 				DE
+ 
+-8C-1F-64   (hex)		BK LAB
+-F8C000-F8CFFF     (base 16)		BK LAB
+-				#1309, Daeryung Technotown 15, Simin-daero 401, Dongan-gu
+-				Anyang-si  Gyonggi-do  14057
+-				KR
+-
+ 8C-1F-64   (hex)		TECZZ LLC
+ D95000-D95FFF     (base 16)		TECZZ LLC
+ 				17 Forest AvenueSuite 017
+ 				Fond Du Lac  WI  54935
+ 				US
+ 
++8C-1F-64   (hex)		BK LAB
++F8C000-F8CFFF     (base 16)		BK LAB
++				#1309, Daeryung Technotown 15, Simin-daero 401, Dongan-gu
++				Anyang-si  Gyonggi-do  14057
++				KR
++
+ 8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+ 57B000-57BFFF     (base 16)		Potter Electric Signal Co. LLC
+ 				1609 Park 370 Place
+ 				Hazelwood  MO  63042
+ 				US
+ 
+-8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+-442000-442FFF     (base 16)		Potter Electric Signal Co. LLC
+-				1609 Park 370 Place
+-				Hazelwood  MO  63043
+-				US
+-
+ 8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+ 8FE000-8FEFFF     (base 16)		Potter Electric Signal Co. LLC
+ 				5757 Phantom Drive
+ 				Hazelwood  MO  63042
+ 				US
+ 
++8C-1F-64   (hex)		Potter Electric Signal Co. LLC
++442000-442FFF     (base 16)		Potter Electric Signal Co. LLC
++				1609 Park 370 Place
++				Hazelwood  MO  63043
++				US
++
+ 8C-1F-64   (hex)		Eyecloud, Inc
+ 072000-072FFF     (base 16)		Eyecloud, Inc
+ 				171 Branham Ln, Ste 10-243
+@@ -15851,15 +15881,15 @@ D95000-D95FFF     (base 16)		TECZZ LLC
+ 				Hangzhou    310024
+ 				CN
+ 
++8C-1F-64   (hex)		Private
++1A8000-1A8FFF     (base 16)		Private
++
+ 8C-1F-64   (hex)		Shenzhen Arctec Innovation Technology Co.,Ltd
+ 199000-199FFF     (base 16)		Shenzhen Arctec Innovation Technology Co.,Ltd
+ 				Room711-713, Yuefu Square, No.481, Fenghuang Street, Guangming Area
+ 				Shenzhen  Guangdong  518107
+ 				CN
+ 
+-8C-1F-64   (hex)		Private
+-1A8000-1A8FFF     (base 16)		Private
+-
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+ 4B7000-4B7FFF     (base 16)		Aplex Technology Inc.
+ 				15F-1, No.186, Jian Yi Road 
+@@ -15959,11 +15989,11 @@ DA4000-DA4FFF     (base 16)		Foenix Coding Ltd
+ 				Chertsey  Surrey  KT16 0AW
+ 				GB
+ 
+-8C-1F-64   (hex)		Rail Telematics Corp
+-7C1000-7C1FFF     (base 16)		Rail Telematics Corp
+-				494 6th Ave S
+-				Jacksonville Beach    32250
+-				US
++8C-1F-64   (hex)		YUYAMA MFG Co.,Ltd
++70A000-70AFFF     (base 16)		YUYAMA MFG Co.,Ltd
++				1-4-30
++				MEISHINGUCHI,TOYONAKA  OSAKA  561-0841
++				JP
+ 
+ 8C-1F-64   (hex)		Vigor Electric Corp.
+ A64000-A64FFF     (base 16)		Vigor Electric Corp.
+@@ -15971,11 +16001,11 @@ A64000-A64FFF     (base 16)		Vigor Electric Corp.
+ 				Danshui Dist.  New Taipei City  25152
+ 				TW
+ 
+-8C-1F-64   (hex)		YUYAMA MFG Co.,Ltd
+-70A000-70AFFF     (base 16)		YUYAMA MFG Co.,Ltd
+-				1-4-30
+-				MEISHINGUCHI,TOYONAKA  OSAKA  561-0841
+-				JP
++8C-1F-64   (hex)		Rail Telematics Corp
++7C1000-7C1FFF     (base 16)		Rail Telematics Corp
++				494 6th Ave S
++				Jacksonville Beach    32250
++				US
+ 
+ 8C-1F-64   (hex)		Sonic Italia
+ 8D2000-8D2FFF     (base 16)		Sonic Italia
+@@ -15989,6 +16019,60 @@ E26000-E26FFF     (base 16)		HyperSilicon Co.,Ltd
+ 				Wuxi  Jiangsu  214105
+ 				CN
+ 
++8C-1F-64   (hex)		Panoramic Power
++B1A000-B1AFFF     (base 16)		Panoramic Power
++				Atir Yeda 15
++				Kfar Sava    4464312
++				IL
++
++8C-1F-64   (hex)		Fujian ONETHING Technology Co.,Ltd.
++B30000-B30FFF     (base 16)		Fujian ONETHING Technology Co.,Ltd.
++				Room B1017, 10th Floor, Building 17, Innovation Park Phase II, No. 7, Wulongjiang Middle Avenue, Shangjie Town, Minhou County, Fujian Province
++				Fujian    350100
++				CN
++
++8C-1F-64   (hex)		beespace Technologies Limited 
++43F000-43FFFF     (base 16)		beespace Technologies Limited 
++				11-12 Edgewater Road,Suite 1, Formation Works,Edgewater Business Park
++				Belfast     BT39JQ
++				GB
++
++8C-1F-64   (hex)		SENSO2ME NV
++78B000-78BFFF     (base 16)		SENSO2ME NV
++				Coebergerstraat 49A
++				Antwerp  Antwerp  2018
++				BE
++
++8C-1F-64   (hex)		Inex Technologies 
++C46000-C46FFF     (base 16)		Inex Technologies 
++				155 Willowbrook Blvd., Suite 130
++				Wayne  NJ  07470
++				US
++
++8C-1F-64   (hex)		ReCar LLC DBA Slate Auto
++1FF000-1FFFFF     (base 16)		ReCar LLC DBA Slate Auto
++				2716 Daley Dr.
++				Troy  MI  48083
++				US
++
++8C-1F-64   (hex)		VINGLOOP TECHNOLOGY LTD
++DFF000-DFFFFF     (base 16)		VINGLOOP TECHNOLOGY LTD
++				UNIT 910.9/F.TOWER 1 CHEUNGSHA WAN PLAZA 833 CHEUNG SHA WAN RD CHEUNG SHA WAN
++				Hong Kong    000000
++				HK
++
++8C-1F-64   (hex)		JMV BHARAT PRIVATE LIMITED
++961000-961FFF     (base 16)		JMV BHARAT PRIVATE LIMITED
++				W 50, SECTOR 11, NOIDA, GAUTAM BUDDHA NAGAR
++				NOIDA  UTTAR PRADESH  201301
++				IN
++
++8C-1F-64   (hex)		Chipset Communication Co.,Ltd.
++B8C000-B8CFFF     (base 16)		Chipset Communication Co.,Ltd.
++				5F-3, No. 130, Jian Kang Rd., 
++				Zhonghe Dist.,  New Taipei City  235
++				TW
++
+ 8C-1F-64   (hex)		Vision Systems Safety Tech
+ E6F000-E6FFFF     (base 16)		Vision Systems Safety Tech
+ 				5 Chemin de Chiradie
+@@ -23711,6 +23795,12 @@ C36000-C36FFF     (base 16)		ODTech Co., Ltd.
+ 				Wanju_gun  Jeonbuk-do  55322
+ 				KR
+ 
++8C-1F-64   (hex)		Tecsys do Brasil Industrial Ltda
++7D0000-7D0FFF     (base 16)		Tecsys do Brasil Industrial Ltda
++				Rua Oros, 146
++				Sao Jose dos Campos  SP  12237150
++				BR
++
+ 8C-1F-64   (hex)		Inspinia Technology s.r.o.
+ 595000-595FFF     (base 16)		Inspinia Technology s.r.o.
+ 				Paleckeho 493
+@@ -23723,23 +23813,17 @@ CB1000-CB1FFF     (base 16)		Xi’an Sunway Communication Co., Ltd.
+ 				Road,High-Tech Zone  Xi’an   710000
+ 				CN
+ 
+-8C-1F-64   (hex)		Tecsys do Brasil Industrial Ltda
+-7D0000-7D0FFF     (base 16)		Tecsys do Brasil Industrial Ltda
+-				Rua Oros, 146
+-				Sao Jose dos Campos  SP  12237150
+-				BR
+-
+ 8C-1F-64   (hex)		Season Electronics Ltd
+ 37D000-37DFFF     (base 16)		Season Electronics Ltd
+ 				600 Nest Business Park 
+ 				Havant  Hampshire  PO9 5TL
+ 				GB
+ 
+-8C-1F-64   (hex)		SURYA ELECTRONICS
+-3F2000-3F2FFF     (base 16)		SURYA ELECTRONICS
+-				Plot no115 ALEAP Industrial Estate Gajularamaram village, Quthubullapur Mandal
+-				HYDERABAD  Telangana  500055
+-				IN
++8C-1F-64   (hex)		DEUTA Werke GmbH
++5ED000-5EDFFF     (base 16)		DEUTA Werke GmbH
++				ET
++				Bergisch Gladbach  NRW  51465
++				DE
+ 
+ 8C-1F-64   (hex)		TelecomWadi
+ 1F9000-1F9FFF     (base 16)		TelecomWadi
+@@ -23747,24 +23831,30 @@ CB1000-CB1FFF     (base 16)		Xi’an Sunway Communication Co., Ltd.
+ 				Giza    3244530
+ 				EG
+ 
++8C-1F-64   (hex)		SURYA ELECTRONICS
++3F2000-3F2FFF     (base 16)		SURYA ELECTRONICS
++				Plot no115 ALEAP Industrial Estate Gajularamaram village, Quthubullapur Mandal
++				HYDERABAD  Telangana  500055
++				IN
++
+ 8C-1F-64   (hex)		Efftronics Systems (P) Ltd
+ 063000-063FFF     (base 16)		Efftronics Systems (P) Ltd
+ 				Plot No.4, IT Park, Auto Nagar
+ 				Mangalagiri  Andhra Pradesh  520010
+ 				IN
+ 
++8C-1F-64   (hex)		SUS Corporation
++F69000-F69FFF     (base 16)		SUS Corporation
++				6F, S-patio Bldg. 14-25 Minami-cho, Suruga-ku,
++				Shizuoka city,  Shizuoka  422-8067
++				JP
++
+ 8C-1F-64   (hex)		Vantageo Private Limited
+ 96B000-96BFFF     (base 16)		Vantageo Private Limited
+ 				617, Lodha Supremus II, Wagle Estate, Thane,
+ 				Mumbai  Maharastra  400604
+ 				IN
+ 
+-8C-1F-64   (hex)		DEUTA Werke GmbH
+-5ED000-5EDFFF     (base 16)		DEUTA Werke GmbH
+-				ET
+-				Bergisch Gladbach  NRW  51465
+-				DE
+-
+ 8C-1F-64   (hex)		Shenzhen Angstrom Excellence Technology Co., Ltd
+ 277000-277FFF     (base 16)		Shenzhen Angstrom Excellence Technology Co., Ltd
+ 				Angstrom Excellence Building, No. 1310,Guanguang Road,Longhua District
+@@ -23783,18 +23873,18 @@ FE0000-FE0FFF     (base 16)		Potter Electric Signal Co. LLC
+ 				Hazelwood  MO  63042
+ 				US
+ 
+-8C-1F-64   (hex)		Samwell International Inc
+-3EB000-3EBFFF     (base 16)		Samwell International Inc
+-				No. 317-1, Sec.2, An Kang Rd., Hsintien Dist
+-				New Taipei City    231
+-				TW
+-
+ 8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+ 965000-965FFF     (base 16)		Potter Electric Signal Co. LLC
+ 				5757 Phantom Drive
+ 				Hazelwood  MO  63042
+ 				US
+ 
++8C-1F-64   (hex)		Samwell International Inc
++3EB000-3EBFFF     (base 16)		Samwell International Inc
++				No. 317-1, Sec.2, An Kang Rd., Hsintien Dist
++				New Taipei City    231
++				TW
++
+ 8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+ EBB000-EBBFFF     (base 16)		Potter Electric Signal Co. LLC
+ 				5757 Phantom Drive
+@@ -23807,36 +23897,36 @@ EBB000-EBBFFF     (base 16)		Potter Electric Signal Co. LLC
+ 				Hazelwood  MO  63042
+ 				US
+ 
+-8C-1F-64   (hex)		SUS Corporation
+-F69000-F69FFF     (base 16)		SUS Corporation
+-				6F, S-patio Bldg. 14-25 Minami-cho, Suruga-ku,
+-				Shizuoka city,  Shizuoka  422-8067
+-				JP
+-
+ 8C-1F-64   (hex)		CS-Tech s.r.o.
+ ED7000-ED7FFF     (base 16)		CS-Tech s.r.o.
+ 				Lazenska
+ 				Usti nad Orlici  Czech Republic  56201
+ 				CZ
+ 
++8C-1F-64   (hex)		Leap Info Systems Pvt. Ltd.
++FEE000-FEEFFF     (base 16)		Leap Info Systems Pvt. Ltd.
++				301 Melinkeri, Plot no.4, Survey No.149/1A, ITI Road,Parihar Chowk, Aundh, Pune – 411007
++				Pune  Maharashtra  411007
++				IN
++
+ 8C-1F-64   (hex)		SARV WEBS PRIVATE LIMITED
+ CA0000-CA0FFF     (base 16)		SARV WEBS PRIVATE LIMITED
+ 				IT-10,EPIP RIICO INDUSTRIAL AREA SITAPURA JAIPUR 302022
+ 				JAIPUR  RAJASTHAN  302022
+ 				IN
+ 
++8C-1F-64   (hex)		CHUGOKU ELECTRICAL INSTRUMENTS Co.,LTD.
++DD3000-DD3FFF     (base 16)		CHUGOKU ELECTRICAL INSTRUMENTS Co.,LTD.
++				2-4-6,Tsurue,Fuchu-cho,Aki-gun,
++				Hiroshima  Japan  735-0008
++				JP
++
+ 8C-1F-64   (hex)		Wi-Tronix, LLC
+ D8D000-D8DFFF     (base 16)		Wi-Tronix, LLC
+ 				631 E Boughton Rd, Suite 240
+ 				Bolingbrook  IL  60440
+ 				US
+ 
+-70-B3-D5   (hex)		Aplex Technology Inc.
+-F57000-F57FFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road 
+-				Zhonghe District  New Taipei City 235   -
+-				TW
+-
+ 8C-1F-64   (hex)		YUYAMA MFG Co.,Ltd
+ 24E000-24EFFF     (base 16)		YUYAMA MFG Co.,Ltd
+ 				1-4-30
+@@ -23856,8 +23946,8 @@ F57000-F57FFF     (base 16)		Aplex Technology Inc.
+ 				TW
+ 
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+-906000-906FFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road
++F57000-F57FFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road 
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+@@ -23867,17 +23957,29 @@ B96000-B96FFF     (base 16)		Observable Space
+ 				Los Angeles  CA  90064
+ 				US
+ 
+-8C-1F-64   (hex)		CHUGOKU ELECTRICAL INSTRUMENTS Co.,LTD.
+-DD3000-DD3FFF     (base 16)		CHUGOKU ELECTRICAL INSTRUMENTS Co.,LTD.
+-				2-4-6,Tsurue,Fuchu-cho,Aki-gun,
+-				Hiroshima  Japan  735-0008
+-				JP
++70-B3-D5   (hex)		Aplex Technology Inc.
++906000-906FFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road
++				Zhonghe District  New Taipei City 235   -
++				TW
+ 
+-8C-1F-64   (hex)		Leap Info Systems Pvt. Ltd.
+-FEE000-FEEFFF     (base 16)		Leap Info Systems Pvt. Ltd.
+-				301 Melinkeri, Plot no.4, Survey No.149/1A, ITI Road,Parihar Chowk, Aundh, Pune – 411007
+-				Pune  Maharashtra  411007
+-				IN
++8C-1F-64   (hex)		Yu Heng Electric CO. TD 
++1FC000-1FCFFF     (base 16)		Yu Heng Electric CO. TD 
++				No. 8, Gongye 2nd Road, Renwu District, 
++				Kaohiung  City   Taiwan   814 
++				CN
++
++8C-1F-64   (hex)		REO AG
++CD0000-CD0FFF     (base 16)		REO AG
++				Brühlerstr. 100
++				Solingen    42657
++				DE
++
++8C-1F-64   (hex)		Intenseye Inc.
++A20000-A20FFF     (base 16)		Intenseye Inc.
++				1250 Broadway Suite 401
++				New York  NY  10001
++				US
+ 
+ 8C-1F-64   (hex)		BOE Smart IoT Technology Co.,Ltd
+ 761000-761FFF     (base 16)		BOE Smart IoT Technology Co.,Ltd
+@@ -23885,12 +23987,6 @@ FEE000-FEEFFF     (base 16)		Leap Info Systems Pvt. Ltd.
+ 				Beijing  Beijing  100176
+ 				CN
+ 
+-8C-1F-64   (hex)		Yu Heng Electric CO. TD 
+-1FC000-1FCFFF     (base 16)		Yu Heng Electric CO. TD 
+-				No. 8, Gongye 2nd Road, Renwu District, 
+-				Kaohiung  City   Taiwan   814 
+-				CN
+-
+ 8C-1F-64   (hex)		TRATON AB
+ 741000-741FFF     (base 16)		TRATON AB
+ 				Lärlingsvägen 3
+@@ -23909,24 +24005,12 @@ ED0000-ED0FFF     (base 16)		Shanghai Jupper Technology Co.Ltd
+ 				Hazelwood  MO  63042
+ 				US
+ 
+-8C-1F-64   (hex)		Intenseye Inc.
+-A20000-A20FFF     (base 16)		Intenseye Inc.
+-				1250 Broadway Suite 401
+-				New York  NY  10001
+-				US
+-
+ 8C-1F-64   (hex)		Smith meter Inc 
+ 6D1000-6D1FFF     (base 16)		Smith meter Inc 
+ 				1602 Wagner Ave
+ 				Erie    16510
+ 				US
+ 
+-8C-1F-64   (hex)		REO AG
+-CD0000-CD0FFF     (base 16)		REO AG
+-				Brühlerstr. 100
+-				Solingen    42657
+-				DE
+-
+ 8C-1F-64   (hex)		Racelogic Ltd
+ FB6000-FB6FFF     (base 16)		Racelogic Ltd
+ 				Unit 10-11 Osier Way,Swan Business Centre
+@@ -23981,60 +24065,42 @@ FA0000-FA0FFF     (base 16)		Pneumax Spa
+ 				Lurano  Bergamo  24050
+ 				IT
+ 
+-8C-1F-64   (hex)		Coral Infratel Pvt Ltd
+-750000-750FFF     (base 16)		Coral Infratel Pvt Ltd
+-				First Floor, 144 Subhash  Nagar
+-				Rohtak  Haryana  124001
+-				IN
+-
+ 8C-1F-64   (hex)		Fortus
+ 9A3000-9A3FFF     (base 16)		Fortus
+ 				32 Lavery Avenue
+ 				Dublin  Dublin  D12 A611
+ 				IE
+ 
++8C-1F-64   (hex)		Potter Electric Signal Co. LLC
++690000-690FFF     (base 16)		Potter Electric Signal Co. LLC
++				1609 Park 370 Place
++				Hazelwood  MO  63042
++				US
++
++8C-1F-64   (hex)		Coral Infratel Pvt Ltd
++750000-750FFF     (base 16)		Coral Infratel Pvt Ltd
++				First Floor, 144 Subhash  Nagar
++				Rohtak  Haryana  124001
++				IN
++
+ 8C-1F-64   (hex)		AMC Europe Kft.
+ A2F000-A2FFFF     (base 16)		AMC Europe Kft.
+ 				Csiri utca 13
+ 				Törökbálint    2045
+ 				HU
+ 
+-8C-1F-64   (hex)		Guangzhou Vannove Technology Co., Ltd
+-6C1000-6C1FFF     (base 16)		Guangzhou Vannove Technology Co., Ltd
+-				No. 728 Kaichuang Avenue, Guangzhou, China.
+-				GuangZhou  GuangDong  51000
+-				CN
+-
+ 8C-1F-64   (hex)		Bots Unlimited LLC
+ 69D000-69DFFF     (base 16)		Bots Unlimited LLC
+ 				5817 La Colonia
+ 				San Antonio  TX  78218
+ 				US
+ 
+-8C-1F-64   (hex)		Potter Electric Signal Co. LLC
+-690000-690FFF     (base 16)		Potter Electric Signal Co. LLC
+-				1609 Park 370 Place
+-				Hazelwood  MO  63042
+-				US
+-
+ 8C-1F-64   (hex)		HARBIN DIGITAL ECONOMY DEVELOPMENT CO.,LTD
+ EC2000-EC2FFF     (base 16)		HARBIN DIGITAL ECONOMY DEVELOPMENT CO.,LTD
+ 				No. 22, Binhe Avenue, Pingfang District
+ 				Harbin  Heilongjiang  150060
+ 				CN
+ 
+-8C-1F-64   (hex)		Combined Public Communications, LLC
+-6E8000-6E8FFF     (base 16)		Combined Public Communications, LLC
+-				100 Aqua Drive
+-				Cold Spring  KY  41076
+-				US
+-
+-8C-1F-64   (hex)		Image Soft Oy
+-843000-843FFF     (base 16)		Image Soft Oy
+-				Valimotie 13A
+-				HELSINKI    00380
+-				FI
+-
+ 8C-1F-64   (hex)		DEUTA Werke GmbH
+ 546000-546FFF     (base 16)		DEUTA Werke GmbH
+ 				ET
+@@ -24047,6 +24113,18 @@ EC2000-EC2FFF     (base 16)		HARBIN DIGITAL ECONOMY DEVELOPMENT CO.,LTD
+ 				Abingdon-on-Thames  Oxfordshire  OX14 4RY
+ 				GB
+ 
++8C-1F-64   (hex)		Image Soft Oy
++843000-843FFF     (base 16)		Image Soft Oy
++				Valimotie 13A
++				HELSINKI    00380
++				FI
++
++8C-1F-64   (hex)		BRS Sistemas Eletrônicos
++944000-944FFF     (base 16)		BRS Sistemas Eletrônicos
++				Rua Capistrano de Abreu, 68
++				Canoas  RS  92120130
++				BR
++
+ 8C-1F-64   (hex)		Flow Power
+ 82B000-82BFFF     (base 16)		Flow Power
+ 				Suite 2, Level 3, 18 - 20 York St
+@@ -31841,18 +31919,18 @@ AB3000-AB3FFF     (base 16)		VELVU TECHNOLOGIES PRIVATE LIMITED
+ 				Skovlunde    2740
+ 				DK
+ 
+-8C-1F-64   (hex)		wincker international enterprise co., ltd
+-B1F000-B1FFFF     (base 16)		wincker international enterprise co., ltd
+-				1FL No. 345 Yen Shou St., Taipei, Taiwan
+-				Taipei    10577
+-				TW
+-
+ 8C-1F-64   (hex)		Chengdu Xiuwei TechnologyDevelopment Co., Ltd
+ 870000-870FFF     (base 16)		Chengdu Xiuwei TechnologyDevelopment Co., Ltd
+ 				10th Floor, Building 10, No. 8 Guangfu Road, Qingyang District
+ 				Chengdu City  Please Select  610073
+ 				CN
+ 
++8C-1F-64   (hex)		wincker international enterprise co., ltd
++B1F000-B1FFFF     (base 16)		wincker international enterprise co., ltd
++				1FL No. 345 Yen Shou St., Taipei, Taiwan
++				Taipei    10577
++				TW
++
+ 8C-1F-64   (hex)		IQ Tools LLC
+ FF5000-FF5FFF     (base 16)		IQ Tools LLC
+ 				Zemlyanoy Val, 64, building 2
+@@ -31943,18 +32021,18 @@ B33000-B33FFF     (base 16)		Aplex Technology Inc.
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+-8C-1F-64   (hex)		Boeing India Private Limited
+-533000-533FFF     (base 16)		Boeing India Private Limited
+-				Plot No: 55-B,56,57,59  Hitech-Defence and Aerospace park, Aerospace Sector, Unachur Village, Yelahanka Taluk, Bangaloe North
+-				Bengaluru  Karnataka  562149
+-				IN
+-
+ 8C-1F-64   (hex)		Jemac Sweden AB
+ 42D000-42DFFF     (base 16)		Jemac Sweden AB
+ 				Trångsundsvägen 20A
+ 				Kalmar    39356
+ 				SE
+ 
++8C-1F-64   (hex)		Boeing India Private Limited
++533000-533FFF     (base 16)		Boeing India Private Limited
++				Plot No: 55-B,56,57,59  Hitech-Defence and Aerospace park, Aerospace Sector, Unachur Village, Yelahanka Taluk, Bangaloe North
++				Bengaluru  Karnataka  562149
++				IN
++
+ 70-B3-D5   (hex)		Aplex Technology Inc.
+ 3D9000-3D9FFF     (base 16)		Aplex Technology Inc.
+ 				15F-1, No.186, Jian Yi Road 
+@@ -31991,12 +32069,6 @@ C31000-C31FFF     (base 16)		Ambarella Inc.
+ 				Santa Clara  CA  95054
+ 				US
+ 
+-8C-1F-64   (hex)		Aegex Technologies LLC Magyarországi Fióktelepe
+-A9D000-A9DFFF     (base 16)		Aegex Technologies LLC Magyarországi Fióktelepe
+-				Tildy Zoltán utca
+-				Pécs  Baranya  7632
+-				HU
+-
+ 8C-1F-64   (hex)		Q (Cue), Inc.
+ 6A6000-6A6FFF     (base 16)		Q (Cue), Inc.
+ 				Abba Hillel Silver Rd 21
+@@ -32009,6 +32081,12 @@ A9D000-A9DFFF     (base 16)		Aegex Technologies LLC Magyarországi Fióktelepe
+ 				Beijing  Haidian District  100085
+ 				CN
+ 
++8C-1F-64   (hex)		Aegex Technologies LLC Magyarországi Fióktelepe
++A9D000-A9DFFF     (base 16)		Aegex Technologies LLC Magyarországi Fióktelepe
++				Tildy Zoltán utca
++				Pécs  Baranya  7632
++				HU
++
+ 8C-1F-64   (hex)		Automation Displays Inc.
+ 4F2000-4F2FFF     (base 16)		Automation Displays Inc.
+ 				3533 White Ave
+@@ -32051,12 +32129,33 @@ BF7000-BF7FFF     (base 16)		Intellicon Private Limited
+ 				Gandhinagar  Gujarat  382028
+ 				IN
+ 
++8C-1F-64   (hex)		Power Electronics Espana, S.L.
++29A000-29AFFF     (base 16)		Power Electronics Espana, S.L.
++				C/ Leonardo Da Vinci, 24-26 
++				Paterna  Valencia  46980
++				ES
++
+ 8C-1F-64   (hex)		Nihon Bouhan Camera Inc
+ 9A7000-9A7FFF     (base 16)		Nihon Bouhan Camera Inc
+-				7F Daiichikosam Bldg ,3-14-10,Ginza
++				7F Daiichikosan Bldg ,3-14-10,Ginza
+ 				Chuou-ku  Tokyo  104-0061
+ 				JP
+ 
++8C-1F-64   (hex)		Private
++B80000-B80FFF     (base 16)		Private
++
++8C-1F-64   (hex)		VivoKey Technologies Inc.
++305000-305FFF     (base 16)		VivoKey Technologies Inc.
++				336 36th Street # 366
++				Bellingham  WA  98225
++				US
++
++8C-1F-64   (hex)		Lumiplan-Duhamel
++0D0000-0D0FFF     (base 16)		Lumiplan-Duhamel
++				215 rue Guynemer
++				Le versoud    38420
++				FR
++
+ 8C-1F-64   (hex)		Mobileye
+ D63000-D63FFF     (base 16)		Mobileye
+ 				13 Hartom st.
+@@ -39743,11 +39842,11 @@ C75000-C75FFF     (base 16)		Abbott Diagnostics Technologies AS
+ 				Oslo  Oslo  0504
+ 				NO
+ 
+-8C-1F-64   (hex)		Oriental Electronics, Inc.
+-68E000-68EFFF     (base 16)		Oriental Electronics, Inc.
+-				2-4-1 Tanabe-Chuo
+-				Kyo-Tanabe  Kyoto  610-0334
+-				JP
++8C-1F-64   (hex)		OnAsset Intelligence
++415000-415FFF     (base 16)		OnAsset Intelligence
++				8407 Sterling Street
++				Irving  TX  75063
++				US
+ 
+ 8C-1F-64   (hex)		OOO Mig Trading
+ C19000-C19FFF     (base 16)		OOO Mig Trading
+@@ -39761,10 +39860,16 @@ C19000-C19FFF     (base 16)		OOO Mig Trading
+ 				Dinkelsbuehl  Bavaria  91550
+ 				DE
+ 
+-8C-1F-64   (hex)		OnAsset Intelligence
+-415000-415FFF     (base 16)		OnAsset Intelligence
+-				8407 Sterling Street
+-				Irving  TX  75063
++8C-1F-64   (hex)		Oriental Electronics, Inc.
++68E000-68EFFF     (base 16)		Oriental Electronics, Inc.
++				2-4-1 Tanabe-Chuo
++				Kyo-Tanabe  Kyoto  610-0334
++				JP
++
++8C-1F-64   (hex)		Pulcro.io LLC
++C22000-C22FFF     (base 16)		Pulcro.io LLC
++				551 S IH 35, Ste 300
++				Round Rock  TX  78664
+ 				US
+ 
+ 8C-1F-64   (hex)		Digitella Inc.
+@@ -39773,29 +39878,29 @@ C19000-C19FFF     (base 16)		OOO Mig Trading
+ 				Anyang-si  Gyeonggi-do  14084
+ 				KR
+ 
+-8C-1F-64   (hex)		Pulcro.io LLC
+-C22000-C22FFF     (base 16)		Pulcro.io LLC
+-				551 S IH 35, Ste 300
+-				Round Rock  TX  78664
+-				US
+-
+ 8C-1F-64   (hex)		Melissa Climate Jsc
+ 6CA000-6CAFFF     (base 16)		Melissa Climate Jsc
+ 				Gen. Gurko 4 Street
+ 				Sofia    1000
+ 				BG
+ 
++8C-1F-64   (hex)		wonder meditec
++B2D000-B2DFFF     (base 16)		wonder meditec
++				2F, 12-11, Seonjam-ro, Seongbuk-gu
++				Seoul, Korea    02836
++				KR
++
+ 8C-1F-64   (hex)		IGL
+ 8F0000-8F0FFF     (base 16)		IGL
+ 				1, Allée des Chevreuils,
+ 				Lissieu    69380
+ 				FR
+ 
+-8C-1F-64   (hex)		wonder meditec
+-B2D000-B2DFFF     (base 16)		wonder meditec
+-				2F, 12-11, Seonjam-ro, Seongbuk-gu
+-				Seoul, Korea    02836
+-				KR
++8C-1F-64   (hex)		In-lite Design BV
++F4A000-F4AFFF     (base 16)		In-lite Design BV
++				Stephensonweg 18
++				Gorinchem  Zuid-Holland  4207 HB
++				NL
+ 
+ 70-B3-D5   (hex)		Teenage Engineering AB
+ 1AF000-1AFFFF     (base 16)		Teenage Engineering AB
+@@ -39821,12 +39926,6 @@ D64000-D64FFF     (base 16)		Potter Electric Signal Co. LLC
+ 				Hazelwood  MO  63042
+ 				US
+ 
+-8C-1F-64   (hex)		In-lite Design BV
+-F4A000-F4AFFF     (base 16)		In-lite Design BV
+-				Stephensonweg 18
+-				Gorinchem  Zuid-Holland  4207 HB
+-				NL
+-
+ 8C-1F-64   (hex)		IDA North America Inc.
+ 275000-275FFF     (base 16)		IDA North America Inc.
+ 				16 16th Street S
+@@ -39839,30 +39938,30 @@ F4A000-F4AFFF     (base 16)		In-lite Design BV
+ 				Zhonghe District  New Taipei City 235   -
+ 				TW
+ 
+-70-B3-D5   (hex)		Aplex Technology Inc.
+-FF3000-FF3FFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road 
+-				Zhonghe District  New Taipei City 235   -
+-				TW
+-
+-70-B3-D5   (hex)		Aplex Technology Inc.
+-65C000-65CFFF     (base 16)		Aplex Technology Inc.
+-				15F-1, No.186, Jian Yi Road 
+-				Zhonghe District  New Taipei City 235   -
+-				TW
+-
+ 8C-1F-64   (hex)		Shenzhen Broadradio RFID Technology Co., Ltd
+ 057000-057FFF     (base 16)		Shenzhen Broadradio RFID Technology Co., Ltd
+ 				B222, 2nd Floor, Building B, Fuhai Technology Industrial Park
+ 				shenzhen  guangdong  5178000
+ 				CN
+ 
++70-B3-D5   (hex)		Aplex Technology Inc.
++FF3000-FF3FFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road 
++				Zhonghe District  New Taipei City 235   -
++				TW
++
+ 8C-1F-64   (hex)		Yu Heng Electric CO. TD 
+ 575000-575FFF     (base 16)		Yu Heng Electric CO. TD 
+ 				No 8 , Gongye 2nd Rd., Renwu Industry Park
+ 				Kaohsiung  Kaohsiung City  814
+ 				TW
+ 
++70-B3-D5   (hex)		Aplex Technology Inc.
++65C000-65CFFF     (base 16)		Aplex Technology Inc.
++				15F-1, No.186, Jian Yi Road 
++				Zhonghe District  New Taipei City 235   -
++				TW
++
+ 8C-1F-64   (hex)		SPX Flow Technology BV
+ CDA000-CDAFFF     (base 16)		SPX Flow Technology BV
+ 				Munnikenheiweg 41
+@@ -39946,3 +40045,21 @@ C6F000-C6FFFF     (base 16)		LUNEAU TECHNOLOGY OPERATIONS
+ 				80 Seungsamsin-ri-gil, Yonggang-dong, Gyeongju-si, Gyeongsangbuk-do
+ 				Gyeongju city    38090
+ 				KR
++
++8C-1F-64   (hex)		A-Best Co.,Lid.
++2AF000-2AFFFF     (base 16)		A-Best Co.,Lid.
++				No.159.,Songde Rd.,
++				TAIPEI CITY  Taiwan, China  11085
++				TW
++
++8C-1F-64   (hex)		DORLET SAU
++3DD000-3DDFFF     (base 16)		DORLET SAU
++				C/ ALBERT EINSTEIN 34, PARQUE TECNOLOGICO DE ALAVA
++				VITORIA - GASTEIZ  ALAVA  01510
++				ES
++
++8C-1F-64   (hex)		NHA TRANG HITECH COMPANY,  LTD
++CED000-CEDFFF     (base 16)		NHA TRANG HITECH COMPANY,  LTD
++				No. 152, Hoang Van Thu Street, Tay Nha Trang Ward
++				KHANH HOA  KHANH HOA  650000
++				VN
+diff --git a/hwdb.d/usb.ids b/hwdb.d/usb.ids
+index 1878f503b6..fa798e65ed 100644
+--- a/hwdb.d/usb.ids
++++ b/hwdb.d/usb.ids
+@@ -9,8 +9,8 @@
+ #	The latest version can be obtained from
+ #		http://www.linux-usb.org/usb.ids
+ #
+-# Version: 2025.07.26
+-# Date:    2025-07-26 20:34:01
++# Version: 2025.09.15
++# Date:    2025-09-15 20:34:02
+ #
+ 
+ # Vendors, devices and interfaces. Please keep sorted.
+@@ -13488,7 +13488,9 @@
+ 0b0d  ProjectLab
+ 	0000  CenturyCD
+ 0b0e  GN Netcom
++	0301  Jabra EVOLVE 20
+ 	0305  Jabra EVOLVE Link MS
++	030c  Jabra EVOLVE 65
+ 	0311  Jabra EVOLVE 65
+ 	0312  enc060:Buttons Volume up/down/mute + phone [Jabra]
+ 	0343  Jabra UC VOICE 150a
+@@ -13507,6 +13509,11 @@
+ 	2007  GN 2000 Stereo Corded Headset
+ 	2456  Jabra SPEAK 810
+ 	245e  Jabra Link 370
++	248a  Jabra Elite 85h
++	24b8  Jabra Evolve2 65
++	24bb  Jabra Evolve2 85
++	24c9  Jabra Link 380
++	24ca  Jabra Link 380
+ 	620c  Jabra BT620s
+ 	9330  Jabra GN9330 Headset
+ 	a346  Jabra Engage 75 Stereo

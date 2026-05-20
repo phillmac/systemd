@@ -1,0 +1,57 @@
+From 6fe4e2e64df52c985acd6ccf02cc69415fbef116 Mon Sep 17 00:00:00 2001
+From: Erin Shepherd <erin.shepherd@e43.eu>
+Date: Sat, 5 Apr 2025 21:40:08 +0200
+Subject: [PATCH] JSON User/Group records: Add properties for UUIDs
+
+It is useful to have stable and unique identifiers for a security principal.
+The majority of identitiy management systems in use with Unix systems today
+(e.g. Active Directory objectGUID, FreeIPA ipaUniqueID, Kanidm UUIDs) assign
+each account and group a unique UUID and exposing that to applications allows
+them to refer to accounts in a stable manner.
+
+This change does not implement user or group lookup by UUID; that is left for
+a later PR.
+
+(cherry picked from commit 800afbbcd7f11255b7fc0ab3948861b27be96eb8)
+
+Related: RHEL-143036
+---
+ docs/GROUP_RECORD.md | 6 ++++++
+ docs/USER_RECORD.md  | 7 +++++++
+ 2 files changed, 13 insertions(+)
+
+diff --git a/docs/GROUP_RECORD.md b/docs/GROUP_RECORD.md
+index c055e49d43..add1a0d786 100644
+--- a/docs/GROUP_RECORD.md
++++ b/docs/GROUP_RECORD.md
+@@ -20,6 +20,12 @@ they carry some identical (or at least very similar) fields.
+ Matches the `gr_name` field of UNIX/glibc NSS `struct group`,
+ or the shadow structure `struct sgrp`'s `sg_namp` field.
+ 
++`uuid` -> A string containing a lowercase UUID that identifies this group.
++The same considerations apply to this field as they do to the corresponding field of user records.
++Users and groups MUST NOT share the same UUID unless they are semantically
++the same security principal e.g. if a system synthesizes a single-user group from
++user records to be the user's primary group.
++
+ `realm` → The "realm" the group belongs to, conceptually identical to the same field of user records.
+ A string in DNS domain name syntax.
+ 
+diff --git a/docs/USER_RECORD.md b/docs/USER_RECORD.md
+index a8e02b2c5e..350ca76649 100644
+--- a/docs/USER_RECORD.md
++++ b/docs/USER_RECORD.md
+@@ -234,6 +234,13 @@ retrievable and resolvable under every name listed here, pretty much everywhere
+ the primary user name is. If logging in is attempted via an alias name it
+ should be normalized to the primary name.
+ 
++`uuid` -> A string containing a lowercase UUID that identifies this user.
++The UUID should be assigned to the user at creation, be the same across multiple machines,
++and never change (even if the user's username, realm or other identifying attributes change).
++When the user database is backed by Microsoft Active Directory, this field should contain
++he value from the [objectGUID](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-ada3/937eb5c6-f6b3-4652-a276-5d6bb8979658)
++attribute. The same UUID can be retrieved via `mbr_uid_to_uuid` on macOS.
++
+ `blobDirectory` → The absolute path to a world-readable copy of the user's blob
+ directory. See [Blob Directories](/USER_RECORD_BLOB_DIRS) for more details.
+ 

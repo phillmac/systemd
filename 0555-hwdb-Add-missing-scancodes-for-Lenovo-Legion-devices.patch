@@ -1,0 +1,44 @@
+From 9cd4334d3c1bed09d07f091bd692d3e6b3d0f371 Mon Sep 17 00:00:00 2001
+From: "Derek J. Clark" <derekjohn.clark@gmail.com>
+Date: Mon, 5 Jan 2026 19:01:30 -0800
+Subject: [PATCH] hwdb: Add missing scancodes for Lenovo Legion devices
+
+Adds missing scancodes for Lenovo Legion Go, Go S, and Go 2. When long
+pressing the power button the device should issue a LEFTMETA + F16
+combo. The LEFTMETA code fires properly, but the F16 is not mapped.
+
+Go and Go S devices detect as AT Translated Set 2 Keyboard, while Go 2
+detects as AT Raw Set 2 Keyboard, hence the multiple entries.
+
+Signed-off-by: Derek J. Clark <derekjohn.clark@gmail.com>
+(cherry picked from commit 8ea31c2307dda52cbbcd19dbe39f3cfdd7a3b8a5)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-keyboard.hwdb | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+
+diff --git a/hwdb.d/60-keyboard.hwdb b/hwdb.d/60-keyboard.hwdb
+index f47802a905..82a04a8a8e 100644
+--- a/hwdb.d/60-keyboard.hwdb
++++ b/hwdb.d/60-keyboard.hwdb
+@@ -1175,6 +1175,19 @@ evdev:atkbd:dmi:bvn*:bvr*:bd*:svnLENOVO:pn21LG:pvr*
+  KEYBOARD_KEY_0a=!9
+  KEYBOARD_KEY_0b=!0
+ 
++# Lenovo Legion Go & Go S
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83E1:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83L3:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83N6:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83Q2:*
++evdev:name:AT Translated Set 2 keyboard:dmi:*:svnLENOVO:pn83Q3:*
++ KEYBOARD_KEY_67=f16 # Power button long press
++
++# Lenovo Legion Go 2
++evdev:name:AT Raw Set 2 keyboard:dmi:*:svnLENOVO:pn83N0:*
++evdev:name:AT Raw Set 2 keyboard:dmi:*:svnLENOVO:pn83N1:*
++ KEYBOARD_KEY_20=f16 # Power button long press
++
+ ###########################################################
+ # LG
+ ###########################################################

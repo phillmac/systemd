@@ -1,0 +1,28 @@
+From 5a26d4d52115079e3da7ddffd77d5b87e45a11aa Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Wed, 30 Apr 2025 21:07:48 +0900
+Subject: [PATCH] TEST-17: drop unnecessary $PATH setting
+
+My local setting was unintentionally inserted by the commit
+7cb4508c5af465ab1be1b103e6c2b613eb58e63c.
+
+(cherry picked from commit da9d75e0c6f6ae1e70e2f7efb8adb3851926e220)
+
+Resolves: RHEL-108242
+---
+ test/units/TEST-17-UDEV.11.sh | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/test/units/TEST-17-UDEV.11.sh b/test/units/TEST-17-UDEV.11.sh
+index ac99a80b0f..f0ab20e5c9 100755
+--- a/test/units/TEST-17-UDEV.11.sh
++++ b/test/units/TEST-17-UDEV.11.sh
+@@ -8,8 +8,6 @@ set -o pipefail
+ # shellcheck source=test/units/util.sh
+ . "$(dirname "$0")"/util.sh
+ 
+-PATH=/var/build:$PATH
+-
+ # shellcheck disable=SC2317
+ cleanup() {
+     cd /

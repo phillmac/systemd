@@ -1,0 +1,105 @@
+From bb285f766c13da97b24194391e111cb0d9701a24 Mon Sep 17 00:00:00 2001
+From: Frantisek Sumsal <frantisek@sumsal.cz>
+Date: Thu, 9 Oct 2025 17:54:58 +0200
+Subject: [PATCH] mkosi: install test dependencies for EnterNamespace= test
+
+The test for the EnterNamespace= feature [0] has been both broken and
+disabled since the migration to the mkosi framework, as it's missing the
+libdw.pc file for pkg-config, so the test is skipped completely, and
+it's also missing gcc to actually build the test binary.
+
+[0] Part of TEST-87-AUX-UTILS-VM.coredump.sh
+
+(cherry picked from commit 4d8e8d44ab3f6f99102faf0dcb53ca4de4d517ae)
+
+Related: RHEL-113920
+---
+ mkosi.conf.d/10-arch/mkosi.conf          | 2 ++
+ mkosi.conf.d/10-centos-fedora/mkosi.conf | 3 +++
+ mkosi.conf.d/10-debian-ubuntu/mkosi.conf | 3 +++
+ mkosi.conf.d/10-opensuse/mkosi.conf      | 3 +++
+ 4 files changed, 11 insertions(+)
+
+diff --git a/mkosi.conf.d/10-arch/mkosi.conf b/mkosi.conf.d/10-arch/mkosi.conf
+index 9ceb6ea6f8..7194edeeac 100644
+--- a/mkosi.conf.d/10-arch/mkosi.conf
++++ b/mkosi.conf.d/10-arch/mkosi.conf
+@@ -21,6 +21,7 @@ Packages=
+         dbus-broker
+         dbus-broker-units
+         dhcp
++        elfutils
+         erofs-utils
+         f2fs-tools
+         git
+@@ -38,6 +39,7 @@ Packages=
+         openssl
+         pacman
+         perf
++        pkgconf
+         polkit
+         procps-ng
+         psmisc
+diff --git a/mkosi.conf.d/10-centos-fedora/mkosi.conf b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+index 90603bba14..6cd4a056c7 100644
+--- a/mkosi.conf.d/10-centos-fedora/mkosi.conf
++++ b/mkosi.conf.d/10-centos-fedora/mkosi.conf
+@@ -26,6 +26,8 @@ Packages=
+         device-mapper-event
+         device-mapper-multipath
+         dnf
++        elfutils-devel
++        elfutils-libs
+         git-core
+         glibc-langpack-de
+         glibc-langpack-en
+@@ -45,6 +47,7 @@ Packages=
+         pam
+         passwd
+         perf
++        pkgconf
+         policycoreutils
+         polkit
+         procps-ng
+diff --git a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
+index c898664f83..85f2af492c 100644
+--- a/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
++++ b/mkosi.conf.d/10-debian-ubuntu/mkosi.conf
+@@ -54,6 +54,8 @@ Packages=
+         isc-dhcp-server
+         knot
+         libcap-ng-utils
++        libdw-dev
++        libdw1
+         locales
+         login
+         man-db
+@@ -64,6 +66,7 @@ Packages=
+         openssh-server
+         passwd
+         polkitd
++        pkgconf
+         procps
+         psmisc
+         python3-pexpect
+diff --git a/mkosi.conf.d/10-opensuse/mkosi.conf b/mkosi.conf.d/10-opensuse/mkosi.conf
+index 4ee3894c00..d400a85320 100644
+--- a/mkosi.conf.d/10-opensuse/mkosi.conf
++++ b/mkosi.conf.d/10-opensuse/mkosi.conf
+@@ -52,6 +52,8 @@ Packages=
+         kernel-default
+         kmod
+         knot
++        libdw-devel
++        libdw1
+         multipath-tools
+         ncat
+         open-iscsi
+@@ -60,6 +62,7 @@ Packages=
+         pam
+         patterns-base-minimal_base
+         perf
++        pkgconf
+         procps4
+         psmisc
+         python3-pefile

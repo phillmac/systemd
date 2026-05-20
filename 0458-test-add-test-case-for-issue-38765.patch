@@ -1,0 +1,44 @@
+From 44e20b005290dbee4e15b65238f7d87bd51be912 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Thu, 4 Sep 2025 00:49:34 +0900
+Subject: [PATCH] test: add test case for issue #38765
+
+(cherry picked from commit 5b89cc2a5ad9ecb040dc1fc9b31fb0e24a59e9ae)
+
+Resolves: RHEL-112205
+---
+ src/core/transaction.c             | 1 +
+ test/units/TEST-87-AUX-UTILS-VM.sh | 8 ++++++++
+ 2 files changed, 9 insertions(+)
+
+diff --git a/src/core/transaction.c b/src/core/transaction.c
+index eeaf7e8be5..e4b04d0461 100644
+--- a/src/core/transaction.c
++++ b/src/core/transaction.c
+@@ -171,6 +171,7 @@ static int delete_one_unmergeable_job(Transaction *tr, Job *job) {
+                                  * another unit in which case we
+                                  * rather remove the start. */
+ 
++                                /* Update test/units/TEST-87-AUX-UTILS-VM.sh when logs below are changed. */
+                                 log_unit_debug(j->unit,
+                                                "Looking at job %s/%s conflicted_by=%s",
+                                                j->unit->id, job_type_to_string(j->type),
+diff --git a/test/units/TEST-87-AUX-UTILS-VM.sh b/test/units/TEST-87-AUX-UTILS-VM.sh
+index 9c2a033aa9..ecbff290f0 100755
+--- a/test/units/TEST-87-AUX-UTILS-VM.sh
++++ b/test/units/TEST-87-AUX-UTILS-VM.sh
+@@ -3,6 +3,14 @@
+ set -eux
+ set -o pipefail
+ 
++# For issue #38765
++journalctl --sync
++if journalctl -q -o short-monotonic --grep "Looking at job .*/.* conflicted_by=(yes|no)" >/failed; then
++    echo "Found unexpected unmergeable jobs"
++    cat /failed
++    exit 1
++fi
++
+ # shellcheck source=test/units/test-control.sh
+ . "$(dirname "$0")"/test-control.sh
+ 

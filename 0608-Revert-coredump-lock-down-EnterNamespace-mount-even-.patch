@@ -1,0 +1,41 @@
+From b19c1dbe3962ba716555284136a23fb0b8da9e3a Mon Sep 17 00:00:00 2001
+From: Michal Sekletar <msekleta@redhat.com>
+Date: Fri, 14 Mar 2025 09:16:17 +0100
+Subject: [PATCH] Revert "coredump: lock down EnterNamespace= mount even more"
+
+This reverts commit 4c9c8b8d09eff18df71ba4aa910df4201f9890a0.
+
+Reverted change broke EnterNamespace= completely. For example, libdw
+tries to access libc in /lib64 which points to usr/lib64 and that fails.
+Similarly for binaries, we need to be able to resolve /bin to usr/bin
+and /sbin to usr/sbin at the very least.
+
+(cherry picked from commit 8f8148cb08bf9f2c0e1f7fe6a5e6eb383115957b)
+
+Related: RHEL-95219
+---
+ src/coredump/coredump.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/src/coredump/coredump.c b/src/coredump/coredump.c
+index ea4f8805f4..9665b3fe3e 100644
+--- a/src/coredump/coredump.c
++++ b/src/coredump/coredump.c
+@@ -832,10 +832,13 @@ static int attach_mount_tree(int mount_tree_fd) {
+                 return log_warning_errno(r, "Failed to create directory: %m");
+ 
+         r = mount_setattr(mount_tree_fd, "", AT_EMPTY_PATH,
+-                                &(struct mount_attr) {
+-                                        .attr_set = MOUNT_ATTR_RDONLY|MOUNT_ATTR_NOSUID|MOUNT_ATTR_NODEV|MOUNT_ATTR_NOEXEC|MOUNT_ATTR_NOSYMFOLLOW,
+-                                        .propagation = MS_SLAVE,
+-                                }, sizeof(struct mount_attr));
++                          &(struct mount_attr) {
++                                  /* MOUNT_ATTR_NOSYMFOLLOW is left out on purpose to allow libdwfl to resolve symlinks.
++                                   * libdwfl will use openat2() with RESOLVE_IN_ROOT so there is no risk of symlink escape.
++                                   * https://sourceware.org/git/?p=elfutils.git;a=patch;h=06f0520f9a78b07c11c343181d552791dd630346 */
++                                  .attr_set = MOUNT_ATTR_RDONLY|MOUNT_ATTR_NOSUID|MOUNT_ATTR_NODEV|MOUNT_ATTR_NOEXEC,
++                                  .propagation = MS_SLAVE,
++                          }, sizeof(struct mount_attr));
+         if (r < 0)
+                 return log_warning_errno(errno, "Failed to change properties of mount tree: %m");
+ 

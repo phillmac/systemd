@@ -1,0 +1,123 @@
+From 78ed449353cbe20dcddcbea1f7f6370a5df0c209 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 1 Sep 2025 05:08:45 +0900
+Subject: [PATCH] core/transaction: first drop unmergable jobs for anchor jobs
+
+As you can see, something spurious happens in the logs below.
+```
+initrd-switch-root.target: Trying to enqueue job initrd-switch-root.target/start/isolate
+systemd-repart.service: Looking at job systemd-repart.service/stop conflicted_by=no
+systemd-repart.service: Looking at job systemd-repart.service/start conflicted_by=no
+systemd-repart.service: Fixing conflicting jobs systemd-repart.service/stop,systemd-repart.service/start by deleting job systemd-repart.service/stop
+initrd-switch-root.target: Fixing conflicting jobs initrd-switch-root.target/stop,initrd-switch-root.target/start by deleting job initrd-switch-root.target/stop
+systemd-repart.service: Deleting job systemd-repart.service/start as dependency of job initrd-switch-root.target/stop
+```
+
+The two conflicting jobs for systemd-repart.service are initially queued
+as the following:
+- initrd-switch-root.target has Wants=initrd-root-fs.target, and
+  initrd-root-fs.target has Wants=systemd-repart.service (through symlink),
+  hence starting initrd-switch-root.target tries to start
+  systemd-repart.service,
+- systemd-repart.service has Conflicts=initrd-switch-root.target, hence
+  starting initrd-switch-root.target tries to stop
+  systemd-repart.service.
+
+As similar, interestingly(?) starting initrd-switch-root.target tries to
+stop initrd-switch-root.target.
+
+So, now there are at least two pairs of conflicting jobs:
+- systemd-repart.service: start vs stop,
+- initrd-switch-root.target: start vs stop.
+
+As these jobs are induced by starting initrd-switch-root.target, of course
+the most important one is the start job for initrd-switch-root.target.
+
+Previously, as you can see in the logs at the beginning, even if
+the start job for initrd-switch-root.target is important, we may first
+try to resolve the conflict in systemd-repart.service, and may drop the
+stop job for systemd-repart.service even if it is relevant to the start
+job of initrd-switch-root.target.
+
+This makes first we solve the pair of conflicting jobs for anchor task.
+So the stop job for initrd-switch-root.target is dropped first, and the
+induced start job for systemd-repart.service is automatically removed,
+thus it is not necessary to solve the conflict in systemd-repart.service
+anymore.
+
+This is especially important for services that are enabled both in initrd
+and after switching root. If a stop job for one of the service is
+unexpectedly dropped during switching root, then the service is not stopped
+before switching root, and will never start after that.
+
+Fixes #38765.
+
+(cherry picked from commit 811af8d53463fae5a8470b7884158cee0f9acbe4)
+
+Resolves: RHEL-112205
+---
+ src/core/transaction.c | 29 +++++++++++++++++++++++++----
+ 1 file changed, 25 insertions(+), 4 deletions(-)
+
+diff --git a/src/core/transaction.c b/src/core/transaction.c
+index 705ed0c50f..eeaf7e8be5 100644
+--- a/src/core/transaction.c
++++ b/src/core/transaction.c
+@@ -14,6 +14,7 @@
+ #include "terminal-util.h"
+ #include "transaction.h"
+ 
++static bool job_matters_to_anchor(Job *job);
+ static void transaction_unlink_job(Transaction *tr, Job *j, bool delete_dependencies);
+ 
+ static void transaction_delete_job(Transaction *tr, Job *j, bool delete_dependencies) {
+@@ -215,17 +216,18 @@ static int delete_one_unmergeable_job(Transaction *tr, Job *job) {
+         return -EINVAL;
+ }
+ 
+-static int transaction_merge_jobs(Transaction *tr, sd_bus_error *e) {
++static int transaction_ensure_mergeable(Transaction *tr, bool matters_to_anchor, sd_bus_error *e) {
+         Job *j;
+         int r;
+ 
+         assert(tr);
+ 
+-        /* First step, check whether any of the jobs for one specific
+-         * task conflict. If so, try to drop one of them. */
+         HASHMAP_FOREACH(j, tr->jobs) {
+                 JobType t;
+ 
++                if (job_matters_to_anchor(j) != matters_to_anchor)
++                        continue;
++
+                 t = j->type;
+                 LIST_FOREACH(transaction, k, j->transaction_next) {
+                         if (job_type_merge_and_collapse(&t, k->type, j->unit) >= 0)
+@@ -252,7 +254,26 @@ static int transaction_merge_jobs(Transaction *tr, sd_bus_error *e) {
+                 }
+         }
+ 
+-        /* Second step, merge the jobs. */
++        return 0;
++}
++
++static int transaction_merge_jobs(Transaction *tr, sd_bus_error *e) {
++        Job *j;
++        int r;
++
++        assert(tr);
++
++        /* First step, try to drop unmergeable jobs for jobs that matter to anchor. */
++        r = transaction_ensure_mergeable(tr, /* matters_to_anchor = */ true, e);
++        if (r < 0)
++                return r;
++
++        /* Second step, do the same for jobs that not matter to anchor. */
++        r = transaction_ensure_mergeable(tr, /* matters_to_anchor = */ false, e);
++        if (r < 0)
++                return r;
++
++        /* Third step, merge the jobs. */
+         HASHMAP_FOREACH(j, tr->jobs) {
+                 JobType t = j->type;
+ 

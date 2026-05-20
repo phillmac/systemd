@@ -1,0 +1,30 @@
+From fb20729d683b6966984555cbbfdd2d8dd18a6a90 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?David=20Santamar=C3=ADa=20Rogado?= <howl.nsp@gmail.com>
+Date: Tue, 30 Dec 2025 01:24:38 +0100
+Subject: [PATCH] quirks: sensor: add info about ACPI accel_matrix
+
+Just inform about if an ACPI accel matrix exists, is the default one instead
+the indentity matrix.
+
+(cherry picked from commit e9b3bfb3f5979862af06e6da18ba43eeb79f0edb)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index c5446bd17d..e1ca6af48e 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -41,7 +41,9 @@
+ #    PROXIMITY_NEAR_LEVEL=<value>
+ #
+ # where <matrix> is a mount-matrix in the format specified in the IIO
+-# subsystem[1]. The default, when unset, is equivalent to:
++# subsystem[1]. The default, when unset, is the one defined by the ACPI
++# found in /sys/bus/iio/devices/iio\:deviceXXX/in_mount_matrix or, in
++# absence of it, is equivalent to:
+ #   ACCEL_MOUNT_MATRIX=1, 0, 0; 0, 1, 0; 0, 0, 1
+ # eg. the identity matrix,
+ # and <value> is an integer value above or equal to which an object is

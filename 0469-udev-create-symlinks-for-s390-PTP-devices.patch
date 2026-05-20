@@ -1,0 +1,30 @@
+From dbe632700253fb0622309a548403cbd097d5c9d5 Mon Sep 17 00:00:00 2001
+From: Miroslav Lichvar <mlichvar@redhat.com>
+Date: Tue, 14 Oct 2025 11:03:01 +0200
+Subject: [PATCH] udev: create symlinks for s390 PTP devices
+
+Similarly to the udev rules handling KVM and Hyper-V PTP devices, create
+symlinks for the s390-specific STCKE and Physical clocks (supported
+since Linux 6.13) to have some stable names that can be specified in
+default configurations of PTP/NTP applications.
+
+(cherry picked from commit 4db925d7da880001b31415354307604dcbe3a4e6)
+
+Resolves: RHEL-120177
+---
+ rules.d/50-udev-default.rules.in | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/rules.d/50-udev-default.rules.in b/rules.d/50-udev-default.rules.in
+index 8fa518cd8f..08b2de7047 100644
+--- a/rules.d/50-udev-default.rules.in
++++ b/rules.d/50-udev-default.rules.in
+@@ -32,6 +32,8 @@ SUBSYSTEM=="net", IMPORT{builtin}="net_driver"
+ 
+ SUBSYSTEM=="ptp", ATTR{clock_name}=="KVM virtual PTP", SYMLINK+="ptp_kvm"
+ SUBSYSTEM=="ptp", ATTR{clock_name}=="hyperv", SYMLINK+="ptp_hyperv"
++SUBSYSTEM=="ptp", ATTR{clock_name}=="s390 Physical Clock", SYMLINK+="ptp_s390_physical"
++SUBSYSTEM=="ptp", ATTR{clock_name}=="s390 STCKE Clock", SYMLINK+="ptp_s390_stcke"
+ 
+ ACTION!="add", GOTO="default_end"
+ 

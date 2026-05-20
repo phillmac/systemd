@@ -1,0 +1,24 @@
+From cc8154b3627e812fb5b8e6c7ba26bc4e0ad0bff0 Mon Sep 17 00:00:00 2001
+From: helpvisa <daniel.brackenbury@gmail.com>
+Date: Wed, 8 Oct 2025 07:18:48 -0400
+Subject: [PATCH] remove bonus line
+
+(cherry picked from commit b12cd57f6d8da94073a9cb44eaf753858a6cd5dd)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-mouse.hwdb | 1 -
+ 1 file changed, 1 deletion(-)
+
+diff --git a/hwdb.d/70-mouse.hwdb b/hwdb.d/70-mouse.hwdb
+index 6bee17080a..38e7d9e1d9 100644
+--- a/hwdb.d/70-mouse.hwdb
++++ b/hwdb.d/70-mouse.hwdb
+@@ -821,7 +821,6 @@ mouse:usb:v22d4p1308:name:Laview Technology Mionix Avior 7000:*
+ mouse:usb:v0e8fp00a7:name:DaKai 2.4G RX:*
+  MOUSE_DPI=*800@126 1600@126
+ 
+-
+ ##########################################
+ # Nulea
+ ##########################################

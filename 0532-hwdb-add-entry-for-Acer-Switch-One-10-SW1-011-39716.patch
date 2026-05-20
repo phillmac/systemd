@@ -1,0 +1,28 @@
+From 427c9365ec32aef2108aac6af635ffb9cdf3ecfe Mon Sep 17 00:00:00 2001
+From: Bastian Almendras <11617389+CypherNoodle@users.noreply.github.com>
+Date: Thu, 13 Nov 2025 16:33:47 -0300
+Subject: [PATCH] hwdb: add entry for Acer Switch One 10 (SW1-011) (#39716)
+
+Add the correct rotation for Acer Switch One 10 (SW1-011)
+
+(cherry picked from commit a0d1dc662a7e47b0caa81088ddae6389fabeeb20)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index b7ae0892ff..12bfc890aa 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -103,6 +103,9 @@ sensor:modalias:acpi:SMO8500:*:dmi:*Acer*:pnOneS1002:*
+ sensor:modalias:acpi:KIOX0009*:dmi:*:svnAcer:pnOneS1003:*
+  ACCEL_MOUNT_MATRIX=1, 0, 0; 0, -1, 0; 0, 0, 1
+ 
++sensor:modalias:acpi:KIOX000A*:dmi:*:svnAcer:pnSwitchOneSW1-011:*
++ ACCEL_MOUNT_MATRIX=0, 1, 0; 1, 0, 0; 0, 0, 1
++
+ sensor:modalias:acpi:BOSC0200*:dmi:*:svnAcer*:pnSwitchSW312-31:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1
+ 

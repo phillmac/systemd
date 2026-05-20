@@ -1,0 +1,31 @@
+From d29566a502b9af9ed13a79b1ca1be1bd2e395dd2 Mon Sep 17 00:00:00 2001
+From: Lucas Adriano Salles <83602841+luc-salles@users.noreply.github.com>
+Date: Thu, 2 Oct 2025 08:50:04 -0500
+Subject: [PATCH] hwdb: fix calibrate rotation sensor for Positivo K116J
+ (#39189)
+
+Fixes #39188.
+
+(cherry picked from commit f8646b9a2ef3b6efd9b9e44919b736c569359299)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 9c85bc3357..61dc4298c9 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -1054,6 +1054,11 @@ sensor:modalias:acpi:KIOX010A*:dmi:bvn*:bvr*:svnPositivoTecnologiaSA:pn*:pvr*:rv
+  ACCEL_MOUNT_MATRIX=-1, 0, 0; 0, 1, 0; 0, 0, 1
+  ACCEL_LOCATION=display
+ 
++# Positivo Duo K116J
++sensor:modalias:acpi:MDA6655*:dmi:bvn*:bvr*:svnPositivoTecnologiaSA:pn*:pvr*:rvnPositivoTecnologiaSA:rnK116J*
++ ACCEL_MOUNT_MATRIX=0, 1, 0; 1, 0, 0; 0, 0, 1
++ ACCEL_LOCATION=display
++
+ ########################################
+ # Predia
+ #########################################

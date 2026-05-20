@@ -1,0 +1,29 @@
+From b69616e750d8d180a24a14caa8714b3dcdc3bbbf Mon Sep 17 00:00:00 2001
+From: DeKoile <132840552+DeKoile@users.noreply.github.com>
+Date: Wed, 10 Sep 2025 20:22:36 +0200
+Subject: [PATCH] Update 60-sensor.hwdb - Add support for Lenovo Legion Go
+
+This adds support for the 3D Accelerometer of the Lenovo Legion Go
+
+(cherry picked from commit 63254ed696d129cc46752e639ae761b758d7b251)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-sensor.hwdb | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/hwdb.d/60-sensor.hwdb b/hwdb.d/60-sensor.hwdb
+index 559fd4151e..9c85bc3357 100644
+--- a/hwdb.d/60-sensor.hwdb
++++ b/hwdb.d/60-sensor.hwdb
+@@ -778,6 +778,10 @@ sensor:modalias:acpi:*BOSC0200*:dmi:*:svnLENOVO*:pn80XE:*
+ sensor:modalias:acpi:*BOSC0200*:dmi:*:svnLENOVO*:pn80U1:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1
+ 
++# Legion Go
++sensor:modalias:platform:HID-SENSOR-200073:dmi:*svnLENOVO:pn83E1:* 
++ ACCEL_MOUNT_MATRIX=0,1,0;-1,0,0;0,0,1
++
+ # Yoga 300-11IBR, display sensor
+ sensor:modalias:acpi:DUAL250E*:dmi:*:svnLENOVO:*:pvrLenovoYoga300-11IBR:*
+  ACCEL_MOUNT_MATRIX=0, -1, 0; -1, 0, 0; 0, 0, 1

@@ -1,0 +1,175 @@
+From e627c841a9e701c675a984e4ff01556c72b44baa Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 16:13:59 +0100
+Subject: [PATCH] sd-varlink: add sd_varlink_get_description() call
+
+(cherry picked from commit 25c24619db829a589dbb4cd53ec3ccf9e2b28aa8)
+
+Related: RHEL-143036
+---
+ man/rules/meson.build                  |   1 +
+ man/sd_varlink_set_description.xml     | 101 +++++++++++++++++++++++++
+ src/libsystemd/libsystemd.sym          |   1 +
+ src/libsystemd/sd-varlink/sd-varlink.c |   6 ++
+ src/systemd/sd-varlink.h               |   1 +
+ 5 files changed, 110 insertions(+)
+ create mode 100644 man/sd_varlink_set_description.xml
+
+diff --git a/man/rules/meson.build b/man/rules/meson.build
+index e76cb0223b..a4767eae59 100644
+--- a/man/rules/meson.build
++++ b/man/rules/meson.build
+@@ -889,6 +889,7 @@ manpages = [
+    'sd_uid_get_sessions',
+    'sd_uid_is_on_seat'],
+   'HAVE_PAM'],
++ ['sd_varlink_set_description', '3', ['sd_varlink_get_description'], ''],
+  ['sd_watchdog_enabled', '3', [], ''],
+  ['shutdown', '8', [], ''],
+  ['smbios-type-11', '7', [], ''],
+diff --git a/man/sd_varlink_set_description.xml b/man/sd_varlink_set_description.xml
+new file mode 100644
+index 0000000000..e64cd8a5ac
+--- /dev/null
++++ b/man/sd_varlink_set_description.xml
+@@ -0,0 +1,101 @@
++<?xml version='1.0'?>
++<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN"
++  "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd">
++<!-- SPDX-License-Identifier: LGPL-2.1-or-later -->
++
++<refentry id="sd_varlink_set_description" xmlns:xi="http://www.w3.org/2001/XInclude">
++
++  <refentryinfo>
++    <title>sd_varlink_set_description</title>
++    <productname>systemd</productname>
++  </refentryinfo>
++
++  <refmeta>
++    <refentrytitle>sd_varlink_set_description</refentrytitle>
++    <manvolnum>3</manvolnum>
++  </refmeta>
++
++  <refnamediv>
++    <refname>sd_varlink_set_description</refname>
++    <refname>sd_varlink_get_description</refname>
++
++    <refpurpose>Set or query description of a Varlink connection object</refpurpose>
++  </refnamediv>
++
++  <refsynopsisdiv>
++    <funcsynopsis>
++      <funcsynopsisinfo>#include &lt;systemd/sd-link.h&gt;</funcsynopsisinfo>
++
++      <funcprototype>
++        <funcdef>int <function>sd_varlink_set_description</function></funcdef>
++        <paramdef>sd_varlink *<parameter>link</parameter></paramdef>
++        <paramdef>const char *<parameter>description</parameter></paramdef>
++      </funcprototype>
++
++      <funcprototype>
++        <funcdef>const char* <function>sd_varlink_get_description</function></funcdef>
++        <paramdef>sd_varlink *<parameter>link</parameter></paramdef>
++      </funcprototype>
++    </funcsynopsis>
++  </refsynopsisdiv>
++
++  <refsect1>
++    <title>Description</title>
++
++    <para><function>sd_varlink_set_description()</function> sets the description string that is used in
++    logging to the specified string. The string is copied internally and freed when the Varlink connection
++    object is deallocated. The <parameter>description</parameter> argument may be <constant>NULL</constant>,
++    in which case the description is unset.</para>
++
++    <para><function>sd_varlink_get_description()</function> returns a description string for the specified
++    Varlink connection. This string may have been previously set with
++    <function>sd_varlink_set_description()</function>. If not set this way, a default string or
++    <constant>NULL</constant> may be returned, depending how the connection was allocated and set up.</para>
++  </refsect1>
++
++  <refsect1>
++    <title>Return Value</title>
++
++    <para>On success, <function>sd_varlink_set_description()</function> returns a non-negative integer. On
++    failure, it returns a negative errno-style error code. <function>sd_varlink_get_description()</function>
++    returns either <constant>NULL</constant> or a pointer to the description string.</para>
++
++    <refsect2>
++      <title>Errors</title>
++
++      <para>Returned errors may indicate the following problems:</para>
++
++      <variablelist>
++        <varlistentry>
++          <term><constant>-EINVAL</constant></term>
++
++          <listitem><para>An argument is invalid.</para></listitem>
++        </varlistentry>
++
++        <varlistentry>
++          <term><constant>-ENOMEM</constant></term>
++
++          <listitem><para>Memory allocation failed.</para></listitem>
++        </varlistentry>
++      </variablelist>
++    </refsect2>
++  </refsect1>
++
++  <xi:include href="libsystemd-pkgconfig.xml" />
++
++  <refsect1>
++    <title>History</title>
++    <para><function>sd_varlink_set_description()</function> was added in version 257.</para>
++    <para><function>sd_varlink_get_description()</function> was added in version 258.</para>
++  </refsect1>
++
++  <refsect1>
++    <title>See Also</title>
++
++    <para><simplelist type="inline">
++      <member><citerefentry><refentrytitle>systemd</refentrytitle><manvolnum>1</manvolnum></citerefentry></member>
++      <member><citerefentry><refentrytitle>sd-varlink</refentrytitle><manvolnum>3</manvolnum></citerefentry></member>
++    </simplelist></para>
++  </refsect1>
++
++</refentry>
+diff --git a/src/libsystemd/libsystemd.sym b/src/libsystemd/libsystemd.sym
+index 4dbe4e3c76..00ebc710be 100644
+--- a/src/libsystemd/libsystemd.sym
++++ b/src/libsystemd/libsystemd.sym
+@@ -1063,4 +1063,5 @@ global:
+ LIBSYSTEMD_258 {
+ global:
+         sd_varlink_get_current_method;
++        sd_varlink_get_description;
+ } LIBSYSTEMD_257;
+diff --git a/src/libsystemd/sd-varlink/sd-varlink.c b/src/libsystemd/sd-varlink/sd-varlink.c
+index 5f3b17199d..0b9bf48363 100644
+--- a/src/libsystemd/sd-varlink/sd-varlink.c
++++ b/src/libsystemd/sd-varlink/sd-varlink.c
+@@ -2879,6 +2879,12 @@ _public_ int sd_varlink_set_description(sd_varlink *v, const char *description)
+         return free_and_strdup(&v->description, description);
+ }
+ 
++_public_ const char* sd_varlink_get_description(sd_varlink *v) {
++        assert_return(v, NULL);
++
++        return v->description;
++}
++
+ static int io_callback(sd_event_source *s, int fd, uint32_t revents, void *userdata) {
+         sd_varlink *v = ASSERT_PTR(userdata);
+ 
+diff --git a/src/systemd/sd-varlink.h b/src/systemd/sd-varlink.h
+index 9401d417b2..7d4da21b0f 100644
+--- a/src/systemd/sd-varlink.h
++++ b/src/systemd/sd-varlink.h
+@@ -210,6 +210,7 @@ int sd_varlink_set_relative_timeout(sd_varlink *v, uint64_t usec);
+ sd_varlink_server* sd_varlink_get_server(sd_varlink *v);
+ 
+ int sd_varlink_set_description(sd_varlink *v, const char *d);
++const char* sd_varlink_get_description(sd_varlink *v);
+ 
+ /* Automatically mark the parameters part of incoming messages as security sensitive */
+ int sd_varlink_set_input_sensitive(sd_varlink *v);

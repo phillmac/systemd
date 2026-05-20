@@ -1,0 +1,32 @@
+From ed799d3b50e866d021ab1c4b0acb5b8fd6d19c6d Mon Sep 17 00:00:00 2001
+From: Li Tian <94442129+litian1992@users.noreply.github.com>
+Date: Tue, 19 Aug 2025 05:43:41 +0800
+Subject: [PATCH] ukify: rstrip and escape binary null characters from
+ 'inspect' output (#38607)
+
+SBAT section of UKI may contain \u000 null characters. Rstrip them, and if there's anything left in the middle,
+escape them so they are displayed as text.
+
+Fixes #38606
+
+(cherry picked from commit 776991a3f349d9c99fd166a0c87fcd2bc1bf92a5)
+Signed-off-by: Li Tian <litian@redhat.com>
+
+Resolves: RHEL-109552
+---
+ src/ukify/ukify.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ukify/ukify.py b/src/ukify/ukify.py
+index da3ceeed24..a868a5b778 100755
+--- a/src/ukify/ukify.py
++++ b/src/ukify/ukify.py
+@@ -1468,7 +1468,7 @@ def inspect_section(
+ 
+     if ttype == 'text':
+         try:
+-            struct['text'] = data.decode()
++            struct['text'] = data.rstrip(b'\0').replace(b'\0', b'\\0').decode()
+         except UnicodeDecodeError as e:
+             print(f'Section {name!r} is not valid text: {e}')
+             struct['text'] = '(not valid UTF-8)'

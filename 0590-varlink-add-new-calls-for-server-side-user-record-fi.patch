@@ -1,0 +1,143 @@
+From 56df03dca7a70c341ec30fec489e2ee32531906b Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 22 Jan 2025 16:27:14 +0100
+Subject: [PATCH] varlink: add new calls for server-side user record filtering
+ to varlink IDL + to spec
+
+This is preparation for adding server side filtering to the userdb
+logic: it adds some fields for this to the userdb varlink API. This only
+adds the IDL for it, no client will use it for now, no server implement
+it. That's added in later commits.
+
+(cherry picked from commit 1ff1e0e01b8cddea89aad88671069527b981a9a2)
+
+Related: RHEL-143036
+---
+ docs/USER_GROUP_API.md                       | 43 ++++++++++++++++++++
+ src/shared/varlink-io.systemd.UserDatabase.c | 19 +++++++++
+ 2 files changed, 62 insertions(+)
+
+diff --git a/docs/USER_GROUP_API.md b/docs/USER_GROUP_API.md
+index 033c2a1b98..0beb3bb912 100644
+--- a/docs/USER_GROUP_API.md
++++ b/docs/USER_GROUP_API.md
+@@ -161,6 +161,10 @@ interface io.systemd.UserDatabase
+ method GetUserRecord(
+         uid : ?int,
+         userName : ?string,
++        fuzzyNames: ?[]string,
++        dispositionMask: ?[]string,
++        uidMin: ?int,
++        uidMax: ?int,
+         service : string
+ ) -> (
+         record : object,
+@@ -170,6 +174,10 @@ method GetUserRecord(
+ method GetGroupRecord(
+         gid : ?int,
+         groupName : ?string,
++        fuzzyNames: ?[]string,
++        dispositionMask: ?[]string,
++        gidMin: ?int,
++        gidMax: ?int,
+         service : string
+ ) -> (
+         record : object,
+@@ -189,6 +197,7 @@ error NoRecordFound()
+ error BadService()
+ error ServiceNotAvailable()
+ error ConflictingRecordFound()
++error NonMatchingRecordFound()
+ error EnumerationNotSupported()
+ ```
+ 
+@@ -203,6 +212,40 @@ If neither of the two parameters are set the whole user database is enumerated.
+ In this case the method call needs to be made with `more` set, so that multiple method call replies may be generated as
+ effect, each carrying one user record.
+ 
++The `fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax` fields permit
++*additional* filtering of the returned set of user records. The `fuzzyNames`
++parameter shall be one or more strings that shall be searched for in "fuzzy"
++way. What specifically this means is left for the backend to decide, but
++typically this should result in substring or string proximity matching of the
++primary user name, the real name of the record and possibly other fields that
++carry identifying information for the user. The `dispositionMask` field shall
++be one of more user record `disposition` strings. If specified only user
++records matching one of the specified dispositions should be enumerated. The
++`uidMin` and `uidMax` fields specify a minimum and maximum value for the UID of
++returned records. Inline searching for `uid` and `userName` support for
++filtering with these four additional parameters is optional, and clients are
++expected to be able to do client-side filtering in case the parameters are not
++supported by a service. The service should return the usual `InvalidParameter`
++error for the relevant parameter if one is passed and it does not support
++it. If a request is made specifying `uid` or `userName` and a suitable record
++is found, but the specified filter via `fuzzyNames`, `dispositionMask`,
++`uidMin`, or `uidMax` does not match, a `NonMatchingRecordFound` error should
++be returned.
++
++Or to say this differently: the *primary search keys* are
++`userName`/`groupName` and `uid`/`gid` and the *secondary search filters* are
++`fuzzyNames`, `dispositionMask`, `uidMin`, `uidMax`. If no entry matching
++either of the primary search keys are found `NoRecordFound()` is returned. If
++one is found that matches one but not the other primary search key
++`ConflictingRecordFound()` is returned. If an entry is found that matches the
++primary search key, but not the secondary match filters
++`NonMatchingRecordFound()` is returned. Finally, if an entry is found that
++matches both the primary search keys and the secondary search filters, they are
++returned as successful response. Note that both the primary search keys and the
++secondary search filters are optional, it is possible to use both, use one of
++the two, or the other of the two, or neither (the latter for a complete dump of
++the database).
++
+ The `service` parameter is mandatory and should be set to the service name
+ being talked to (i.e. to the same name as the `AF_UNIX` socket path, with the
+ `/run/systemd/userdb/` prefix removed). This is useful to allow implementation
+diff --git a/src/shared/varlink-io.systemd.UserDatabase.c b/src/shared/varlink-io.systemd.UserDatabase.c
+index a9484484e3..b2157298af 100644
+--- a/src/shared/varlink-io.systemd.UserDatabase.c
++++ b/src/shared/varlink-io.systemd.UserDatabase.c
+@@ -7,6 +7,14 @@ static SD_VARLINK_DEFINE_METHOD_FULL(
+                 SD_VARLINK_SUPPORTS_MORE,
+                 SD_VARLINK_DEFINE_INPUT(uid, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
+                 SD_VARLINK_DEFINE_INPUT(userName, SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_FIELD_COMMENT("Names to search for in a fuzzy fashion."),
++                SD_VARLINK_DEFINE_INPUT(fuzzyNames, SD_VARLINK_STRING, SD_VARLINK_NULLABLE|SD_VARLINK_ARRAY),
++                SD_VARLINK_FIELD_COMMENT("User dispositions to limit search by."),
++                SD_VARLINK_DEFINE_INPUT(dispositionMask, SD_VARLINK_STRING, SD_VARLINK_NULLABLE|SD_VARLINK_ARRAY),
++                SD_VARLINK_FIELD_COMMENT("Minimum UID to restrict search too."),
++                SD_VARLINK_DEFINE_INPUT(uidMin, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
++                SD_VARLINK_FIELD_COMMENT("Maximum UID to restrict search too."),
++                SD_VARLINK_DEFINE_INPUT(uidMax, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
+                 SD_VARLINK_DEFINE_INPUT(service, SD_VARLINK_STRING, 0),
+                 SD_VARLINK_DEFINE_OUTPUT(record, SD_VARLINK_OBJECT, 0),
+                 SD_VARLINK_DEFINE_OUTPUT(incomplete, SD_VARLINK_BOOL, SD_VARLINK_NULLABLE));
+@@ -16,6 +24,14 @@ static SD_VARLINK_DEFINE_METHOD_FULL(
+                 SD_VARLINK_SUPPORTS_MORE,
+                 SD_VARLINK_DEFINE_INPUT(gid, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
+                 SD_VARLINK_DEFINE_INPUT(groupName, SD_VARLINK_STRING, SD_VARLINK_NULLABLE),
++                SD_VARLINK_FIELD_COMMENT("Additional names to search for in a fuzzy fashion."),
++                SD_VARLINK_DEFINE_INPUT(fuzzyNames, SD_VARLINK_STRING, SD_VARLINK_NULLABLE|SD_VARLINK_ARRAY),
++                SD_VARLINK_FIELD_COMMENT("Group dispositions to limit search by."),
++                SD_VARLINK_DEFINE_INPUT(dispositionMask, SD_VARLINK_STRING, SD_VARLINK_NULLABLE|SD_VARLINK_ARRAY),
++                SD_VARLINK_FIELD_COMMENT("Minimum GID to restrict search too."),
++                SD_VARLINK_DEFINE_INPUT(gidMin, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
++                SD_VARLINK_FIELD_COMMENT("Maximum GID to restrict search too."),
++                SD_VARLINK_DEFINE_INPUT(gidMax, SD_VARLINK_INT, SD_VARLINK_NULLABLE),
+                 SD_VARLINK_DEFINE_INPUT(service, SD_VARLINK_STRING, 0),
+                 SD_VARLINK_DEFINE_OUTPUT(record, SD_VARLINK_OBJECT, 0),
+                 SD_VARLINK_DEFINE_OUTPUT(incomplete, SD_VARLINK_BOOL, SD_VARLINK_NULLABLE));
+@@ -34,6 +50,7 @@ static SD_VARLINK_DEFINE_ERROR(BadService);
+ static SD_VARLINK_DEFINE_ERROR(ServiceNotAvailable);
+ static SD_VARLINK_DEFINE_ERROR(ConflictingRecordFound);
+ static SD_VARLINK_DEFINE_ERROR(EnumerationNotSupported);
++static SD_VARLINK_DEFINE_ERROR(NonMatchingRecordFound);
+ 
+ /* As per https://systemd.io/USER_GROUP_API/ */
+ SD_VARLINK_DEFINE_INTERFACE(
+@@ -46,4 +63,6 @@ SD_VARLINK_DEFINE_INTERFACE(
+                 &vl_error_BadService,
+                 &vl_error_ServiceNotAvailable,
+                 &vl_error_ConflictingRecordFound,
++                SD_VARLINK_SYMBOL_COMMENT("Error indicating that there's a user record matching the primary UID/GID or user/group, but that doesn't match the additional specified matches."),
++                &vl_error_NonMatchingRecordFound,
+                 &vl_error_EnumerationNotSupported);

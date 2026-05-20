@@ -1,0 +1,30 @@
+From ee5a3f14e24c9b9f2594e58deb1e429724d90e8a Mon Sep 17 00:00:00 2001
+From: AsciiWolf <mail@asciiwolf.com>
+Date: Thu, 11 Sep 2025 21:32:18 +0200
+Subject: [PATCH] hwdb: add LimeSDR XTRX devices
+
+(cherry picked from commit 56347fe7f32d0427b371e3c354486241d4e98a20)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/70-software-radio.hwdb | 7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff --git a/hwdb.d/70-software-radio.hwdb b/hwdb.d/70-software-radio.hwdb
+index 7b885cac0b..79e91dc5ef 100644
+--- a/hwdb.d/70-software-radio.hwdb
++++ b/hwdb.d/70-software-radio.hwdb
+@@ -86,6 +86,13 @@ usb:v1D50p604B*
+ usb:v1D50p6089*
+  ID_SOFTWARE_RADIO=1
+ 
++##########################################
++# LimeSDR
++##########################################
++# XTRX (USB3380)
++usb:v0525p3380*
++ ID_SOFTWARE_RADIO=1
++
+ ##########################################
+ # Microtelecom
+ ##########################################

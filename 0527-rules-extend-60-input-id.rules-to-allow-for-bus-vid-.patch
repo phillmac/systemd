@@ -1,0 +1,82 @@
+From cdacb7a8ed9f49f2286761ad25f1432bf8665b8f Mon Sep 17 00:00:00 2001
+From: Peter Hutterer <peter.hutterer@who-t.net>
+Date: Thu, 9 Oct 2025 10:55:16 +1000
+Subject: [PATCH] rules: extend 60-input-id.rules to allow for bus/vid/pid/name
+ matches
+
+Same approach as used in 70-mouse.rules, allow for a name-based match
+optionally combined with bus/vid/pid (which the existing modalias rule
+would already allow us anyway). Note that ID_BUS isn't assigned until
+after this rule has run so we need to use the id/bustype attribute
+directly.
+
+Related to https://github.com/systemd/systemd/issues/36677
+
+(cherry picked from commit 5b647b84a935abd57ff7aaa61d3a64c5c6ffd0db)
+
+Resolves: RHEL-72702
+---
+ hwdb.d/60-input-id.hwdb   |  8 ++++++++
+ hwdb.d/parse_hwdb.py      |  2 +-
+ rules.d/60-input-id.rules | 11 +++++++++++
+ 3 files changed, 20 insertions(+), 1 deletion(-)
+
+diff --git a/hwdb.d/60-input-id.hwdb b/hwdb.d/60-input-id.hwdb
+index 6730ac9efa..edc166c847 100644
+--- a/hwdb.d/60-input-id.hwdb
++++ b/hwdb.d/60-input-id.hwdb
+@@ -5,6 +5,7 @@
+ #
+ # Match string formats:
+ # id-input:modalias:<modalias>
++# id-input:<bus>:v<vid>p<pid>:name:<name>:*
+ #
+ # To add local entries, create a new file
+ #   /etc/udev/hwdb.d/61-input-id-local.hwdb
+@@ -47,6 +48,13 @@
+ # id-input:modalias:input:b0003v1234pABCD*
+ #  ID_INPUT_TOUCHPAD=1
+ #  ID_INPUT=1
++#
++# id-input:usb:v12abp34cd:name:SomeVendor *:*
++#  ID_INPUT_TOUCHPAD=1
++#  ID_INPUT=1
++#
++# For technical reasons the hexadecimal vid/pid in the modalias match are
++# uppercase but lowercase in the bus/vid/pid/name match.
+ 
+ # Sort by brand, model
+ 
+diff --git a/hwdb.d/parse_hwdb.py b/hwdb.d/parse_hwdb.py
+index 768bd064d0..bca18eadcd 100755
+--- a/hwdb.d/parse_hwdb.py
++++ b/hwdb.d/parse_hwdb.py
+@@ -75,7 +75,7 @@ UDEV_TAG = Word(string.ascii_uppercase, alphanums + '_')
+ TYPES = {'mouse':    ('usb', 'bluetooth', 'ps2', '*'),
+          'evdev':    ('name', 'atkbd', 'input'),
+          'fb':       ('pci', 'vmbus'),
+-         'id-input': ('modalias'),
++         'id-input': ('modalias', 'bluetooth', 'i2c', 'usb'),
+          'touchpad': ('i8042', 'rmi', 'bluetooth', 'usb'),
+          'joystick': ('i8042', 'rmi', 'bluetooth', 'usb'),
+          'keyboard': ('name', ),
+diff --git a/rules.d/60-input-id.rules b/rules.d/60-input-id.rules
+index bb8a812d1b..c2bdbfdc27 100644
+--- a/rules.d/60-input-id.rules
++++ b/rules.d/60-input-id.rules
+@@ -5,4 +5,15 @@ ACTION=="remove", GOTO="id_input_end"
+ SUBSYSTEM=="input", ENV{ID_INPUT}=="", IMPORT{builtin}="input_id"
+ SUBSYSTEM=="input", IMPORT{builtin}="hwdb --subsystem=input --lookup-prefix=id-input:modalias:"
+ 
++# id-input:<bus>:v<vid>p<pid>:name:<name>:*
++KERNELS=="input*", ATTRS{id/bustype}=="0003", \
++        IMPORT{builtin}="hwdb 'id-input:usb:v$attr{id/vendor}p$attr{id/product}:name:$attr{name}:'", \
++        GOTO="id_input_end"
++KERNELS=="input*", ATTRS{id/bustype}=="0005", \
++        IMPORT{builtin}="hwdb 'id-input:bluetooth:v$attr{id/vendor}p$attr{id/product}:name:$attr{name}:'", \
++        GOTO="id_input_end"
++KERNELS=="input*", ATTRS{id/bustype}=="0018", \
++        IMPORT{builtin}="hwdb 'id-input:i2c:v$attr{id/vendor}p$attr{id/product}:name:$attr{name}:'", \
++        GOTO="id_input_end"
++
+ LABEL="id_input_end"

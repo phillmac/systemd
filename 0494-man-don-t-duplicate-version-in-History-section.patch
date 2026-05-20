@@ -1,0 +1,150 @@
+From 0754d389b288f690c2815f1f99859ee03d3ca00b Mon Sep 17 00:00:00 2001
+From: Mike Yuan <me@yhndnzj.com>
+Date: Wed, 14 May 2025 20:33:22 +0200
+Subject: [PATCH] man: don't duplicate version in History section
+
+(cherry picked from commit 7d71b23304cf8f7d4b4a06f9322847c22c1c5175)
+
+Related: RHEL-128767
+---
+ man/kernel-command-line.xml      | 5 ++---
+ man/systemd-system.conf.xml      | 5 ++---
+ man/systemd.resource-control.xml | 7 +++----
+ man/systemd.xml                  | 5 ++---
+ tools/check-version-history.py   | 7 +++++--
+ tools/command_ignorelist         | 4 ++++
+ 6 files changed, 18 insertions(+), 15 deletions(-)
+
+diff --git a/man/kernel-command-line.xml b/man/kernel-command-line.xml
+index 0a4c8cf11b..102015f545 100644
+--- a/man/kernel-command-line.xml
++++ b/man/kernel-command-line.xml
+@@ -762,11 +762,10 @@
+       <variablelist>
+         <varlistentry>
+           <term>systemd 252</term>
++
+           <listitem><para>Kernel command-line arguments <varname>systemd.unified_cgroup_hierarchy</varname>
+           and <varname>systemd.legacy_systemd_cgroup_controller</varname> were deprecated. Please switch to
+-          the unified cgroup hierarchy.</para>
+-
+-          <xi:include href="version-info.xml" xpointer="v252"/></listitem>
++          the unified cgroup hierarchy.</para></listitem>
+         </varlistentry>
+       </variablelist>
+   </refsect1>
+diff --git a/man/systemd-system.conf.xml b/man/systemd-system.conf.xml
+index 297838eaa4..23d09cfb37 100644
+--- a/man/systemd-system.conf.xml
++++ b/man/systemd-system.conf.xml
+@@ -754,10 +754,9 @@
+       <variablelist>
+         <varlistentry>
+           <term>systemd 252</term>
+-          <listitem><para>Option <varname>DefaultBlockIOAccounting=</varname> was deprecated. Please switch
+-          to the unified cgroup hierarchy.</para>
+ 
+-          <xi:include href="version-info.xml" xpointer="v252"/></listitem>
++          <listitem><para>Option <varname>DefaultBlockIOAccounting=</varname> was deprecated. Please switch
++          to the unified cgroup hierarchy.</para></listitem>
+         </varlistentry>
+       </variablelist>
+   </refsect1>
+diff --git a/man/systemd.resource-control.xml b/man/systemd.resource-control.xml
+index e4403e7274..540db6293f 100644
+--- a/man/systemd.resource-control.xml
++++ b/man/systemd.resource-control.xml
+@@ -1689,7 +1689,8 @@ DeviceAllow=/dev/loop-control
+       <variablelist>
+         <varlistentry>
+           <term>systemd 252</term>
+-          <listitem><para> Options for controlling the Legacy Control Group Hierarchy (<ulink
++
++          <listitem><para>Options for controlling the Legacy Control Group Hierarchy (<ulink
+           url="https://docs.kernel.org/admin-guide/cgroup-v1/index.html">Control Groups version 1</ulink>)
+           are now fully deprecated:
+           <varname>CPUShares=<replaceable>weight</replaceable></varname>,
+@@ -1703,9 +1704,7 @@ DeviceAllow=/dev/loop-control
+           <varname>BlockIOReadBandwidth=<replaceable>device</replaceable>
+           <replaceable>bytes</replaceable></varname>,
+           <varname>BlockIOWriteBandwidth=<replaceable>device</replaceable> <replaceable>bytes</replaceable></varname>.
+-          Please switch to the unified cgroup hierarchy.</para>
+-
+- <xi:include href="version-info.xml" xpointer="v252"/></listitem>
++          Please switch to the unified cgroup hierarchy.</para></listitem>
+         </varlistentry>
+       </variablelist>
+   </refsect1>
+diff --git a/man/systemd.xml b/man/systemd.xml
+index d11c601a88..afdaf98ac9 100644
+--- a/man/systemd.xml
++++ b/man/systemd.xml
+@@ -1563,11 +1563,10 @@
+       <variablelist>
+         <varlistentry>
+           <term>systemd 252</term>
++
+           <listitem><para>Kernel command-line arguments <varname>systemd.unified_cgroup_hierarchy</varname>
+           and <varname>systemd.legacy_systemd_cgroup_controller</varname> were deprecated. Please switch to
+-          the unified cgroup hierarchy.</para>
+-
+-          <xi:include href="version-info.xml" xpointer="v252"/></listitem>
++          the unified cgroup hierarchy.</para></listitem>
+         </varlistentry>
+       </variablelist>
+   </refsect1>
+diff --git a/tools/check-version-history.py b/tools/check-version-history.py
+index efd7023762..dce2b6abd1 100644
+--- a/tools/check-version-history.py
++++ b/tools/check-version-history.py
+@@ -75,9 +75,12 @@ def find_undocumented_commands(pages, ignorelist):
+             parent = listitem if listitem is not None else varlistentry
+ 
+             rev = parent.getchildren()[-1]
+-            if rev.get("href") != "version-info.xml":
+-                if (filename, path) not in ignorelist:
++            if (
++                rev.get("href") != "version-info.xml" and
++                not path.startswith(tuple(entry[1] for entry in ignorelist if entry[0] == filename))
++            ):
+                     undocumented.append((filename, path))
++
+     return undocumented
+ 
+ 
+diff --git a/tools/command_ignorelist b/tools/command_ignorelist
+index f35f2a3bc1..42076013e4 100644
+--- a/tools/command_ignorelist
++++ b/tools/command_ignorelist
+@@ -14,6 +14,7 @@ journald.conf.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="Co
+ journald.conf.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="RateLimitIntervalSec="]
+ journald.conf.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="SystemMaxUse="]
+ journald.conf.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="ForwardToSyslog="]
++kernel-command-line.xml ./refsect1[title="History"]/
+ loginctl.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="-p"]
+ loginctl.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="-a"]
+ loginctl.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--no-ask-password"]
+@@ -123,6 +124,7 @@ systemctl.xml ./refsect1[title="Commands"]/refsect2[title="System Commands"]/var
+ systemctl.xml ./refsect1[title="Commands"]/refsect2[title="System Commands"]/variablelist/varlistentry[term="suspend"]
+ systemctl.xml ./refsect1[title="Commands"]/refsect2[title="System Commands"]/variablelist/varlistentry[term="hibernate"]
+ systemctl.xml ./refsect1[title="Commands"]/refsect2[title="System Commands"]/variablelist/varlistentry[term="switch-root ROOT INIT"]
++systemd.xml ./refsect1[title="History"]/
+ systemd-ask-password.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--icon="]
+ systemd-ask-password.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--timeout="]
+ systemd-ask-password.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="--no-tty"]
+@@ -169,6 +171,7 @@ systemd-nspawn.xml ./refsect1[title="Options"]/refsect2[title="Execution Options
+ systemd-nspawn.xml ./refsect1[title="Options"]/refsect2[title="System Identity Options"]/variablelist/varlistentry[term="--uuid="]
+ systemd-nspawn.xml ./refsect1[title="Options"]/refsect2[title="Networking Options"]/variablelist/varlistentry[term="--private-network"]
+ systemd-nspawn.xml ./refsect1[title="Options"]/refsect2[title="Image Options"]/variablelist/varlistentry[term="--read-only"]
++systemd-system.conf.xml ./refsect1[title="History"]/
+ systemd-tmpfiles.xml ./refsect1[title="Commands and options"]/variablelist/varlistentry[term="--create"]
+ systemd-tmpfiles.xml ./refsect1[title="Commands and options"]/variablelist/varlistentry[term="--clean"]
+ systemd-tmpfiles.xml ./refsect1[title="Commands and options"]/variablelist/varlistentry[term="--remove"]
+@@ -243,6 +246,7 @@ systemd.path.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="Pat
+ systemd.path.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="Unit="]
+ systemd.path.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="MakeDirectory="]
+ systemd.path.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="DirectoryMode="]
++systemd.resource-control.xml ./refsect1[title="History"]/
+ systemd.service.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="Type="]
+ systemd.service.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="RemainAfterExit="]
+ systemd.service.xml ./refsect1[title="Options"]/variablelist/varlistentry[term="GuessMainPID="]
