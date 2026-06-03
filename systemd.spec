@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        23%{?dist}.1
+Release:        23%{?dist}.2
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -729,6 +729,14 @@ Patch0616: 0616-path-util-invert-PATH_STARTSWITH_ACCEPT_DOT_DOT-flag.patch
 Patch0617: 0617-sd-json-fix-off-by-one-issue-when-updating-parent-fo.patch
 Patch0618: 0618-core-cgroup-avoid-one-unnecessary-strjoina.patch
 Patch0619: 0619-core-validate-input-cgroup-path-more-prudently.patch
+Patch0620: 0620-nspawn-apply-BindUser-Ephemeral-from-settings-file-o.patch
+Patch0621: 0621-nspawn-normalize-pivot_root-paths.patch
+Patch0622: 0622-udev-check-for-invalid-chars-in-various-fields-recei.patch
+Patch0623: 0623-udev-ensure-there-is-space-for-trailing-NUL-before-c.patch
+Patch0624: 0624-udev-ensure-tag-parsing-stays-within-bounds.patch
+Patch0625: 0625-udev-fix-review-mixup.patch
+Patch0626: 0626-udev-scsi-id-check-for-invalid-chars-in-various-fiel.patch
+Patch0627: 0627-udev-builtin-net-id-print-cescaped-bad-attributes.patch
 
 # Downstream-only patches (9000–9999)
 %endif
@@ -1680,6 +1688,16 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
+* Thu Apr 16 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-23.2
+- nspawn: apply BindUser/Ephemeral from settings file only if trusted (RHEL-163873)
+- nspawn: normalize pivot_root paths (RHEL-163873)
+- udev: check for invalid chars in various fields received from the kernel (RHEL-163879)
+- udev: ensure there is space for trailing NUL before calling sprintf (RHEL-163879)
+- udev: ensure tag parsing stays within bounds (RHEL-163879)
+- udev: fix review mixup (RHEL-163879)
+- udev/scsi-id: check for invalid chars in various fields received from the kernel (RHEL-163879)
+- udev-builtin-net-id: print cescaped bad attributes (RHEL-163879)
+
 * Wed Apr 08 2026 systemd maintenance team <systemd-maint@redhat.com> - 257-23.1
 - ci: re-enable bpf-framework option for build and unit test jobs (RHEL-152080)
 - ci: add bpftool workaround to codeql job too (RHEL-152080)

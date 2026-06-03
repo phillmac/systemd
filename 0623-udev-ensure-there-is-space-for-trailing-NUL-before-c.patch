@@ -1,0 +1,45 @@
+From 94e160ec13ff9c2673ce403579f5899f9a698f24 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 6 Mar 2026 19:42:16 +0000
+Subject: [PATCH] udev: ensure there is space for trailing NUL before calling
+ sprintf
+
+sprintf will write 5 characters, as it adds a trailing NUL byte.
+
+Reported on yeswehack.com as:
+YWH-PGM9780-62
+
+Follow-up for 8cfcf9980a3
+
+(cherry picked from commit 69e4ba69d689748d1d515c5a8d063073df3c5821)
+
+Related: RHEL-163879
+---
+ src/shared/device-nodes.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/src/shared/device-nodes.c b/src/shared/device-nodes.c
+index d08c40fe2c..20206ee7b4 100644
+--- a/src/shared/device-nodes.c
++++ b/src/shared/device-nodes.c
+@@ -7,6 +7,7 @@
+ 
+ #include "device-nodes.h"
+ #include "path-util.h"
++#include "stdio-util.h"
+ #include "string-util.h"
+ #include "utf8.h"
+ 
+@@ -39,10 +40,10 @@ int encode_devnode_name(const char *str, char *str_enc, size_t len) {
+ 
+                 } else if (str[i] == '\\' || !allow_listed_char_for_devnode(str[i], NULL)) {
+ 
+-                        if (len-j < 4)
++                        if (len-j < 5)
+                                 return -EINVAL;
+ 
+-                        sprintf(&str_enc[j], "\\x%02x", (unsigned char) str[i]);
++                        assert_se(snprintf_ok(&str_enc[j], 5, "\\x%02x", (unsigned char) str[i]));
+                         j += 4;
+ 
+                 } else {

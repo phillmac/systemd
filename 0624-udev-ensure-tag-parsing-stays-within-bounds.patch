@@ -1,0 +1,32 @@
+From 25730b46464a2636ab8cd760c5b609cdf6118787 Mon Sep 17 00:00:00 2001
+From: Luca Boccassi <luca.boccassi@gmail.com>
+Date: Fri, 6 Mar 2026 20:25:05 +0000
+Subject: [PATCH] udev: ensure tag parsing stays within bounds
+
+This cannot actually happen, but add a safety check nonetheless.
+
+Reported on yeswehack.com as:
+YWH-PGM9780-43
+
+Follow-up for d7867b31836173d1a943ecb1cab6484536126411
+
+(cherry picked from commit 45a200cd751fae382f4145760cf84fd181db1319)
+
+Related: RHEL-163879
+---
+ src/udev/udev-builtin-path_id.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/udev/udev-builtin-path_id.c b/src/udev/udev-builtin-path_id.c
+index d6ea471482..545757dc09 100644
+--- a/src/udev/udev-builtin-path_id.c
++++ b/src/udev/udev-builtin-path_id.c
+@@ -667,7 +667,7 @@ static void add_id_tag(UdevEvent *event, const char *path) {
+         size_t i = 0;
+ 
+         /* compose valid udev tag name */
+-        for (const char *p = path; *p; p++) {
++        for (const char *p = path; *p && i < sizeof(tag) - 1; p++) {
+                 if (ascii_isdigit(*p) ||
+                     ascii_isalpha(*p) ||
+                     *p == '-') {
