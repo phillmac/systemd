@@ -1,0 +1,21 @@
+From: Local privatebus downstream maintenance <phillmac@users.noreply.github.com>
+Subject: [PATCH] manager: keep live runtime tree untouched in manager test mode
+
+A minimal unprivileged verification manager has no reason to create
+/run/systemd. Skip all runtime-dir changes for MANAGER_IS_TEST_RUN.
+Normal managers still create required directories explicitly.
+
+diff --git a/src/core/manager.c b/src/core/manager.c
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -2044,6 +2044,10 @@
+ 
+         assert(m);
+ 
++        /* A verification/test manager must not write to the host's /run tree. */
++        if (MANAGER_IS_TEST_RUN(m))
++                return 0;
++
+         _cleanup_free_ char *d = path_join(m->prefix[EXEC_DIRECTORY_RUNTIME], "systemd");
+         if (!d)
+                 return log_oom();
