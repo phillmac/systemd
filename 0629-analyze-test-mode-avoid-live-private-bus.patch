@@ -1,0 +1,28 @@
+From 71a737d68db8c8a72fdc076d0ec87f43d3ecd7a1 Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Wed, 12 Mar 2025 18:19:34 +0100
+Subject: [PATCH 2/5] analyze: don't connect to bus from analyze test run
+
+This thing should not be "live", hence don't try to connect to the bus,
+or bind the private bus socket.
+
+Fixes: #36540
+---
+ src/core/manager.c | 3 +++
+ 1 file changed, 3 insertions(+)
+
+diff --git a/src/core/manager.c b/src/core/manager.c
+index 26e275f7a084..cf96a61dbb43 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -1968,6 +1968,9 @@ static bool manager_dbus_is_running(Manager *m, bool deserialized) {
+ static void manager_setup_bus(Manager *m) {
+         assert(m);
+ 
++        if (MANAGER_IS_TEST_RUN(m))
++                return;
++
+         /* Let's set up our private bus connection now, unconditionally */
+         (void) bus_init_private(m);
+ 
+
