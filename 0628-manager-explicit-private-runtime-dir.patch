@@ -1,0 +1,114 @@
+From e75fbee6248736d2a71aa96438b495887ef761ea Mon Sep 17 00:00:00 2001
+From: Lennart Poettering <lennart@poettering.net>
+Date: Thu, 13 Mar 2025 11:43:46 +0100
+Subject: [PATCH 1/5] manager: explicitly create our private runtime directory
+
+So far /run/systemd/ was created as side-effect of initializing the
+D-Bus client/server. But in one of the next commits we'll suppress
+connecting to D-Bus in test runs, hence let's move the logic our of the
+D-Bus code and into manager_startup().
+
+Then, also drop creating it again and again in PID 1 at various places,
+and just rely on it to exist.
+---
+ src/core/core-varlink.c |  2 +-
+ src/core/dbus.c         |  2 --
+ src/core/manager.c      | 25 ++++++++++++++++++++++---
+ 3 files changed, 23 insertions(+), 6 deletions(-)
+
+diff --git a/src/core/core-varlink.c b/src/core/core-varlink.c
+index 985bd702b824..3c791cf9b3d9 100644
+--- a/src/core/core-varlink.c
++++ b/src/core/core-varlink.c
+@@ -633,7 +633,7 @@ static int manager_varlink_init_system(Manager *m) {
+         bool fresh = r > 0;
+ 
+         if (!MANAGER_IS_TEST_RUN(m)) {
+-                (void) mkdir_p_label("/run/systemd/userdb", 0755);
++                (void) mkdir_label("/run/systemd/userdb", 0755);
+ 
+                 FOREACH_STRING(address, "/run/systemd/userdb/io.systemd.DynamicUser", VARLINK_ADDR_PATH_MANAGED_OOM_SYSTEM) {
+                         if (!fresh) {
+diff --git a/src/core/dbus.c b/src/core/dbus.c
+index a2a2611a03ea..240b74ec410f 100644
+--- a/src/core/dbus.c
++++ b/src/core/dbus.c
+@@ -34,7 +34,6 @@
+ #include "fd-util.h"
+ #include "fs-util.h"
+ #include "log.h"
+-#include "mkdir-label.h"
+ #include "process-util.h"
+ #include "selinux-access.h"
+ #include "serialize.h"
+@@ -978,7 +977,6 @@ int bus_init_private(Manager *m) {
+                 return log_error_errno(r, "Failed set socket path for private bus: %m");
+         sa_len = r;
+ 
+-        (void) mkdir_parents_label(sa.un.sun_path, 0755);
+         (void) sockaddr_un_unlink(&sa.un);
+ 
+         fd = socket(AF_UNIX, SOCK_STREAM|SOCK_CLOEXEC|SOCK_NONBLOCK, 0);
+diff --git a/src/core/manager.c b/src/core/manager.c
+index 36217ead14a4..26e275f7a084 100644
+--- a/src/core/manager.c
++++ b/src/core/manager.c
+@@ -336,7 +336,7 @@ static int manager_check_ask_password(Manager *m) {
+                 if (inotify_fd < 0)
+                         return log_error_errno(errno, "Failed to create inotify object: %m");
+ 
+-                (void) mkdir_p_label("/run/systemd/ask-password", 0755);
++                (void) mkdir_label("/run/systemd/ask-password", 0755);
+                 r = inotify_add_watch_and_warn(inotify_fd, "/run/systemd/ask-password", IN_CLOSE_WRITE|IN_DELETE|IN_MOVED_TO|IN_ONLYDIR);
+                 if (r < 0)
+                         return r;
+@@ -1047,7 +1047,7 @@ int manager_new(RuntimeScope runtime_scope, ManagerTestRunFlags test_run_flags,
+                         if (r < 0)
+                                 return r;
+ 
+-                        r = mkdir_p_label(units_path, 0755);
++                        r = mkdir_label(units_path, 0755);
+                 }
+                 if (r < 0 && r != -EEXIST)
+                         return r;
+@@ -1105,7 +1105,6 @@ static int manager_setup_notify(Manager *m) {
+                                                m->notify_socket);
+                 sa_len = r;
+ 
+-                (void) mkdir_parents_label(m->notify_socket, 0755);
+                 (void) sockaddr_un_unlink(&sa.un);
+ 
+                 r = mac_selinux_bind(fd, &sa.sa, sa_len);
+@@ -2045,11 +2044,31 @@ void manager_reloading_stopp(Manager **m) {
+         }
+ }
+ 
++static int manager_make_runtime_dir(Manager *m) {
++        int r;
++
++        assert(m);
++
++        _cleanup_free_ char *d = path_join(m->prefix[EXEC_DIRECTORY_RUNTIME], "systemd");
++        if (!d)
++                return log_oom();
++
++        r = mkdir_label(d, 0755);
++        if (r < 0 && r != -EEXIST)
++                return log_error_errno(r, "Failed to create directory '%s/': %m", d);
++
++        return 0;
++}
++
+ int manager_startup(Manager *m, FILE *serialization, FDSet *fds, const char *root) {
+         int r;
+ 
+         assert(m);
+ 
++        r = manager_make_runtime_dir(m);
++        if (r < 0)
++                return r;
++
+         /* If we are running in test mode, we still want to run the generators,
+          * but we should not touch the real generator directories. */
+         r = lookup_paths_init_or_warn(&m->lookup_paths, m->runtime_scope,
+

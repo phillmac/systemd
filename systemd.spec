@@ -48,7 +48,7 @@ Url:            https://systemd.io
 # Allow users to specify the version and release when building the rpm by 
 # setting the %%version_override and %%release_override macros.
 Version:        %{?version_override}%{!?version_override:257}
-Release:        23%{?dist}.2.alma.1
+Release:        23%{?dist}.2.alma.1.privatebus2
 
 %global stable %(c="%version"; [ "$c" = "${c#*.*}" ]; echo $?)
 
@@ -737,6 +737,10 @@ Patch0624: 0624-udev-ensure-tag-parsing-stays-within-bounds.patch
 Patch0625: 0625-udev-fix-review-mixup.patch
 Patch0626: 0626-udev-scsi-id-check-for-invalid-chars-in-various-fiel.patch
 Patch0627: 0627-udev-builtin-net-id-print-cescaped-bad-attributes.patch
+Patch0628: 0628-manager-explicit-private-runtime-dir.patch
+Patch0629: 0629-analyze-test-mode-avoid-live-private-bus.patch
+Patch0630: 0630-pid1-test-mode-avoid-oomd-bus.patch
+Patch0631: 0631-manager-do-not-create-host-runtime-dir-in-test-mode.patch
 
 # Downstream-only patches (9000–9999)
 %endif
@@ -1688,6 +1692,15 @@ rm -f .file-list-*
 rm -f %{name}.lang
 
 %changelog
+* Sun Nov 01 2026 phillmac <phillmac@users.noreply.github.com> - 257-23.2.alma.1.privatebus2
+- Make manager test-mode startup skip host runtime directory creation.
+- Regress unprivileged systemd-analyze verify in minimal /run chroots.
+
+* Sun Nov 01 2026 phillmac <phillmac@users.noreply.github.com> - 257-23.2.alma.1.privatebus1
+- Backport systemd/systemd PR #36719 fixes for #36540: skip live private bus and oomd connections in manager test mode.
+- Create runtime directories explicitly to preserve normal user and system manager behavior.
+- Carry three required upstream commits; omit two unrelated debug/test logging follow-ups.
+
 * Wed Jun 03 2026 Andrew Lukoshko <alukoshko@almalinux.org> - 257-23.2.alma.1
 - Debrand for AlmaLinux
 
